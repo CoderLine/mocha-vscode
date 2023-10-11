@@ -12,10 +12,11 @@ import { cliPackageName } from './constants';
 import { DisposableStore } from './disposable';
 import { CliPackageMissing, ConfigProcessReadError, HumanError } from './errors';
 
-interface IResolvedConfiguration {
+export interface IResolvedConfiguration {
   files: string[];
   env: Record<string, string>;
   extensionTestsPath: string;
+  extensionDevelopmentPath: string;
   config: TestConfiguration;
   path: string;
 }
@@ -41,7 +42,7 @@ export class ConfigurationFile implements vscode.Disposable {
 
   constructor(
     public readonly uri: vscode.Uri,
-    private readonly wf: vscode.WorkspaceFolder,
+    public readonly wf: vscode.WorkspaceFolder,
   ) {
     const watcher = this.ds.add(vscode.workspace.createFileSystemWatcher(uri.fsPath));
     let changeDebounce: NodeJS.Timeout | undefined;
@@ -75,6 +76,13 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   /**
+   * Clears any cached config read.
+   */
+  public forget() {
+    this.readPromise = undefined;
+  }
+
+  /**
    * Spawns the test CLI associated with the configuration file using the
    * given args.
    */
@@ -90,9 +98,13 @@ export class ConfigurationFile implements vscode.Disposable {
     });
   }
 
-  private async _read() {
-    const p = await this.spawnCli(['--list-configuration']);
-    const configs = await new Promise<IResolvedConfiguration[]>((resolve, reject) => {
+  /**
+   * Spawns the test CLI associated with the configuration file using the
+   * given args, and captures its output.
+   */
+  public async captureCliJson<T>(args: readonly string[]) {
+    const p = await this.spawnCli(args);
+    return await new Promise<T>((resolve, reject) => {
       const output: Buffer[] = [];
       p.stdout.on('data', (chunk) => output.push(chunk));
       p.stderr.on('data', (chunk) => output.push(chunk));
@@ -110,7 +122,10 @@ export class ConfigurationFile implements vscode.Disposable {
         }
       });
     });
+  }
 
+  private async _read() {
+    const configs = await this.captureCliJson<IResolvedConfiguration[]>(['--list-configuration']);
     return new ConfigurationList(this.uri, configs, this.wf);
   }
 

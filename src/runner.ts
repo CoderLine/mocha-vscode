@@ -2,17 +2,21 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { MochaEvent, MochaEventTuple } from '@vscode/test-cli';
+import { IDesktopTestConfiguration, MochaEvent, MochaEventTuple } from '@vscode/test-cli';
 import styles from 'ansi-styles';
+import { randomUUID } from 'crypto';
 import split2 from 'split2';
 import * as vscode from 'vscode';
-import { ConfigurationFile } from './configurationFile';
+import { ConfigValue } from './configValue';
+import { ConfigurationFile, IResolvedConfiguration } from './configurationFile';
+import { DisposableStore } from './disposable';
 import { TestProcessExitedError } from './errors';
 import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
 import { SourceMapStore } from './source-map-store';
 
 interface ISpawnOptions {
+  configIndex: number;
   config: ConfigurationFile;
   args: string[];
   onLine: (line: string) => void;
@@ -25,7 +29,10 @@ export type RunHandler = (
 ) => Promise<void>;
 
 export class TestRunner {
-  constructor(private readonly smStore: SourceMapStore) {}
+  constructor(
+    private readonly smStore: SourceMapStore,
+    private readonly launchConfig: ConfigValue<Record<string, any>>,
+  ) {}
 
   public makeHandler(
     ctrl: vscode.TestController,
@@ -57,7 +64,11 @@ export class TestRunner {
         outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`));
       };
 
+      const spawnCts = new vscode.CancellationTokenSource();
+      run.token.onCancellationRequested(() => spawnCts.cancel());
+
       const spawnOpts: ISpawnOptions = {
+        configIndex,
         args,
         config,
         onLine: (line) => {
@@ -160,13 +171,14 @@ export class TestRunner {
             }
             case MochaEvent.End:
               isOutsideTestRun = true;
+              spawnCts.cancel();
               break;
             default:
               // just normal output
               outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`));
           }
         },
-        token: run.token,
+        token: spawnCts.token,
       };
 
       run.appendOutput(
@@ -176,9 +188,15 @@ export class TestRunner {
       );
 
       try {
-        await this.runWithoutDebug(spawnOpts);
+        if (debug) {
+          await this.runDebug(spawnOpts);
+        } else {
+          await this.runWithoutDebug(spawnOpts);
+        }
       } catch (e) {
-        enqueueLine(String(e));
+        if (!spawnCts.token.isCancellationRequested) {
+          enqueueLine(String(e));
+        }
       }
 
       if (!ranAnyTest) {
@@ -188,6 +206,98 @@ export class TestRunner {
       await outputQueue.drain();
       run.end();
     };
+  }
+
+  private async runDebug({ args, config, onLine, token, configIndex }: ISpawnOptions) {
+    const thisConfig = (
+      await config.captureCliJson<IResolvedConfiguration[]>([...args, '--list-configuration'])
+    )?.[0];
+    if (token.isCancellationRequested || !thisConfig || token.isCancellationRequested) {
+      return;
+    }
+
+    const ds = new DisposableStore();
+    return new Promise<void>((resolve, reject) => {
+      const sessionKey = randomUUID();
+      const includedSessions = new Set<vscode.DebugSession | undefined>();
+      const launchConfig = this.launchConfig.value || {};
+
+      Promise.resolve(
+        vscode.debug.startDebugging(config.wf, {
+          ...launchConfig,
+          type: 'extensionHost',
+          request: 'launch',
+          name: thisConfig.config.label || `Extension Test Config #${configIndex + 1}`,
+          args: [
+            `--extensionTestsPath=${thisConfig.extensionTestsPath}`,
+            `--extensionDevelopmentPath=${thisConfig.extensionDevelopmentPath}`,
+            ...(launchConfig.args || []),
+            ...((thisConfig.config as IDesktopTestConfiguration).launchArgs || []),
+          ],
+          env: { ...thisConfig.env, ...launchConfig.env },
+          __extensionSessionKey: sessionKey,
+        }),
+      ).catch(reject);
+
+      ds.add(
+        token.onCancellationRequested(() => {
+          for (const session of includedSessions) {
+            if (!session?.parentSession) {
+              vscode.debug.stopDebugging(session);
+            }
+          }
+
+          resolve();
+        }),
+      );
+
+      let didFindFirst = false;
+      ds.add(
+        vscode.debug.onDidTerminateDebugSession((session) => {
+          includedSessions.delete(session);
+          if (didFindFirst && includedSessions.size === 0) {
+            resolve();
+          }
+        }),
+      );
+
+      let output = '';
+      ds.add(
+        vscode.debug.registerDebugAdapterTrackerFactory('*', {
+          createDebugAdapterTracker(session) {
+            if (
+              session.configuration.__extensionSessionKey !== sessionKey &&
+              !includedSessions.has(session.parentSession)
+            ) {
+              return undefined;
+            }
+
+            didFindFirst = true;
+            includedSessions.add(session);
+
+            return {
+              onDidSendMessage({ type, event, body }) {
+                if (
+                  type === 'event' &&
+                  event === 'output' &&
+                  body.output &&
+                  body.category !== 'telemetry'
+                ) {
+                  output += body.output;
+                }
+
+                let newLine = output.indexOf('\n');
+                while (newLine !== -1) {
+                  onLine(output.substring(0, newLine));
+                  output = output.substring(newLine + 1);
+                  newLine = output.indexOf('\n');
+                }
+              },
+            };
+          },
+        }),
+      );
+    }).finally(() => ds.dispose());
   }
 
   private async runWithoutDebug({ args, config, onLine, token }: ISpawnOptions) {
@@ -225,6 +335,7 @@ export class TestRunner {
   ) {
     const reporter = await config.resolveCli('fullJsonStream');
     const args = [...baseArgs, '--reporter', reporter];
+    const exclude = new Set(request.exclude);
     const include = request.include?.slice() ?? [...ctrl.items].map(([, item]) => item);
 
     const grepRe: string[] = [];
@@ -232,7 +343,7 @@ export class TestRunner {
 
     for (const test of include) {
       const data = testMetadata.get(test);
-      if (!data) {
+      if (!data || exclude.has(test)) {
         continue;
       }
 
@@ -259,7 +370,7 @@ export class TestRunner {
     }
 
     // if there's no include, omit --run so that every file is executed
-    if (!request.include) {
+    if (!request.include || !exclude.size) {
       for (const path of compiledFileTests.value.keys()) {
         args.push('--run', path);
       }

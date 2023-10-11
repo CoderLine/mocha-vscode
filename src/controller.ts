@@ -37,9 +37,6 @@ export class Controller {
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
   private runProfiles = new Map<string, vscode.TestRunProfile[]>();
 
-  /** Promise that resolves when workspace files have been scanned */
-  private initialFileScan?: Promise<void>;
-
   /** Error item shown in the tree, if any. */
   private errorItem?: vscode.TestItem;
 
@@ -56,6 +53,11 @@ export class Controller {
   /** Change emitter used for testing, to pick up when the file watcher detects a chagne */
   public readonly onDidChange = this.didChangeEmitter.event;
 
+  /** Gets run profiles the controller has registerd. */
+  public get profiles() {
+    return [...this.runProfiles.values()].flat();
+  }
+
   constructor(
     public readonly ctrl: vscode.TestController,
     private readonly wf: vscode.WorkspaceFolder,
@@ -70,7 +72,10 @@ export class Controller {
     const rescan = () => this.scanFiles();
     this.disposable.add(this.configFile.onDidChange(rescan));
     this.disposable.add(this.extractMode.onDidChange(rescan));
-    ctrl.refreshHandler = rescan;
+    ctrl.refreshHandler = () => {
+      this.configFile.forget();
+      rescan();
+    };
     this.scanFiles();
   }
 
@@ -102,7 +107,14 @@ export class Controller {
       return;
     }
 
-    const tree = extract(contents, this.extractMode.value);
+    let tree: IParsedNode[];
+    try {
+      tree = extract(contents, this.extractMode.value);
+    } catch (e) {
+      this.deleteFileTests(uri.toString());
+      return;
+    }
+
     if (!tree.length) {
       this.deleteFileTests(uri.toString());
       return;
@@ -237,8 +249,7 @@ export class Controller {
       }
     });
 
-    const promise = (this.initialFileScan = this.scanFiles());
-    await promise;
+    await this.scanFiles();
   }
 
   private handleScanError() {

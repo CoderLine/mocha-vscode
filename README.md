@@ -1,52 +1,43 @@
-# nodejs-testing
+# VS Code Extension Test Runner
 
-Provide integration with VS Code using the [`node:test` runner](https://nodejs.org/api/test.html). Simply install the extension and start running tests, no setup required.[\*](#having-problems-read-this)
+This is a VS Code extension for other extension authors, that runs tests as you develop extensions. It requires use of the new extension test API and configuration file. For more information, see our [testing guide for extension authors](https://code.visualstudio.com/api/working-with-extensions/testing-extension).
 
-**This extension requires Node.js >=19**: `node:test` is quite new and did not offer features we need in prior versions.
+## Getting Started
 
-## Having Problems? Read this!
+Please follow the [testing guide for extension authors](https://code.visualstudio.com/api/working-with-extensions/testing-extension) to initially set up tests using the command line. Then, [install this extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.extension-test-runner).
 
-- The extension looks for files that use the [Node.js test runner naming convention](https://nodejs.org/api/test.html#test-runner-execution-model). Make sure your files are named correctly!
+This extension automatically discovers and works with the `.vscode-test.js/mjs/cjs` files found in your workspace. It requires minimal to no extra configuration. It works by looking at test files in your JavaScript code. If you write tests in TypeScript, you will want to:
 
-- The Node.js test runner only supports running JavaScript files. If you have a compilation step, you'll need to make sure that runs **with sourcemaps** so we can figure out where tests appear in your source code. For example, for TypeScript, set `"sourceMap": true` in your tsconfig.json.
+1. Modify your tsconfig.json and add `"sourceMap": true`
+1. Add `**/*.js.map` to your `.vscodeignore` file to avoid bloating the published extension.
 
-- If tests aren't initially found in your workspace folder, this extension won't keep watching for changes. Manually run the "refresh tests" action if you later add some (or just reload your window.)
+## Configuration
 
-![](./screenshot.png)
-_Theme: [Codesong](https://marketplace.visualstudio.com/items?itemName=connor4312.codesong)_
+- `extension-test-runner.extractSettings`: configures how tests get extracted. You can configure:
 
-## Configuring
+  - The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing. Evaluation is likely to lead to better results, but may have side-effects. Defaults to `evaluation`.
+  - The `test` and `suite` identifiers the process extracts. Defaults to `["it", "test"]` and `["describe", "suite"]` respectively, covering Mocha's common interfaces.
 
-- `nodejs-testing.include` is the list of directories in which to look for test files, relative to your workspace folder. Defaults to `['./']`.
-- `nodejs-testing.exclude` is the list of glob patterns that should be excluded from the search. Defaults to `['**/node_modules/**']`.
-- `nodejs-testing.concurrency` is how many test files to run in parallel. Setting it to 0 (default) will use the number of CPU cores - 1.
-- `nodejs-testing.nodejsPath` is the path to the Node.js binary to use for running tests. If unset, will try to find Node on your PATH.
-- `nodejs-testing.extensions` is a list of test extensions to search for, and optional additional Node.js parameters to pass when running those test files. It defaults to
+- `extension-test-runner.debugOptions`: options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options.
 
-  ```json
-  [
-    {
-      "extensions": ["mjs", "cjs", "js"],
-      "parameters": []
-    }
-  ]
-  ```
+## Contributing
 
-  ...but is useful for configuring loaders for other file types. For example, to run TypeScript tests, you could use
+This project welcomes contributions and suggestions. Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
 
-  ```json
-  {
-    "nodejs-testing.extensions": [
-      {
-        "extensions": ["mjs", "cjs", "js"],
-        "parameters": []
-      },
-      {
-        "extensions": ["mts", "cts", "ts"],
-        "parameters": ["--loader", "tsx"]
-      }
-    ]
-  }
-  ```
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
 
-  You can also import other helpers by adding parameters like `["--import", "${workspaceFolder}/path/to/file.js"]`. See the [Node.js command line API](https://nodejs.org/api/cli.html) for a full list of options.
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+## Trademarks
+
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
+[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
+Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
+Any use of third-party trademarks or logos are subject to those third-party's policies.

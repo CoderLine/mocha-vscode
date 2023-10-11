@@ -27,7 +27,7 @@
         "title": "Extension Test Runner",
         "properties": {
           "extension-test-runner.extractSettings": {
-            "markdownDescription": "Configures how tests get extracted. You can choose:\n\n- The `extractWith` mode, that configures if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
+            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
             "type": "object",
             "properties": {
               "suite": {
@@ -66,15 +66,20 @@
               "test",
               "extractWith"
             ]
+          },
+          "extension-test-runner.debugOptions": {
+            "type": "object",
+            "additionalProperties": true,
+            "markdownDescription": "Options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options."
           }
         }
       }
     ]
   },
   "activationEvents": [
-    "workspaceContains:**/.vscode-test.{js,cjs,mjs}"
+    "workspaceContains:**/.vscode-test.{js,cjs,mjs}",
+    "onCommand:extension-test-runner.get-controllers-for-test"
   ],
-  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/microsoft/vscode-test-runner-ext.git"

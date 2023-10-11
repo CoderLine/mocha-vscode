@@ -7,7 +7,7 @@ const ctx = esbuild.context({
   entryPoints: ["src/extension.ts"],
   tsconfig: "./tsconfig.json",
   bundle: true,
-  external: ["vscode"],
+  external: ["vscode", "pnpapi"],
   sourcemap: !minify,
   minify,
   platform: "node",

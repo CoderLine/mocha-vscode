@@ -16,3 +16,4 @@ export const defaultTestSymbols: ITestSymbols = {
 };
 
 export const showConfigErrorCommand = 'extension-test-runner.showConfigError';
+export const getControllersForTestCommand = 'extension-test-runner.get-controllers-for-test';

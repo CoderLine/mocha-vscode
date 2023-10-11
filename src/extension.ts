@@ -1,6 +1,11 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { configFilePattern, showConfigErrorCommand } from './constants';
+import { ConfigValue } from './configValue';
+import {
+  configFilePattern,
+  getControllersForTestCommand,
+  showConfigErrorCommand,
+} from './constants';
 import { Controller } from './controller';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
@@ -11,9 +16,9 @@ const enum FolderSyncState {
   ReSyncNeeded,
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
   const smStore = new SourceMapStore();
-  const runner = new TestRunner(smStore);
+  const runner = new TestRunner(smStore, new ConfigValue('debugOptions', {}));
 
   let ctrls: Controller[] = [];
   let resyncState: FolderSyncState = FolderSyncState.Idle;
@@ -73,13 +78,16 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage('No configuration error detected');
   };
 
+  const initialSync = syncWorkspaceFolders();
+
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(syncWorkspaceFolders),
     vscode.commands.registerCommand(showConfigErrorCommand, showConfigError),
+    vscode.commands.registerCommand(getControllersForTestCommand, () =>
+      initialSync.then(() => ctrls),
+    ),
     new vscode.Disposable(() => ctrls.forEach((c) => c.dispose())),
   );
-
-  syncWorkspaceFolders();
 }
 
 export function deactivate() {}

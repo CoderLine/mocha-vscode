@@ -10,18 +10,17 @@ import * as path from 'path';
 import * as sinon from 'sinon';
 import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
+import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
 
 export const getController = async () => {
-  const c = await vscode.commands.executeCommand<Map<vscode.WorkspaceFolder, Controller>>(
-    'nodejs-testing.get-controllers-for-test',
-  );
+  const c = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
-  if (!c.size) {
+  if (!c.length) {
     throw new Error('no controllers registered');
   }
 
-  const controller = c.values().next().value as Controller;
+  const controller = c[0];
   await controller.scanFiles();
   return controller;
 };
@@ -53,12 +52,11 @@ export const onceChanged = (controller: Controller) =>
 export const expectTestTree = async ({ ctrl }: Controller, tree: TestTreeExpectation[]) => {
   const e = ['root', []] satisfies TestTreeExpectation;
   buildTreeExpectation(e, ctrl.items);
-  assert.deepStrictEqual(e[1], tree);
+  assert.deepStrictEqual(e[1], tree, JSON.stringify(e[1]));
 };
 
-export const saveAndRestoreWorkspace = async (cwd: string, fn: () => unknown) => {
-  const original = path.join(cwd, 'workspace');
-  const backup = path.join(tmpdir(), `nodejs-test-backup-${randomBytes(8).toString('hex')}`);
+export const saveAndRestoreWorkspace = async (original: string, fn: () => unknown) => {
+  const backup = path.join(tmpdir(), `ext-test-backup-${randomBytes(8).toString('hex')}`);
 
   await fs.cp(original, backup, { recursive: true });
 
@@ -156,6 +154,7 @@ export class FakeTestRun implements vscode.TestRun {
     location?: vscode.Location | undefined,
     test?: vscode.TestItem | undefined,
   ): void {
+    // console.log(output); // debug
     this.output.push({ output, location, test });
   }
   end(): void {
@@ -168,7 +167,7 @@ export const captureTestRun = async (ctrl: Controller, req: vscode.TestRunReques
   const fake = new FakeTestRun();
   const createTestRun = sinon.stub(ctrl.ctrl, 'createTestRun').returns(fake);
   try {
-    // await ctrl.runHandler(req, new vscode.CancellationTokenSource().token);
+    await req.profile!.runHandler(req, new vscode.CancellationTokenSource().token);
     return fake;
   } finally {
     createTestRun.restore();
