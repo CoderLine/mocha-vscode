@@ -40,11 +40,24 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
         return placeholder;
       }
 
+      const startLine = frame.lineNumber;
+      const startColumn = frame.columnNumber || 1;
+
+      // approximate the length of the test case:
+      const functionLines = String(callback).split('\n');
+      const endLine = frame.lineNumber + functionLines.length - 1;
+      let endColumn = functionLines[functionLines.length - 1].length;
+      if (endLine === startLine) {
+        endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
+      }
+
       const node: IParsedNode = {
         name,
         kind,
-        startLine: frame.lineNumber,
-        startColumn: frame.columnNumber || 1,
+        startLine,
+        startColumn,
+        endLine,
+        endColumn,
         children: [],
       };
       if (directive) {

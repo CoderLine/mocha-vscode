@@ -12,6 +12,7 @@ import { DisposableStore, MutableDisposable } from './disposable';
 import { IParsedNode, NodeKind, extract } from './extract';
 import { last } from './iterable';
 import { ICreateOpts, ItemType, getContainingItemsForFile, testMetadata } from './metadata';
+import { TestRunner } from './runner';
 import { ISourceMapMaintainer, SourceMapStore } from './source-map-store';
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('ext-test-duplicates');
@@ -34,6 +35,7 @@ export class Controller {
   );
   private readonly watcher = this.disposable.add(new MutableDisposable());
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
+  private runProfiles = new Map<string, vscode.TestRunProfile[]>();
 
   /** Promise that resolves when workspace files have been scanned */
   private initialFileScan?: Promise<void>;
@@ -51,70 +53,45 @@ export class Controller {
     }
   >();
 
-  /** Change emtiter used for testing, to pick up when the file watcher detects a chagne */
+  /** Change emitter used for testing, to pick up when the file watcher detects a chagne */
   public readonly onDidChange = this.didChangeEmitter.event;
-
-  // /** Handler for a normal test run */
-  // public readonly runHandler: RunHandler;
-  // /** Handler for a test debug run */
-  // public readonly debugHandler: RunHandler;
 
   constructor(
     public readonly ctrl: vscode.TestController,
     private readonly wf: vscode.WorkspaceFolder,
     private readonly smStore: SourceMapStore,
     configFileUri: vscode.Uri,
+    private readonly runner: TestRunner,
   ) {
     this.disposable.add(ctrl);
     this.configFile = this.disposable.add(new ConfigurationFile(configFileUri, wf));
     this.onDidDelete = this.configFile.onDidDelete;
 
-    const rescan = () => {
-      if (this.watcher.value) {
-        // a full sync is only needed if we're watching the workspace
-        this.scanFiles();
-      } else {
-        for (const { sourceMap } of this.testsInFiles.values()) {
-          this._syncFile(sourceMap.compiledUri);
-        }
-      }
-    };
-
+    const rescan = () => this.scanFiles();
     this.disposable.add(this.configFile.onDidChange(rescan));
     this.disposable.add(this.extractMode.onDidChange(rescan));
-
-    ctrl.resolveHandler = this.resolveHandler();
-    // this.runHandler = runner.makeHandler(wf, ctrl, false);
-    // this.debugHandler = runner.makeHandler(wf, ctrl, true);
-
-    ctrl.refreshHandler = () => this.scanFiles();
-    // ctrl.createRunProfile("Run", vscode.TestRunProfileKind.Run, this.runHandler, true);
-    // ctrl.createRunProfile("Debug", vscode.TestRunProfileKind.Debug, this.debugHandler, true);
+    ctrl.refreshHandler = rescan;
+    this.scanFiles();
   }
 
   public dispose() {
     this.disposable.dispose();
   }
 
-  private resolveHandler() {
-    return async (test?: vscode.TestItem) => {
-      if (!test) {
-        if (this.watcher.value) {
-          await this.initialFileScan; // will have been set when the watcher was created
-        } else {
-          await this.scanFiles();
-        }
-      }
-    };
-  }
-
-  public syncFile(uri: vscode.Uri, contents?: () => string) {
-    if (this.currentConfig?.includesTestFile(uri)) {
-      this._syncFile(uri, contents?.());
-    }
+  public async syncFile(uri: vscode.Uri, contents?: () => string) {
+    this._syncFile(uri, contents?.());
   }
 
   private async _syncFile(uri: vscode.Uri, contents?: string) {
+    if (!this.currentConfig) {
+      await this.readConfig();
+    }
+
+    const includeViaConfigs = this.currentConfig?.includesTestFile(uri);
+    if (!includeViaConfigs) {
+      return;
+    }
+
     contents ??= await fs.readFile(uri.fsPath, 'utf8');
 
     // avoid re-parsing if the contents are the same (e.g. if a file is edited
@@ -133,6 +110,7 @@ export class Controller {
 
     const smMaintainer = previous?.sourceMap ?? this.smStore.maintain(uri);
     const sourceMap = await smMaintainer.refresh(contents);
+    const tags = includeViaConfigs.map((c) => new vscode.TestTag(`${c}`));
     const add = (
       parent: vscode.TestItem,
       node: IParsedNode,
@@ -142,7 +120,10 @@ export class Controller {
       let item = parent.children.get(node.name);
       if (!item) {
         item = this.ctrl.createTestItem(node.name, node.name, start.uri);
-        testMetadata.set(item, { type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test });
+        item.tags = tags;
+        testMetadata.set(item, {
+          type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test,
+        });
         parent.children.add(item);
       }
       item.range = new vscode.Range(start.range.start, end.range.end);
@@ -183,7 +164,8 @@ export class Controller {
         node.endLine !== undefined && node.endColumn !== undefined
           ? sourceMap.originalPositionFor(node.endLine, node.endColumn - 1)
           : start;
-      const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri }))!.item!;
+      const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri, tags }))!
+        .item!;
       diagnosticCollection.delete(start.uri);
       newTestsInFile.set(node.name, add(file, node, start, end));
     }
@@ -238,14 +220,14 @@ export class Controller {
     this.didChangeEmitter.fire();
   }
 
-  private async startWatchingWorkspace(config: ConfigurationList) {
+  private async startWatchingWorkspace() {
     // we need to watch for *every* change due to https://github.com/microsoft/vscode/issues/60813
     const watcher = (this.watcher.value = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(this.wf, `**/*`),
     ));
 
-    watcher.onDidCreate((uri) => config.includesTestFile(uri) && this._syncFile(uri));
-    watcher.onDidChange((uri) => config.includesTestFile(uri) && this._syncFile(uri));
+    watcher.onDidCreate((uri) => this._syncFile(uri));
+    watcher.onDidChange((uri) => this._syncFile(uri));
     watcher.onDidDelete((uri) => {
       const prefix = uri.toString();
       for (const key of this.testsInFiles.keys()) {
@@ -259,7 +241,7 @@ export class Controller {
     await promise;
   }
 
-  private handleScanError(e: unknown) {
+  private handleScanError() {
     this.watcher.clear();
     for (const key of this.testsInFiles.keys()) {
       this.deleteFileTests(key);
@@ -274,22 +256,70 @@ export class Controller {
     this.ctrl.items.add(item);
   }
 
+  /** Creates run profiles for each configuration in the extension tests */
+  private applyRunHandlers(configs: ConfigurationList) {
+    const oldRunHandlers = this.runProfiles;
+    this.runProfiles = new Map();
+    for (const [index, { config }] of configs.value.entries()) {
+      const name = config.label || `Config #${index + 1}`;
+
+      const prev = oldRunHandlers.get(name);
+      if (prev) {
+        this.runProfiles.set(name, prev);
+        oldRunHandlers.delete(name);
+      } else {
+        const run = this.runner.makeHandler(this.ctrl, this.configFile, index, false);
+        const debug = this.runner.makeHandler(this.ctrl, this.configFile, index, true);
+        const profiles = [
+          this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Run, run, true),
+          this.ctrl.createRunProfile(`${name} Debug`, vscode.TestRunProfileKind.Debug, debug, true),
+        ];
+        for (const profile of profiles) {
+          profile.tag = new vscode.TestTag(`${index}`);
+        }
+
+        this.runProfiles.set(name, profiles);
+      }
+    }
+
+    for (const profiles of oldRunHandlers.values()) {
+      for (const profile of profiles) {
+        profile.dispose();
+      }
+    }
+  }
+
+  private async readConfig() {
+    let configs: ConfigurationList;
+    try {
+      configs = await this.configFile.read();
+    } catch {
+      this.handleScanError();
+      return;
+    }
+
+    if (configs !== this.currentConfig) {
+      this.applyRunHandlers(configs);
+      this.currentConfig = configs;
+    }
+
+    return configs;
+  }
+
   public async scanFiles() {
     if (this.errorItem) {
       this.ctrl.items.delete(this.errorItem.id);
       this.errorItem = undefined;
     }
 
-    let configs: ConfigurationList;
-    try {
-      configs = await this.configFile.read();
-    } catch (e) {
-      return this.handleScanError(e);
-    }
-
     if (!this.watcher.value) {
       // starting the watcher will call this again
-      return this.startWatchingWorkspace(configs);
+      return this.startWatchingWorkspace();
+    }
+
+    const configs = await this.readConfig();
+    if (!configs) {
+      return;
     }
 
     const toRemove = new Set(this.testsInFiles.keys());
@@ -297,10 +327,8 @@ export class Controller {
     const todo2: Promise<void>[] = [];
 
     const processFile = (file: vscode.Uri) => {
-      if (configs.includesTestFile(file)) {
-        todo2.push(this._syncFile(file));
-        toRemove.delete(file.toString());
-      }
+      todo2.push(this._syncFile(file));
+      toRemove.delete(file.toString());
     };
 
     rough.files.forEach((f) => processFile(vscode.Uri.file(f)));

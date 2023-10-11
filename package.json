@@ -21,6 +21,56 @@
       "description": "Test code and configurations are automatically evaluated by this extension."
     }
   },
+  "contributes": {
+    "configuration": [
+      {
+        "title": "Extension Test Runner",
+        "properties": {
+          "extension-test-runner.extractSettings": {
+            "markdownDescription": "Configures how tests get extracted. You can choose:\n\n- The `extractWith` mode, that configures if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
+            "type": "object",
+            "properties": {
+              "suite": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "test": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "extractWith": {
+                "type": "string",
+                "enum": [
+                  "evaluation",
+                  "syntax"
+                ]
+              }
+            },
+            "default": {
+              "suite": [
+                "describe",
+                "suite"
+              ],
+              "test": [
+                "it",
+                "test"
+              ],
+              "extractWith": "evaluation"
+            },
+            "required": [
+              "suite",
+              "test",
+              "extractWith"
+            ]
+          }
+        }
+      }
+    ]
+  },
   "activationEvents": [
     "workspaceContains:**/.vscode-test.{js,cjs,mjs}"
   ],

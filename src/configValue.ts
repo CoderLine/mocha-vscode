@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-const sectionName = 'extension-testing';
+const sectionName = 'extension-test-runner';
 
 const walkObject = <T>(value: T, replacer: (value: unknown) => any): T => {
   if (value instanceof Array) {
