@@ -55,9 +55,23 @@ export const expectTestTree = async ({ ctrl }: Controller, tree: TestTreeExpecta
   assert.deepStrictEqual(e[1], tree, JSON.stringify(e[1]));
 };
 
+/** Retries deletion a few times since directories may still be in use briefly during test shutdown */
+const rmrf = async (path: string) => {
+  for (let i = 10; i >= 0; i--) {
+    try {
+      await fs.rm(path, { recursive: true, force: true });
+      return;
+    } catch (e) {
+      if (i === 0) {
+        throw e;
+      }
+    }
+  }
+};
+
 export const saveAndRestoreWorkspace = async (original: string, fn: () => unknown) => {
   const backup = path.join(tmpdir(), `ext-test-backup-${randomBytes(8).toString('hex')}`);
-  await fs.rm(path.join(original, '.vscode-test'), { recursive: true, force: true });
+  await rmrf(path.join(original, '.vscode-test'));
   await fs.cp(original, backup, { recursive: true });
 
   try {
@@ -65,12 +79,10 @@ export const saveAndRestoreWorkspace = async (original: string, fn: () => unknow
   } finally {
     // vscode behaves badly when we delete the workspace folder; delete contents instead.
     const files = await fs.readdir(original);
-    await Promise.all(
-      files.map((f) => fs.rm(path.join(original, f), { recursive: true, force: true })),
-    );
+    await Promise.all(files.map((f) => rmrf(path.join(original, f))));
 
     await fs.cp(backup, original, { recursive: true });
-    await fs.rm(backup, { recursive: true, force: true });
+    await rmrf(backup);
 
     // it seems like all these files changes can require a moment for vscode's file
     // watcher to update before we can run the next test. 500 seems to do it 🤷‍♂️

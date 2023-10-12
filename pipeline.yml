@@ -1,6 +1,3 @@
-trigger: none
-pr: none
-
 resources:
   repositories:
     - repository: templates
@@ -39,6 +36,8 @@ extends:
       - script: npm run test
         displayName: Run Tests
         condition: ${{ eq(parameters.runTests, true) }}
+        env:
+          DISPLAY: ':99.0'
 
     tsa:
       enabled: true
