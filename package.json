@@ -21,10 +21,65 @@
       "description": "Test code and configurations are automatically evaluated by this extension."
     }
   },
+  "contributes": {
+    "configuration": [
+      {
+        "title": "Extension Test Runner",
+        "properties": {
+          "extension-test-runner.extractSettings": {
+            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
+            "type": "object",
+            "properties": {
+              "suite": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "test": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "extractWith": {
+                "type": "string",
+                "enum": [
+                  "evaluation",
+                  "syntax"
+                ]
+              }
+            },
+            "default": {
+              "suite": [
+                "describe",
+                "suite"
+              ],
+              "test": [
+                "it",
+                "test"
+              ],
+              "extractWith": "evaluation"
+            },
+            "required": [
+              "suite",
+              "test",
+              "extractWith"
+            ]
+          },
+          "extension-test-runner.debugOptions": {
+            "type": "object",
+            "additionalProperties": true,
+            "markdownDescription": "Options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options."
+          }
+        }
+      }
+    ]
+  },
   "activationEvents": [
-    "workspaceContains:**/.vscode-test.{js,cjs,mjs}"
+    "workspaceContains:**/.vscode-test.{js,cjs,mjs}",
+    "onCommand:extension-test-runner.get-controllers-for-test"
   ],
-  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/microsoft/vscode-test-runner-ext.git"
@@ -55,6 +110,7 @@
     "@types/sinon": "^10.0.19",
     "@types/split2": "^4.2.1",
     "@types/vscode": "^1.83.0",
+    "@vscode/test-cli": "^0.0.1",
     "@vscode/test-electron": "^2.3.5",
     "acorn": "^8.10.0",
     "chai": "^4.3.10",

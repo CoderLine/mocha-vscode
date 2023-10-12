@@ -3,6 +3,7 @@
  *--------------------------------------------------------*/
 
 import { extractWithEvaluation } from './evaluate';
+import { extractWithAst } from './syntax';
 
 export interface IParsedNode {
   name: string;
@@ -29,8 +30,13 @@ export const enum NodeKind {
 
 export const extract = (code: string, symbols: ITestSymbols) => {
   if (symbols.extractWith === 'evaluation') {
-    return extractWithEvaluation(code, symbols);
-  } else {
-    throw new Error('not implemented');
+    try {
+      return extractWithEvaluation(code, symbols);
+    } catch (e) {
+      console.warn('error evaluating, will fallback', e);
+      // fall through
+    }
   }
+
+  return extractWithAst(code, symbols);
 };

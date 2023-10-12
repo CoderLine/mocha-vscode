@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 import type { TestConfiguration } from '@vscode/test-cli';
-import { spawn } from 'child_process';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import resolveModule from 'enhanced-resolve';
 import * as fs from 'fs';
 import { minimatch } from 'minimatch';
@@ -12,10 +12,11 @@ import { cliPackageName } from './constants';
 import { DisposableStore } from './disposable';
 import { CliPackageMissing, ConfigProcessReadError, HumanError } from './errors';
 
-interface IResolvedConfiguration {
+export interface IResolvedConfiguration {
   files: string[];
   env: Record<string, string>;
   extensionTestsPath: string;
+  extensionDevelopmentPath: string;
   config: TestConfiguration;
   path: string;
 }
@@ -41,7 +42,7 @@ export class ConfigurationFile implements vscode.Disposable {
 
   constructor(
     public readonly uri: vscode.Uri,
-    private readonly wf: vscode.WorkspaceFolder,
+    public readonly wf: vscode.WorkspaceFolder,
   ) {
     const watcher = this.ds.add(vscode.workspace.createFileSystemWatcher(uri.fsPath));
     let changeDebounce: NodeJS.Timeout | undefined;
@@ -74,14 +75,36 @@ export class ConfigurationFile implements vscode.Disposable {
     return (this.readPromise ??= this._read());
   }
 
-  private async _read() {
-    const cliPath = await this.getCliBinPath();
-    const configs = await new Promise<IResolvedConfiguration[]>((resolve, reject) => {
-      const p = spawn(
-        process.execPath,
-        [cliPath, '--config', this.uri.fsPath, '--list-configuration'],
-        { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } },
-      );
+  /**
+   * Clears any cached config read.
+   */
+  public forget() {
+    this.readPromise = undefined;
+  }
+
+  /**
+   * Spawns the test CLI associated with the configuration file using the
+   * given args.
+   */
+  public async spawnCli(args: readonly string[]) {
+    const cliPath = await this.resolveCli();
+    return await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
+      const p = spawn(process.execPath, [cliPath, '--config', this.uri.fsPath, ...args], {
+        cwd: path.dirname(this.uri.fsPath),
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      });
+      p.on('spawn', () => resolve(p));
+      p.on('error', reject);
+    });
+  }
+
+  /**
+   * Spawns the test CLI associated with the configuration file using the
+   * given args, and captures its output.
+   */
+  public async captureCliJson<T>(args: readonly string[]) {
+    const p = await this.spawnCli(args);
+    return await new Promise<T>((resolve, reject) => {
       const output: Buffer[] = [];
       p.stdout.on('data', (chunk) => output.push(chunk));
       p.stderr.on('data', (chunk) => output.push(chunk));
@@ -99,7 +122,10 @@ export class ConfigurationFile implements vscode.Disposable {
         }
       });
     });
+  }
 
+  private async _read() {
+    const configs = await this.captureCliJson<IResolvedConfiguration[]>(['--list-configuration']);
     return new ConfigurationList(this.uri, configs, this.wf);
   }
 
@@ -107,15 +133,21 @@ export class ConfigurationFile implements vscode.Disposable {
    * Resolves the path to the test runner CLI, a JavaScript file.
    * @throws {HumanError} if the module isn't found
    */
-  private async getCliBinPath() {
+  public async resolveCli(suffix?: string) {
     return new Promise<string>((resolve, reject) =>
-      resolver.resolve({}, this.uri.fsPath, cliPackageName, {}, (err, res) => {
-        if (err) {
-          reject(new CliPackageMissing(err));
-        } else {
-          resolve(path.join(path.dirname(res as string), 'bin.mjs'));
-        }
-      }),
+      resolver.resolve(
+        {},
+        this.uri.fsPath,
+        suffix ? `${cliPackageName}/${suffix}` : cliPackageName,
+        {},
+        (err, res) => {
+          if (err) {
+            reject(new CliPackageMissing(err));
+          } else {
+            resolve(suffix ? (res as string) : path.join(path.dirname(res as string), 'bin.mjs'));
+          }
+        },
+      ),
     );
   }
 
@@ -181,12 +213,14 @@ export class ConfigurationList {
     return { patterns: [...patterns], files: [...files] };
   }
 
-  /** Gets the config the given test file is included by, if any. */
+  /** Gets the configs the given test file is included by, if any. */
   public includesTestFile(uri: vscode.Uri) {
     const file = toForwardSlashes(uri.fsPath);
-    const patternGroup = this.patterns.findIndex((files) => {
+    let indexes: number[] | undefined;
+
+    for (const [i, patterns] of this.patterns.entries()) {
       let matched = false;
-      for (let { glob, value } of files) {
+      for (let { glob, value } of patterns) {
         let negated = false;
         if (value.startsWith('!')) {
           negated = true;
@@ -198,9 +232,12 @@ export class ConfigurationList {
         }
       }
 
-      return matched;
-    });
+      if (matched) {
+        indexes ??= [];
+        indexes.push(i);
+      }
+    }
 
-    return patternGroup !== -1 ? this.patterns[patternGroup] : undefined;
+    return indexes;
   }
 }

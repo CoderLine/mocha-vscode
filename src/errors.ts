@@ -19,3 +19,9 @@ export class ConfigProcessReadError extends HumanError {
     super(`Could not read .vscode-test configuration: ${output}`);
   }
 }
+
+export class TestProcessExitedError extends HumanError {
+  constructor(code: number | null) {
+    super(`Test process exited with code ${code}`);
+  }
+}

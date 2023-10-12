@@ -7,7 +7,13 @@ import { IParsedNode, ITestSymbols, NodeKind } from '.';
  * for this extension) but rather to avoid side-effects from evaluation which
  * are much more likely when other code is required.
  */
-const replacedGlobals = new Set(['require']);
+const replacedGlobals = new Set([
+  // avoid side-effects:
+  'require',
+  'process',
+  // avoid printing to the console from tests:
+  'console',
+]);
 
 /**
  * Honestly kind of amazed this works. We can use a Proxy as our globalThis
@@ -25,26 +31,47 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
   const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
 
   // A placeholder object that returns itself for all functions calls and method accesses.
-  const placeholder: unknown = new Proxy(() => placeholder, {
-    get: () => placeholder,
-  });
+  const placeholder: () => unknown = () =>
+    new Proxy(placeholder, {
+      get: (obj, target) => {
+        const desc = Object.getOwnPropertyDescriptor(obj, target);
+        if (desc && !desc.writable && !desc.configurable) {
+          return desc.value; // avoid invariant volation https://stackoverflow.com/q/75148897
+        }
+        return placeholder();
+      },
+      set: () => true,
+    });
 
   function makeTesterFunction(kind: NodeKind, directive?: string) {
     const fn = (name: string, callback: () => void) => {
       if (typeof name !== 'string' || typeof callback !== 'function') {
-        return placeholder;
+        return placeholder();
       }
 
       const frame = errorParser.parse(new Error())[1];
       if (!frame || !frame.lineNumber) {
-        return placeholder;
+        return placeholder();
+      }
+
+      const startLine = frame.lineNumber;
+      const startColumn = frame.columnNumber || 1;
+
+      // approximate the length of the test case:
+      const functionLines = String(callback).split('\n');
+      const endLine = frame.lineNumber + functionLines.length - 1;
+      let endColumn = functionLines[functionLines.length - 1].length;
+      if (endLine === startLine) {
+        endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
       }
 
       const node: IParsedNode = {
         name,
         kind,
-        startLine: frame.lineNumber,
-        startColumn: frame.columnNumber || 1,
+        startLine,
+        startColumn,
+        endLine,
+        endColumn,
         children: [],
       };
       if (directive) {
@@ -83,7 +110,7 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
         } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
           return (globalThis as any)[prop];
         } else {
-          return placeholder;
+          return placeholder();
         }
       },
     },

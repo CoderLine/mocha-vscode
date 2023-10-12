@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 /**
  * Queue used to display test runner output. Some optimization to
  * avoid additional microtasks if the output can be displayed

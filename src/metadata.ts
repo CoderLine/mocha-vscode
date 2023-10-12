@@ -1,3 +1,7 @@
+/*---------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as path from 'path';
 import * as vscode from 'vscode';
 
@@ -16,6 +20,7 @@ export const testMetadata = new WeakMap<vscode.TestItem, ItemMetadata>();
 
 export interface ICreateOpts {
   compiledFile: vscode.Uri;
+  tags: vscode.TestTag[];
 }
 
 /** Gets the test collection for a file of the given URI, descending from the root. */
@@ -43,6 +48,7 @@ export function* getContainingItemsForFile(
         filePath[i],
         uri.with({ path: filePath.slice(0, i + 1).join(path.sep) }),
       );
+      item.tags = createOpts.tags;
       testMetadata.set(
         item,
         i === filePath.length - 1

@@ -1,7 +1,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { configFilePattern, showConfigErrorCommand } from './constants';
+import { ConfigValue } from './configValue';
+import {
+  configFilePattern,
+  getControllersForTestCommand,
+  showConfigErrorCommand,
+} from './constants';
 import { Controller } from './controller';
+import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
 
 const enum FolderSyncState {
@@ -10,8 +16,9 @@ const enum FolderSyncState {
   ReSyncNeeded,
 }
 
-export async function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
   const smStore = new SourceMapStore();
+  const runner = new TestRunner(smStore, new ConfigValue('debugOptions', {}));
 
   let ctrls: Controller[] = [];
   let resyncState: FolderSyncState = FolderSyncState.Idle;
@@ -45,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
               : folder.name,
           );
 
-          ctrls.push(new Controller(ctrl, folder, smStore, file));
+          ctrls.push(new Controller(ctrl, folder, smStore, file, runner));
         }
       }),
     );
@@ -56,28 +63,6 @@ export async function activate(context: vscode.ExtensionContext) {
     if (prevState === FolderSyncState.ReSyncNeeded) {
       syncWorkspaceFolders();
     }
-  };
-
-  const changesDebounce = new Map<string, NodeJS.Timeout>();
-  const syncTextDocument = (document: vscode.TextDocument) => {
-    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
-    if (document.uri.scheme !== 'file' || !folder) {
-      return;
-    }
-
-    const debounce = changesDebounce.get(document.uri.toString());
-    if (debounce) {
-      clearTimeout(debounce);
-    }
-
-    changesDebounce.set(
-      document.uri.toString(),
-      setTimeout(() => {
-        for (const ctrl of ctrls) {
-          ctrl?.syncFile(document.uri, () => document.getText());
-        }
-      }, 300),
-    );
   };
 
   const showConfigError = async (configUriStr: string) => {
@@ -93,17 +78,16 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage('No configuration error detected');
   };
 
+  const initialSync = syncWorkspaceFolders();
+
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(syncWorkspaceFolders),
-    vscode.workspace.onDidChangeTextDocument((e) => syncTextDocument(e.document)),
     vscode.commands.registerCommand(showConfigErrorCommand, showConfigError),
+    vscode.commands.registerCommand(getControllersForTestCommand, () =>
+      initialSync.then(() => ctrls),
+    ),
     new vscode.Disposable(() => ctrls.forEach((c) => c.dispose())),
   );
-
-  syncWorkspaceFolders();
-  for (const editor of vscode.window.visibleTextEditors) {
-    syncTextDocument(editor.document);
-  }
 }
 
 export function deactivate() {}
