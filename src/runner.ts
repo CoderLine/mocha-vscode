@@ -42,7 +42,7 @@ export class TestRunner {
   ): RunHandler {
     return async (request) => {
       const run = ctrl.createTestRun(request);
-      const { args, compiledFileTests } = await this.prepareArguments(
+      const { args, compiledFileTests, leafTests } = await this.prepareArguments(
         ctrl,
         config,
         ['--label', `${configIndex}`],
@@ -110,7 +110,10 @@ export class TestRunner {
                 }`,
               );
               const test = compiledFileTests.lookup(file, path);
-              if (test) run.passed(test);
+              if (test) {
+                run.passed(test);
+                leafTests.delete(test);
+              }
               break;
             }
             case MochaEvent.Fail: {
@@ -135,6 +138,7 @@ export class TestRunner {
                 return;
               }
 
+              leafTests.delete(tcase);
               const hasDiff =
                 actual !== undefined &&
                 expected !== undefined &&
@@ -196,6 +200,22 @@ export class TestRunner {
       } catch (e) {
         if (!spawnCts.token.isCancellationRequested) {
           enqueueLine(String(e));
+        }
+      }
+
+      if (!spawnCts.token.isCancellationRequested) {
+        if (ranAnyTest) {
+          for (const t of leafTests) {
+            run.skipped(t);
+          }
+        } else {
+          const md = new vscode.MarkdownString(
+            'Test process exited unexpectedly, [view output](command:testing.showMostRecentOutput)',
+          );
+          md.isTrusted = true;
+          for (const t of leafTests) {
+            run.errored(t, new vscode.TestMessage(md));
+          }
         }
       }
 
@@ -336,6 +356,7 @@ export class TestRunner {
     const reporter = await config.resolveCli('fullJsonStream');
     const args = [...baseArgs, '--reporter', reporter];
     const exclude = new Set(request.exclude);
+    const leafTests = new Set<vscode.TestItem>();
     const include = request.include?.slice() ?? [...ctrl.items].map(([, item]) => item);
 
     const grepRe: string[] = [];
@@ -358,7 +379,10 @@ export class TestRunner {
         grepRe.push(escapeRe(getFullName(test)) + (data.type === ItemType.Test ? '$' : ' '));
       }
 
-      forEachLeaf(test, (t) => run.enqueued(t));
+      forEachLeaf(test, (t) => {
+        leafTests.add(t);
+        run.enqueued(t);
+      });
 
       for (let i = test as vscode.TestItem | undefined; i; i = i.parent) {
         const metadata = testMetadata.get(i);
@@ -380,7 +404,7 @@ export class TestRunner {
       args.push('--grep', `/^(${grepRe.join('|')})/`);
     }
 
-    return { args, compiledFileTests };
+    return { args, compiledFileTests, leafTests };
   }
 }
 

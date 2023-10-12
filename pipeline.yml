@@ -14,6 +14,10 @@ parameters:
     displayName: 🚀 Publish Extension
     type: boolean
     default: false
+  - name: runTests
+    displayName: 👩‍🔬 Run Tests
+    type: boolean
+    default: true
 
 extends:
   template: azure-pipelines/extension/stable.yml@templates
@@ -34,6 +38,7 @@ extends:
 
       - script: npm run test
         displayName: Run Tests
+        condition: ${{ eq(parameters.runTests, true) }}
 
     tsa:
       enabled: true

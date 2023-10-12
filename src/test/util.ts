@@ -57,7 +57,7 @@ export const expectTestTree = async ({ ctrl }: Controller, tree: TestTreeExpecta
 
 export const saveAndRestoreWorkspace = async (original: string, fn: () => unknown) => {
   const backup = path.join(tmpdir(), `ext-test-backup-${randomBytes(8).toString('hex')}`);
-
+  await fs.rm(path.join(original, '.vscode-test'), { recursive: true, force: true });
   await fs.cp(original, backup, { recursive: true });
 
   try {
