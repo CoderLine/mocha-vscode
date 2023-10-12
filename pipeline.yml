@@ -36,6 +36,8 @@ extends:
       - script: npm run test
         displayName: Run Tests
         condition: ${{ eq(parameters.runTests, true) }}
+        env:
+          DISPLAY: ':99.0'
 
     tsa:
       enabled: true
