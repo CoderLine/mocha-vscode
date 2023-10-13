@@ -4,6 +4,7 @@
   "description": "Runs tests in VS Code extensions",
   "publisher": "ms-vscode",
   "version": "0.0.1",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.83.0"
   },

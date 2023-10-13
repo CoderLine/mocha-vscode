@@ -78,13 +78,15 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
         node.directive = directive;
       }
       stack[stack.length - 1].children.push(node);
-      stack.push(node);
-      try {
-        callback();
-      } catch (e) {
-        node.error = e instanceof Error ? e.message : String(e);
-      } finally {
-        stack.pop();
+      if (kind === NodeKind.Suite) {
+        stack.push(node);
+        try {
+          callback();
+        } catch (e) {
+          node.error = e instanceof Error ? e.message : String(e);
+        } finally {
+          stack.pop();
+        }
       }
     };
     if (!directive) {
