@@ -139,10 +139,7 @@ export class TestRunner {
               }
 
               leafTests.delete(tcase);
-              const hasDiff =
-                actual !== undefined &&
-                expected !== undefined &&
-                (expected !== '[undefined]' || actual !== '[undefined]');
+              const hasDiff = actual !== expected;
               const testFirstLine =
                 tcase.range &&
                 new vscode.Location(

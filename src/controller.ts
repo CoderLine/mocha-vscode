@@ -335,11 +335,15 @@ export class Controller {
 
     const toRemove = new Set(this.testsInFiles.keys());
     const rough = configs.roughIncludedFiles();
+    const seen = new Set<string>();
     const todo2: Promise<void>[] = [];
 
     const processFile = (file: vscode.Uri) => {
-      todo2.push(this._syncFile(file));
-      toRemove.delete(file.toString());
+      if (!seen.has(file.toString())) {
+        todo2.push(this._syncFile(file));
+        toRemove.delete(file.toString());
+        seen.add(file.toString());
+      }
     };
 
     rough.files.forEach((f) => processFile(vscode.Uri.file(f)));
@@ -360,7 +364,7 @@ export class Controller {
     }
 
     if (this.testsInFiles.size === 0) {
-      this.watcher.dispose(); // stop watching if there are no tests discovered
+      this.watcher.clear(); // stop watching if there are no tests discovered
     }
   }
 

@@ -5,7 +5,7 @@
 import { ITestSymbols } from './extract';
 
 /** Pattern of files the CLI looks for */
-export const configFilePattern = '.vscode-test.{js,mjs,cjs}';
+export const configFilePattern = '**/.vscode-test.{js,mjs,cjs}';
 /** Package name of the VS Code CLI */
 export const cliPackageName = '@vscode/test-cli';
 
