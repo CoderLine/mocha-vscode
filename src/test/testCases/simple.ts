@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
 import {
   captureTestRun,
@@ -183,10 +184,17 @@ it('handles changes to .vscode-test.js', () =>
 
     const configPath = path.join(folder, '.vscode-test.js');
     const original = await fs.readFile(configPath, 'utf-8');
-    const updated = original.replace('**/*.test.js', '*.test.js');
-    await fs.writeFile(configPath, updated);
+    let updated = original.replace('**/*.test.js', '*.test.js');
 
-    await onChange;
+    // the vscode file watcher is set up async and does not always catch the change, keep changing the file
+    while (true) {
+      updated += '\n//';
+      await fs.writeFile(configPath, updated);
+      const ok = await Promise.race([onChange.then(() => true), setTimeout(500)]);
+      if (ok) {
+        break;
+      }
+    }
 
     await expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
