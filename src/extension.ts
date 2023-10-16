@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
 import {
@@ -78,7 +79,19 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage('No configuration error detected');
   };
 
-  const initialSync = syncWorkspaceFolders();
+  const initialSync = (async () => {
+    // Workaround for vscode#179203 where findFiles doesn't work on startup.
+    // This extension is only activated on workspaceContains, so we have pretty
+    // high confidence that we should find something.
+    for (let retries = 0; retries < 10; retries++) {
+      await syncWorkspaceFolders();
+      if (ctrls.length > 0) {
+        break;
+      }
+
+      await timers.setTimeout(1000);
+    }
+  })();
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(syncWorkspaceFolders),
