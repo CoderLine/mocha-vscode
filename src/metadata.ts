@@ -2,7 +2,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 
 export const enum ItemType {
@@ -46,7 +45,7 @@ export function* getContainingItemsForFile(
       const item = ctrl.createTestItem(
         filePath[i],
         filePath[i],
-        uri.with({ path: filePath.slice(0, i + 1).join(path.sep) }),
+        uri.with({ path: filePath.slice(0, i + 1).join('/') }),
       );
       item.tags = createOpts.tags;
       testMetadata.set(
