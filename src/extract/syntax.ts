@@ -4,7 +4,7 @@
 
 import type { Options } from 'acorn';
 import { parse } from 'acorn-loose';
-import { traverse } from 'estraverse';
+import * as evk from 'eslint-visitor-keys';
 import { Node } from 'estree';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
 
@@ -30,6 +30,30 @@ const getStringish = (nameArg: Node | undefined): string | undefined => {
   if (nameArg?.type === C.TemplateLiteral && nameArg.quasis.length === 1) {
     return nameArg.quasis[0].value.cooked || nameArg.quasis[0].value.raw;
   }
+};
+
+const traverse = (
+  node: Node,
+  visitor: { enter: (node: Node) => void; leave: (node: Node) => void },
+) => {
+  if (!node) {
+    return;
+  }
+  visitor.enter(node);
+
+  const keys = evk.KEYS[node.type];
+  if (keys) {
+    for (const key of keys) {
+      const child = (node as unknown as Record<string, Node | Node[]>)[key];
+      if (child instanceof Array) {
+        child.forEach((c) => traverse(c, visitor));
+      } else if (child) {
+        traverse(child, visitor);
+      }
+    }
+  }
+
+  visitor.leave(node);
 };
 
 export const extractWithAst = (text: string, symbols: ITestSymbols) => {
