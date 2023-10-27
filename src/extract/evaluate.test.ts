@@ -156,4 +156,22 @@ describe('evaluate', () => {
     );
     expect(src).to.deep.equal([]);
   });
+
+  it('runs esbuild-style modules', () => {
+    const src = extractWithEvaluation(
+      `var foo = () => suite('hello', () => {}); foo();`,
+      defaultTestSymbols,
+    );
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        kind: 0,
+        startLine: 1,
+        startColumn: 17,
+        endLine: 1,
+        endColumn: Number.MAX_SAFE_INTEGER,
+        children: [],
+      },
+    ]);
+  });
 });
