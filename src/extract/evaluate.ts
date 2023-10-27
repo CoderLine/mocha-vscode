@@ -101,22 +101,21 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
   const suiteFunction = makeTesterFunction(NodeKind.Suite);
   const testFunction = makeTesterFunction(NodeKind.Test);
 
-  const contextObj = new Proxy(
-    {},
-    {
-      get(_target, prop, _receiver) {
-        if (symbols.suite.includes(prop as string)) {
-          return suiteFunction;
-        } else if (symbols.test.includes(prop as string)) {
-          return testFunction;
-        } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
-          return (globalThis as any)[prop];
-        } else {
-          return placeholder();
-        }
-      },
+  const contextObj = new Proxy({} as any, {
+    get(target, prop, _receiver) {
+      if (symbols.suite.includes(prop as string)) {
+        return suiteFunction;
+      } else if (symbols.test.includes(prop as string)) {
+        return testFunction;
+      } else if (prop in target) {
+        return target[prop]; // top-level `var` defined get set on the contextObj
+      } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
+        return (globalThis as any)[prop];
+      } else {
+        return placeholder();
+      }
     },
-  );
+  });
 
   vm.runInNewContext(code, contextObj, {
     timeout: 1000,
