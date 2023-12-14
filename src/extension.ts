@@ -66,13 +66,18 @@ export function activate(context: vscode.ExtensionContext) {
     }
   };
 
+  const openUntitledEditor = async (contents: string) => {
+    const untitledDoc = await vscode.workspace.openTextDocument({ content: contents });
+    await vscode.window.showTextDocument(untitledDoc);
+  };
+
   const showConfigError = async (configUriStr: string) => {
     const configUri = vscode.Uri.parse(configUriStr);
     const ctrl = ctrls.find((c) => c.configFile.uri.toString() === configUri.toString());
     try {
       await ctrl?.configFile.read();
     } catch (e) {
-      vscode.window.showErrorMessage(String(e), { modal: true });
+      await openUntitledEditor(String(e));
       return;
     }
 
