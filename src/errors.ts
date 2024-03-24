@@ -1,9 +1,10 @@
 /*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
 /** Errors with a human-readable message. */
-export class HumanError extends Error {}
+export class HumanError extends Error { }
 
 export class CliPackageMissing extends HumanError {
   constructor(innerError: Error) {

@@ -1,3 +1,8 @@
+/*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as errorParser from 'error-stack-parser';
 import * as vm from 'vm';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';

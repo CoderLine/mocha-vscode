@@ -1,3 +1,8 @@
+/*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as path from 'path';
 import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
@@ -108,4 +113,4 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() {}
+export function deactivate() { }

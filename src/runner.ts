@@ -1,4 +1,5 @@
 /*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
@@ -33,7 +34,7 @@ export class TestRunner {
   constructor(
     private readonly smStore: SourceMapStore,
     private readonly launchConfig: ConfigValue<Record<string, any>>,
-  ) {}
+  ) { }
 
   public makeHandler(
     ctrl: vscode.TestController,
@@ -103,8 +104,7 @@ export class TestRunner {
               const { path } = parsed[1];
               if (path.length > 0) {
                 enqueueLine(
-                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
-                    path[path.length - 1]
+                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
                   }`,
                 );
               }
@@ -114,8 +114,7 @@ export class TestRunner {
               ranAnyTest = true;
               const { file, path } = parsed[1];
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
-                  path[path.length - 1]
+                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
                 }`,
               );
               const test = compiledFileTests.lookup(file, path);
@@ -131,8 +130,7 @@ export class TestRunner {
               const tcase = compiledFileTests.lookup(file, path);
 
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${
-                  styles.red.close
+                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${styles.red.close
                 }`,
               );
               const rawErr = stack || err;

@@ -1,4 +1,5 @@
 /*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
@@ -63,8 +64,8 @@ export const extractWithAst = (text: string, symbols: ITestSymbols) => {
     symbols.suite.includes(name)
       ? NodeKind.Suite
       : symbols.test.includes(name)
-      ? NodeKind.Test
-      : undefined;
+        ? NodeKind.Test
+        : undefined;
   const stack: { node: Node; r: IParsedNode }[] = [];
   stack.push({ node: undefined, r: { children: [] } } as any);
 

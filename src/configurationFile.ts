@@ -1,6 +1,8 @@
 /*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
+
 import type { TestConfiguration } from '@vscode/test-cli';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import resolveModule from 'enhanced-resolve';

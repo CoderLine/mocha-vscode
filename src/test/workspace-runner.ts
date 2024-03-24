@@ -1,3 +1,8 @@
+/*---------------------------------------------------------
+ * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as inspector from "inspector";
 import Mocha from "mocha";
 import * as path from "path";

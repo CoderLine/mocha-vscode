@@ -1,17 +1,27 @@
 {
-  "name": "extension-test-runner",
-  "displayName": "Extension Test Runner",
-  "description": "Runs tests in VS Code extensions",
-  "publisher": "ms-vscode",
-  "version": "0.0.7",
+  "name": "mocha-vscode",
+  "displayName": "Mocha Test Runner",
+  "description": "Run and debug Mocha tests right within VS Code.",
+  "publisher": "mocha",
+  "version": "1.0.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.83.0"
   },
   "keywords": [
-    "vscode",
+    "mocha",
     "test",
-    "cli"
+    "bdd",
+    "tdd",
+    "tap",
+    "testing",
+    "chai",
+    "assertion",
+    "ava",
+    "jest",
+    "tape",
+    "jasmine",
+    "karma"
   ],
   "enabledApiProposals": [
     "testCoverage"
@@ -30,7 +40,7 @@
       {
         "title": "Extension Test Runner",
         "properties": {
-          "extension-test-runner.extractSettings": {
+          "mocha-vscode.extractSettings": {
             "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
             "type": "object",
             "properties": {
@@ -71,7 +81,7 @@
               "extractWith"
             ]
           },
-          "extension-test-runner.debugOptions": {
+          "mocha-vscode.debugOptions": {
             "type": "object",
             "additionalProperties": true,
             "markdownDescription": "Options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options."
@@ -81,17 +91,17 @@
     ]
   },
   "activationEvents": [
-    "workspaceContains:**/.vscode-test.{js,cjs,mjs}",
-    "onCommand:extension-test-runner.get-controllers-for-test"
+    "workspaceContains:**/.mocharc.{js,cjs,yaml,yml,json,jsonc}",
+    "onCommand:mocha-vscode.get-controllers-for-test"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/microsoft/vscode-test-runner-ext.git"
+    "url": "https://github.com/mocha/mocha-vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/microsoft/vscode-test-runner-ext/issues"
+    "url": "https://github.com/mocha/mocha-vscode/issues"
   },
-  "homepage": "https://github.com/microsoft/vscode-test-runner-ext#readme",
+  "homepage": "https://github.com/mocha/mocha-vscode#readme",
   "main": "./out/extension.js",
   "scripts": {
     "package": "vsce package --no-dependencies",
