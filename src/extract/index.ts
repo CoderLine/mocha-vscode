@@ -3,41 +3,22 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import { ConfigurationFile } from '../configurationFile';
 import { extractWithEvaluation } from './evaluate';
 import { extractWithAst } from './syntax';
+import { ITestSymbols } from './types';
 
-export interface IParsedNode {
-  name: string;
-  kind: NodeKind;
-  startLine: number; // base 1
-  startColumn: number; // base 1
-  endLine?: number; // base 1
-  endColumn?: number; // base 1
-  directive?: 'skip' | 'only' | string;
-  children: IParsedNode[];
-  error?: string;
-}
+export * from './types';
 
-export interface ITestSymbols {
-  suite: readonly string[];
-  test: readonly string[];
-  extractWith: 'evaluation' | 'syntax';
-}
-
-export const enum NodeKind {
-  Suite,
-  Test,
-}
-
-export const extract = (code: string, symbols: ITestSymbols) => {
+export const extract = async (filePath: string, code: string, config: ConfigurationFile, symbols: ITestSymbols) => {
   if (symbols.extractWith === 'evaluation') {
     try {
-      return extractWithEvaluation(code, symbols);
+      return await extractWithEvaluation(filePath, code, config, symbols);
     } catch (e) {
       console.warn('error evaluating, will fallback', e);
       // fall through
     }
   }
 
-  return extractWithAst(code, symbols);
+  return extractWithAst(filePath, code, config, symbols);
 };

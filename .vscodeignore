@@ -13,3 +13,8 @@ out/test/**
 testCases/**
 .esbuild.js
 .nvmrc
+
+
+node_modules/**
+!node_modules/esbuild/**/*
+!package.json

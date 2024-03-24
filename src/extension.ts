@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
     await Promise.all(
       folders.map(async (folder) => {
         const files = await vscode.workspace.findFiles(
-          new vscode.RelativePattern(folder, configFilePattern),
+          new vscode.RelativePattern(folder, configFilePattern), '**/node_modules/**'
         );
         for (const file of files) {
           const rel = path.relative(folder.uri.fsPath, path.dirname(file.fsPath));

@@ -3,11 +3,14 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import type { Options } from 'acorn';
-import { parse } from 'acorn-loose';
+import { parse as esTreeParse, type TSESTreeOptions } from '@typescript-eslint/typescript-estree';
+import type { Options as AcornOptions } from 'acorn';
+import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
 import { Node } from 'estree';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
+import { ConfigurationFile } from '../configurationFile';
+import { isTypeScript } from '../constants';
 
 const enum C {
   MemberExpression = 'MemberExpression',
@@ -18,10 +21,14 @@ const enum C {
   Identifier = 'Identifier',
 }
 
-export const acornOptions: Options = {
+export const acornOptions: AcornOptions = {
   ecmaVersion: 'latest',
   locations: true,
   allowReserved: true,
+};
+
+export const esTreeOptions: TSESTreeOptions = {
+  jsDocParsingMode: 'none'
 };
 
 const getStringish = (nameArg: Node | undefined): string | undefined => {
@@ -57,8 +64,10 @@ const traverse = (
   visitor.leave(node);
 };
 
-export const extractWithAst = (text: string, symbols: ITestSymbols) => {
-  const ast = parse(text, acornOptions);
+
+export const extractWithAst = (filePath: string, text: string, _config: ConfigurationFile, symbols: ITestSymbols) => {
+  // TODO: pull some parsing options from the input config (e.g. package.json or .tsconfig beside it)
+  const ast = isTypeScript(filePath) ? esTreeParse(text, esTreeOptions) as Node : acornParse(text, acornOptions) as Node;
 
   const interestingName = (name: string) =>
     symbols.suite.includes(name)

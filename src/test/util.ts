@@ -72,7 +72,7 @@ const rmrf = async (path: string) => {
 
 export const saveAndRestoreWorkspace = async (original: string, fn: () => unknown) => {
   const backup = path.join(tmpdir(), `ext-test-backup-${randomBytes(8).toString('hex')}`);
-  await rmrf(path.join(original, '.vscode-test'));
+  await rmrf(path.join(original, '.mocha-test'));
   await fs.cp(original, backup, { recursive: true });
 
   try {
@@ -97,6 +97,7 @@ export class FakeTestRun implements vscode.TestRun {
   public output: { output: string; location?: vscode.Location; test?: vscode.TestItem }[] = [];
   public states: { test: vscode.TestItem; state: TestState; message?: vscode.TestMessage }[] = [];
   public ended = false;
+  public coverage: vscode.FileCoverage[] = [];
 
   public terminalStates() {
     const last: typeof this.states = [];
@@ -173,6 +174,10 @@ export class FakeTestRun implements vscode.TestRun {
   end(): void {
     this.ended = true;
   }
+  addCoverage(fileCoverage: vscode.FileCoverage): void {
+    this.coverage.push(fileCoverage);
+  }
+  onDidDispose: vscode.Event<void> = new vscode.EventEmitter<void>().event;
   //#endregion
 }
 

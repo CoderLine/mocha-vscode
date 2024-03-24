@@ -4,13 +4,13 @@ This is the Mocha extension for VS Code enabling developers to run and debug tes
 
 ## Credits
 
-This project started as a fork of the `Extension Test Runner` developed by Microsoft and then was adapted to work with Mocha directly.
+This project started as a fork of the `Extension Test Runner` and `Command-line runner for VS Code tests` developed by Microsoft and then was adapted to work with Mocha directly.
 The main credits of this extension go over to the folks at Microsoft (and their contributors) and without them it would have been 
 a lot more effort to ship a Mocha test runner for VS Code. 
 
 * https://marketplace.visualstudio.com/items?itemName=ms-vscode.extension-test-runner
 * https://github.com/microsoft/vscode-extension-test-runner
-
+* https://github.com/microsoft/vscode-test-cl
 
 
 ## Getting Started

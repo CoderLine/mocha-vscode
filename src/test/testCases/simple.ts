@@ -182,12 +182,12 @@ it('handles file and directory excludes', async () => {
   });
 });
 
-it('handles changes to .vscode-test.js', () =>
+it('handles changes to .mocharc.js', () =>
   saveAndRestoreWorkspace(folder, async () => {
     const c = await getController();
     const onChange = onceChanged(c);
 
-    const configPath = path.join(folder, '.vscode-test.js');
+    const configPath = path.join(folder, '.mocharc.js');
     const original = await fs.readFile(configPath, 'utf-8');
     let updated = original.replace('**/*.test.js', '*.test.js');
 

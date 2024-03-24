@@ -4,9 +4,9 @@
  *--------------------------------------------------------*/
 
 import { expect } from 'chai';
-import { NodeKind } from '.';
-import { defaultTestSymbols } from '../constants';
-import { extractWithAst } from './syntax';
+import { defaultTestSymbols } from '../../constants';
+import { NodeKind } from '../../extract';
+import { extractWithAst } from '../../extract/syntax';
 
 describe('syntax', () => {
   it('extracts basic suite', () => {

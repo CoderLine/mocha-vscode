@@ -22,7 +22,7 @@ export interface IMappingAccessor {
 export const identityMapping = (file: vscode.Uri): IMappingAccessor => ({
   originalPositionFor(line, col) {
     // VS Code positions are base 0, adjust the line
-    return new vscode.Location(file, new vscode.Position(line - 1, col));
+    return new vscode.Location(file, new vscode.Position(line, col));
   },
 });
 
@@ -31,11 +31,11 @@ const smMappingAccessor = (file: vscode.Uri, sm: TraceMap): IMappingAccessor => 
     const { source, line: smLine, column: smCol } = originalPositionFor(sm, { line, column });
     if (!source) {
       // VS Code positions are base 0, adjust the line
-      return new vscode.Location(file, new vscode.Position(line - 1, column));
+      return new vscode.Location(file, new vscode.Position(line, column));
     }
 
-    return new vscode.Location(vscode.Uri.parse(source), new vscode.Position(smLine - 1, smCol));
-  },
+    return new vscode.Location(vscode.Uri.parse(source), new vscode.Position(smLine, smCol));
+  }
 });
 
 export const parseSourceMap = (

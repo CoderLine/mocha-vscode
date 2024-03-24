@@ -110,7 +110,7 @@ export class Controller {
 
     let tree: IParsedNode[];
     try {
-      tree = extract(contents, this.extractMode.value);
+      tree = await extract(uri.fsPath, contents, this.configFile, this.extractMode.value);
     } catch (e) {
       this.deleteFileTests(uri.toString());
       return;
@@ -123,7 +123,6 @@ export class Controller {
 
     const smMaintainer = previous?.sourceMap ?? this.smStore.maintain(uri);
     const sourceMap = await smMaintainer.refresh(contents);
-    const tags = includeViaConfigs.map((c) => new vscode.TestTag(`${c}`));
     const add = (
       parent: vscode.TestItem,
       node: IParsedNode,
@@ -133,7 +132,6 @@ export class Controller {
       let item = parent.children.get(node.name);
       if (!item) {
         item = this.ctrl.createTestItem(node.name, node.name, start.uri);
-        item.tags = tags;
         testMetadata.set(item, {
           type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test,
         });
@@ -145,10 +143,10 @@ export class Controller {
       const seen = new Map<string, vscode.TestItem>();
       for (const child of node.children) {
         const existing = seen.get(child.name);
-        const start = sourceMap.originalPositionFor(child.startLine, child.startColumn - 1);
+        const start = sourceMap.originalPositionFor(child.startLine, child.startColumn);
         const end =
           child.endLine !== undefined && child.endColumn !== undefined
-            ? sourceMap.originalPositionFor(child.endLine, child.endColumn - 1)
+            ? sourceMap.originalPositionFor(child.endLine, child.endColumn)
             : start;
         if (existing) {
           addDuplicateDiagnostic(start, existing);
@@ -172,12 +170,12 @@ export class Controller {
     // a single describe/test is not split between different files.
     const newTestsInFile = new Map<string, vscode.TestItem>();
     for (const node of tree) {
-      const start = sourceMap.originalPositionFor(node.startLine, node.startColumn - 1);
+      const start = sourceMap.originalPositionFor(node.startLine, node.startColumn);
       const end =
         node.endLine !== undefined && node.endColumn !== undefined
-          ? sourceMap.originalPositionFor(node.endLine, node.endColumn - 1)
+          ? sourceMap.originalPositionFor(node.endLine, node.endColumn)
           : start;
-      const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri, tags }))!
+      const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri }))!
         .item!;
       diagnosticCollection.delete(start.uri);
       newTestsInFile.set(node.name, add(file, node, start, end));
@@ -269,37 +267,30 @@ export class Controller {
   }
 
   /** Creates run profiles for each configuration in the extension tests */
-  private applyRunHandlers(configs: ConfigurationList) {
+  private applyRunHandlers() {
     const oldRunHandlers = this.runProfiles;
     this.runProfiles = new Map();
-    for (const [index, { config }] of configs.value.entries()) {
-      const originalName = config.label || `Config #${index + 1}`;
-      let name = originalName;
-      for (let i = 2; this.runProfiles.has(name); i++) {
-        name = `${originalName} #${i}`;
-      }
-
-      const prev = oldRunHandlers.get(name);
-      if (prev) {
-        this.runProfiles.set(name, prev);
-        oldRunHandlers.delete(name);
-        continue;
-      }
-
-      const run = this.runner.makeHandler(this.ctrl, this.configFile, index, false);
-      const debug = this.runner.makeHandler(this.ctrl, this.configFile, index, true);
-      const coverage = this.runner.makeHandler(this.ctrl, this.configFile, index, false, true);
-      const profiles = [
-        this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Run, run, true),
-        this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true),
-        this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Coverage, coverage, true),
-      ];
-      for (const profile of profiles) {
-        profile.tag = new vscode.TestTag(`${index}`);
-      }
-
-      this.runProfiles.set(name, profiles);
+    const originalName = `Mocha Config`;
+    let name = originalName;
+    for (let i = 2; this.runProfiles.has(name); i++) {
+      name = `${originalName} #${i}`;
     }
+
+    const prev = oldRunHandlers.get(name);
+    if (prev) {
+      this.runProfiles.set(name, prev);
+      oldRunHandlers.delete(name);
+      return
+    }
+
+    const run = this.runner.makeHandler(this.ctrl, this.configFile, false);
+    const debug = this.runner.makeHandler(this.ctrl, this.configFile, true);
+    const profiles = [
+      this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Run, run, true),
+      this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true)
+    ];
+
+    this.runProfiles.set(name, profiles);
 
     for (const profiles of oldRunHandlers.values()) {
       for (const profile of profiles) {
@@ -318,7 +309,7 @@ export class Controller {
     }
 
     if (configs !== this.currentConfig) {
-      this.applyRunHandlers(configs);
+      this.applyRunHandlers();
       this.currentConfig = configs;
     }
 

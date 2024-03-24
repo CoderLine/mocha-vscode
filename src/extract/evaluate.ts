@@ -3,22 +3,15 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
+import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
 import * as errorParser from 'error-stack-parser';
+import {
+  transform as esbuildTransform
+} from 'esbuild';
 import * as vm from 'vm';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
-
-/**
- * Note: the goal is not to sandbox test code (workspace trust is required
- * for this extension) but rather to avoid side-effects from evaluation which
- * are much more likely when other code is required.
- */
-const replacedGlobals = new Set([
-  // avoid side-effects:
-  'require',
-  'process',
-  // avoid printing to the console from tests:
-  'console',
-]);
+import { ConfigurationFile } from '../configurationFile';
+import { isEsm, isTypeScript } from '../constants';
 
 /**
  * Honestly kind of amazed this works. We can use a Proxy as our globalThis
@@ -32,7 +25,21 @@ const replacedGlobals = new Set([
  * Since extension host tests are always common.js (at least for now) this
  * is also effective in stubbing require() so we know code is nicely isolated.
  */
-export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
+
+export async function extractWithEvaluation(filePath: string, code: string, config: ConfigurationFile, symbols: ITestSymbols) {
+  /**
+   * Note: the goal is not to sandbox test code (workspace trust is required
+   * for this extension) but rather to avoid side-effects from evaluation which
+   * are much more likely when other code is required.
+   */
+  const replacedGlobals = new Set([
+    // avoid side-effects:
+    'require',
+    'process',
+    // avoid printing to the console from tests:
+    'console',
+  ]);
+
   const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
 
   // A placeholder object that returns itself for all functions calls and method accesses.
@@ -48,7 +55,7 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
       set: () => true,
     });
 
-  function makeTesterFunction(kind: NodeKind, directive?: string) {
+  function makeTesterFunction(kind: NodeKind, sourceMap?: TraceMap | undefined, directive?: string) {
     const fn = (name: string, callback: () => void) => {
       if (typeof name !== 'string' || typeof callback !== 'function') {
         return placeholder();
@@ -59,15 +66,39 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
         return placeholder();
       }
 
-      const startLine = frame.lineNumber;
-      const startColumn = frame.columnNumber || 1;
+      let startLine = (frame.lineNumber || 1) - 1;
+      let startColumn = (frame.columnNumber || 1) - 1;
 
       // approximate the length of the test case:
-      const functionLines = String(callback).split('\n');
-      const endLine = frame.lineNumber + functionLines.length - 1;
+      let functionLines = String(callback).split('\n');
+      let endLine = startLine + functionLines.length;
       let endColumn = functionLines[functionLines.length - 1].length;
       if (endLine === startLine) {
         endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
+      }
+
+      if (sourceMap) {
+        try {
+          const startMapped = originalPositionFor(sourceMap, {
+            line: startLine,
+            column: startColumn
+          });
+          if (startMapped.line !== null) {
+            startLine = startMapped.line + 1;
+            startColumn = startMapped.column;
+          }
+          const endMapped = originalPositionFor(sourceMap, {
+            line: endLine,
+            column: endColumn
+          })
+          if (endMapped.line !== null) {
+            endLine = endMapped.line + 1;
+            endColumn = endMapped.column;
+          }
+        }
+        catch (e) {
+          console.error('error mapping source', e);
+        }
       }
 
       const node: IParsedNode = {
@@ -93,18 +124,45 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
           stack.pop();
         }
       }
+
+      return placeholder();
     };
     if (!directive) {
-      fn.skip = makeTesterFunction(kind, 'skip');
-      fn.only = makeTesterFunction(kind, 'only');
+      fn.skip = makeTesterFunction(kind, sourceMap, 'skip');
+      fn.only = makeTesterFunction(kind, sourceMap, 'only');
     }
 
     return fn;
   }
 
+  let sourceMap: TraceMap | undefined;
+  // transpile typescript or ESM via esbuild if needed
+  if (isTypeScript(filePath) || isEsm(filePath, code)) {
+    const result = await esbuildTransform(code, {
+      target: `node${process.versions.node.split('.')[0]}`, // target current runtime
+      sourcemap: true, // need source map for correct test positions
+      format: 'cjs', // vm.runInNewContext only supports CJS
+      sourcesContent: false, // optimize source maps
+      minifyWhitespace: false,
+      minify: false,
+      keepNames: true, // reduce CPU
+      sourcefile: filePath, // for auto-detection of the loader
+      platform: "node", // we will evaluate here in node
+      loader: 'default' // use the default loader
+    });
+
+    code = result.code;
+    try {
+      sourceMap = new TraceMap(result.map, filePath);
+    }
+    catch (e) {
+      // TODO[log output]: invalid source map? -> ignore for now
+    }
+  }
+
   // currently these are the same, but they might be different in the future?
-  const suiteFunction = makeTesterFunction(NodeKind.Suite);
-  const testFunction = makeTesterFunction(NodeKind.Test);
+  const suiteFunction = makeTesterFunction(NodeKind.Suite, sourceMap);
+  const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
 
   const contextObj = new Proxy({} as any, {
     get(target, prop, _receiver) {
@@ -122,9 +180,11 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
     },
   });
 
+
   vm.runInNewContext(code, contextObj, {
-    timeout: 1000,
+    timeout: 10000 // TODO: setting? 
   });
 
   return stack[0].children;
 };
+
