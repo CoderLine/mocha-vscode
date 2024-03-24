@@ -110,7 +110,7 @@ export class Controller {
 
     let tree: IParsedNode[];
     try {
-      tree = await extract(uri.fsPath, contents, this.configFile, this.extractMode.value);
+      tree = await extract(uri.fsPath, contents, this.extractMode.value);
     } catch (e) {
       this.deleteFileTests(uri.toString());
       return;

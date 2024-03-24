@@ -17,6 +17,10 @@ type OptionsModule = {
   loadOptions(): IResolvedConfiguration
 };
 
+type ConfigModule = {
+  findConfig(): string
+};
+
 export type IResolvedConfiguration = Mocha.MochaOptions & { "_": string[] | undefined, "node-option": string[] | undefined }
 
 export class ConfigurationFile implements vscode.Disposable {
@@ -26,6 +30,7 @@ export class ConfigurationFile implements vscode.Disposable {
 
   private _resolver?: resolveModule.Resolver;
   private _optionsModule?: OptionsModule;
+  private _configModule?: ConfigModule;
   private _pathToNode?: string;
   private _pathToMocha?: string;
 
@@ -134,6 +139,7 @@ export class ConfigurationFile implements vscode.Disposable {
 
   private async _read() {
     this._optionsModule ??= require(await this._resolveLocalMochaPath('/lib/cli/options')) as OptionsModule;
+    this._configModule ??= require(await this._resolveLocalMochaPath('/lib/cli/config')) as ConfigModule;
     let config: IResolvedConfiguration;
 
     // need to change to the working dir for loading the config, 
@@ -141,6 +147,18 @@ export class ConfigurationFile implements vscode.Disposable {
     const currentCwd = process.cwd();;
     try {
       process.chdir(path.dirname(this.uri.fsPath));
+
+      // we need to ensure a reload for javascript files
+      // as they are in the require cache https://github.com/mochajs/mocha/blob/e263c7a722b8c2fcbe83596836653896a9e0258b/lib/cli/config.js#L37
+      const configFile = this._configModule.findConfig();
+      try {
+        const resolved = require.resolve(configFile);
+        delete require.cache[resolved];
+      }
+      catch (e) {
+        // ignore
+      }
+
       config = this._optionsModule.loadOptions();
     }
     finally {

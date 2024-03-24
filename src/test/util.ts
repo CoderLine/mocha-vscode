@@ -4,8 +4,8 @@
  *--------------------------------------------------------*/
 
 import * as assert from 'assert';
-import { randomBytes } from 'crypto';
-import { promises as fs } from 'fs';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import * as sinon from 'sinon';
@@ -14,7 +14,49 @@ import * as vscode from 'vscode';
 import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
 
-export const getController = async () => {
+export function integrationTestPrepare(name: string) {
+  let workspaceBackup: string;
+
+  const workspaceFolder = path.resolve(__dirname, '..', '..', 'test-workspaces', name);
+  if (!fs.existsSync(workspaceFolder)) {
+    assert.fail(`Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`);
+  }
+
+  beforeEach(async () => {
+    workspaceBackup = await backupWorkspace(workspaceFolder);
+  });
+
+  afterEach(async () => {
+    await restoreWorkspace(workspaceFolder, workspaceBackup);
+  });
+
+  return workspaceFolder;
+}
+
+
+async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
+  // vscode behaves badly when we delete the workspace folder; delete contents instead.
+  const files = await fs.promises.readdir(workspaceFolder);
+  await Promise.all(files.map((f) => rmrf(path.join(workspaceFolder, f))));
+
+  await fs.promises.cp(workspaceBackup, workspaceFolder, { recursive: true });
+  await rmrf(workspaceBackup);
+
+  // it seems like all these files changes can require a moment for vscode's file
+  // watcher to update before we can run the next test. 500 seems to do it 🤷‍♂️
+  await setTimeout(500);
+}
+
+async function backupWorkspace(source: string) {
+  const backupFolder = path.resolve(tmpdir(), '.mocha-vscode-test-backup', crypto.randomUUID());
+  await rmrf(backupFolder);
+  await fs.promises.cp(source, backupFolder, { recursive: true });
+
+  return backupFolder;
+}
+
+
+export async function getController() {
   const c = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
   if (!c.length) {
@@ -28,7 +70,7 @@ export const getController = async () => {
 
 type TestTreeExpectation = [string, TestTreeExpectation[]?];
 
-const buildTreeExpectation = (entry: TestTreeExpectation, c: vscode.TestItemCollection) => {
+function buildTreeExpectation(entry: TestTreeExpectation, c: vscode.TestItemCollection) {
   for (const [id, { children }] of c) {
     const node: TestTreeExpectation = [id];
     buildTreeExpectation(node, children);
@@ -42,52 +84,33 @@ const buildTreeExpectation = (entry: TestTreeExpectation, c: vscode.TestItemColl
   entry[1]?.sort(([a], [b]) => a.localeCompare(b));
 };
 
-export const onceChanged = (controller: Controller) =>
-  new Promise<void>((resolve) => {
+export function onceChanged(controller: Controller, timeout: number = 10000) {
+  return new Promise<void>((resolve, reject) => {
+    setTimeout(timeout).then(reject);
     const l = controller.onDidChange(() => {
       l.dispose();
       resolve();
     });
   });
+}
 
-export const expectTestTree = async ({ ctrl }: Controller, tree: TestTreeExpectation[]) => {
+export async function expectTestTree({ ctrl }: Controller, tree: TestTreeExpectation[]) {
   const e = ['root', []] satisfies TestTreeExpectation;
   buildTreeExpectation(e, ctrl.items);
   assert.deepStrictEqual(e[1], tree, JSON.stringify(e[1]));
 };
 
 /** Retries deletion a few times since directories may still be in use briefly during test shutdown */
-const rmrf = async (path: string) => {
+async function rmrf(path: string) {
   for (let i = 10; i >= 0; i--) {
     try {
-      await fs.rm(path, { recursive: true, force: true });
+      await fs.promises.rm(path, { recursive: true, force: true });
       return;
     } catch (e) {
       if (i === 0) {
         throw e;
       }
     }
-  }
-};
-
-export const saveAndRestoreWorkspace = async (original: string, fn: () => unknown) => {
-  const backup = path.join(tmpdir(), `ext-test-backup-${randomBytes(8).toString('hex')}`);
-  await rmrf(path.join(original, '.mocha-test'));
-  await fs.cp(original, backup, { recursive: true });
-
-  try {
-    await fn();
-  } finally {
-    // vscode behaves badly when we delete the workspace folder; delete contents instead.
-    const files = await fs.readdir(original);
-    await Promise.all(files.map((f) => rmrf(path.join(original, f))));
-
-    await fs.cp(backup, original, { recursive: true });
-    await rmrf(backup);
-
-    // it seems like all these files changes can require a moment for vscode's file
-    // watcher to update before we can run the next test. 500 seems to do it 🤷‍♂️
-    await setTimeout(500);
   }
 };
 
@@ -181,7 +204,7 @@ export class FakeTestRun implements vscode.TestRun {
   //#endregion
 }
 
-export const captureTestRun = async (ctrl: Controller, req: vscode.TestRunRequest) => {
+export async function captureTestRun(ctrl: Controller, req: vscode.TestRunRequest) {
   const fake = new FakeTestRun();
   const createTestRun = sinon.stub(ctrl.ctrl, 'createTestRun').returns(fake);
   try {

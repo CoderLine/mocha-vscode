@@ -4,26 +4,33 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const dirname = fileURLToPath(new URL('.', import.meta.url));
-const testCaseRunnerDir = path.join(dirname, 'out/test/testCases');
+const integrationTestDir = path.join(dirname, 'out/test/integration');
+const workspaceBaseDir = path.join(dirname, 'test-workspaces');
 
-// @ts-check
+
+const vsCodeVersion = process.env.VSCODE_TEST_VERSION ?? 'stable';
+const vsCodePlatform = process.env.VSCODE_TEST_PLATFORM ?? 'desktop';
 
 export default defineConfig([
   {
-    label: 'core',
-    files: 'out/**/*.test.js',
+    platform: vsCodePlatform,
+    version: vsCodeVersion,
+    label: 'unit',
+    files: 'out/test/unit/**/*.test.js',
     mocha: { ui: 'bdd' },
   },
   ...fs
-    .readdirSync(testCaseRunnerDir)
-    .filter((f) => f.endsWith('.js'))
+    .readdirSync(integrationTestDir)
+    .filter((f) => f.endsWith('.test.js'))
     .map((file) => {
-      const label = path.basename(file, '.js');
+      const label = path.basename(file, '.test.js');
       return {
+        platform: vsCodePlatform,
+        version: vsCodeVersion,
         label,
-        files: path.join(testCaseRunnerDir, file),
-        workspaceFolder: path.join(dirname, `testCases/${label}`),
+        files: path.join(integrationTestDir, file),
         mocha: { ui: 'bdd', timeout: 60_000 },
+        workspaceFolder: path.join(workspaceBaseDir, label),
       };
     }),
 ]);

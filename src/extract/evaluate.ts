@@ -10,7 +10,6 @@ import {
 } from 'esbuild';
 import * as vm from 'vm';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
-import { ConfigurationFile } from '../configurationFile';
 import { isEsm, isTypeScript } from '../constants';
 
 /**
@@ -26,7 +25,7 @@ import { isEsm, isTypeScript } from '../constants';
  * is also effective in stubbing require() so we know code is nicely isolated.
  */
 
-export async function extractWithEvaluation(filePath: string, code: string, config: ConfigurationFile, symbols: ITestSymbols) {
+export async function extractWithEvaluation(filePath: string, code: string, symbols: ITestSymbols) {
   /**
    * Note: the goal is not to sandbox test code (workspace trust is required
    * for this extension) but rather to avoid side-effects from evaluation which
@@ -71,7 +70,7 @@ export async function extractWithEvaluation(filePath: string, code: string, conf
 
       // approximate the length of the test case:
       let functionLines = String(callback).split('\n');
-      let endLine = startLine + functionLines.length;
+      let endLine = startLine + functionLines.length - 1;
       let endColumn = functionLines[functionLines.length - 1].length;
       if (endLine === startLine) {
         endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
@@ -108,7 +107,7 @@ export async function extractWithEvaluation(filePath: string, code: string, conf
         startColumn,
         endLine,
         endColumn,
-        children: [],
+        children: []
       };
       if (directive) {
         node.directive = directive;
@@ -117,15 +116,13 @@ export async function extractWithEvaluation(filePath: string, code: string, conf
       if (kind === NodeKind.Suite) {
         stack.push(node);
         try {
-          callback.call(placeholder());
+          return callback.call(placeholder());
         } catch (e) {
           node.error = e instanceof Error ? e.message : String(e);
         } finally {
           stack.pop();
         }
       }
-
-      return placeholder();
     };
     if (!directive) {
       fn.skip = makeTesterFunction(kind, sourceMap, 'skip');

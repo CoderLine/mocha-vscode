@@ -9,7 +9,6 @@ import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
 import { Node } from 'estree';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
-import { ConfigurationFile } from '../configurationFile';
 import { isTypeScript } from '../constants';
 
 const enum C {
@@ -65,7 +64,7 @@ const traverse = (
 };
 
 
-export const extractWithAst = (filePath: string, text: string, _config: ConfigurationFile, symbols: ITestSymbols) => {
+export const extractWithAst = (filePath: string, text: string, symbols: ITestSymbols) => {
   // TODO: pull some parsing options from the input config (e.g. package.json or .tsconfig beside it)
   const ast = isTypeScript(filePath) ? esTreeParse(text, esTreeOptions) as Node : acornParse(text, acornOptions) as Node;
 
@@ -109,10 +108,10 @@ export const extractWithAst = (filePath: string, text: string, _config: Configur
       const child: IParsedNode = {
         children: [],
         kind,
-        startLine: node.loc!.start.line,
-        startColumn: node.loc!.start.column + 1,
-        endLine: node.loc!.end.line,
-        endColumn: node.loc!.end.column + 1,
+        startLine: node.loc!.start.line - 1,
+        startColumn: node.loc!.start.column,
+        endLine: node.loc!.end.line - 1,
+        endColumn: node.loc!.end.column,
         name,
       };
       if (directive) {
