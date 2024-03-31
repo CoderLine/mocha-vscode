@@ -67,6 +67,11 @@ export class Controller {
     configFileUri: vscode.Uri,
     private readonly runner: TestRunner,
   ) {
+    logChannel.info(
+      'New Test Controller for workspace folder and config',
+      wf.uri.fsPath,
+      configFileUri.fsPath,
+    );
     this.disposable.add(ctrl);
     this.configFile = this.disposable.add(new ConfigurationFile(configFileUri, wf));
     this.onDidDelete = this.configFile.onDidDelete;

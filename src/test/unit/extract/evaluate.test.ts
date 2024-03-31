@@ -7,13 +7,18 @@ import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
 import { NodeKind } from '../../../extract';
 import { extractWithEvaluation } from '../../../extract/evaluate';
+import { source } from '../../util';
 
 describe('evaluate', () => {
   it('extracts basic suite', async () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      ["suite('hello', () => {", "  it('works', () => {});", '})'].join('\n'),
+      source(
+        "suite('hello', () => {", //
+        "  it('works', () => {});",
+        '})',
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -43,13 +48,13 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      [
-        "suite('hello', () => {",
+      source(
+        "suite('hello', () => {", //
         "  for (const name of ['foo', 'bar', 'baz']) {",
         '    it(name, () => {});',
         '  }',
         '})',
-      ].join('\n'),
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -96,7 +101,11 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      ["suite('hello', () => {", "  throw new Error('whoops');", '})'].join('\n'),
+      source(
+        "suite('hello', () => {", //
+        "  throw new Error('whoops');",
+        '})',
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -116,8 +125,11 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      ["suite('hello', () => {", "  it.only('a', ()=>{});", "  it.skip('a', ()=>{});", '})'].join(
-        '\n',
+      source(
+        "suite('hello', () => {", //
+        "  it.only('a', ()=>{});",
+        "  it.skip('a', ()=>{});",
+        '})',
       ),
       defaultTestSymbols,
     );

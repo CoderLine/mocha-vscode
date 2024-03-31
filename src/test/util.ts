@@ -14,6 +14,10 @@ import * as vscode from 'vscode';
 import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
 
+export function source(...lines: string[]) {
+  return lines.join('\n');
+}
+
 export function integrationTestPrepare(name: string) {
   let workspaceBackup: string;
 

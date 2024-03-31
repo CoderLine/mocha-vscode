@@ -7,12 +7,17 @@ import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
 import { NodeKind } from '../../../extract';
 import { extractWithAst } from '../../../extract/syntax';
+import { source } from '../../util';
 
 describe('syntax', () => {
   it('extracts basic suite', () => {
     const src = extractWithAst(
       'test.js',
-      ["suite('hello', () => {", "  it('works', () => {});", '})'].join('\n'),
+      source(
+        "suite('hello', () => {", //
+        "  it('works', () => {});",
+        '})',
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -41,8 +46,11 @@ describe('syntax', () => {
   it('works with skip/only', () => {
     const src = extractWithAst(
       'test.js',
-      ["suite('hello', () => {", "  it.only('a', ()=>{});", "  it.skip('a', ()=>{});", '})'].join(
-        '\n',
+      source(
+        "suite('hello', () => {", //
+        "  it.only('a', ()=>{});",
+        "  it.skip('a', ()=>{});",
+        '})',
       ),
       defaultTestSymbols,
     );
@@ -83,13 +91,13 @@ describe('syntax', () => {
   it('can detect suite but not dynamic tests', () => {
     const src = extractWithAst(
       'test.js',
-      [
-        "suite('hello', () => {",
+      source(
+        "suite('hello', () => {", //
         "  for (const name of ['foo', 'bar', 'baz']) {",
         '    it(name, () => {});',
         '  }',
         '})',
-      ].join('\n'),
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([

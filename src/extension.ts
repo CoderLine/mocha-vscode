@@ -7,11 +7,7 @@ import * as path from 'path';
 import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
-import {
-  configFilePattern,
-  getControllersForTestCommand,
-  showConfigErrorCommand,
-} from './constants';
+import { configFilePattern, getControllersForTestCommand } from './constants';
 import { Controller } from './controller';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';

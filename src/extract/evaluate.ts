@@ -73,16 +73,13 @@ export async function extractWithEvaluation(
         return placeholder();
       }
 
-      let startLine = (frame.lineNumber || 1) - 1;
-      let startColumn = (frame.columnNumber || 1) - 1;
+      let startLine = frame.lineNumber || 1;
+      let startColumn = frame.columnNumber || 1;
 
       // approximate the length of the test case:
       let functionLines = String(callback).split('\n');
       let endLine = startLine + functionLines.length - 1;
       let endColumn = functionLines[functionLines.length - 1].length;
-      if (endLine === startLine) {
-        endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
-      }
 
       if (sourceMap) {
         try {
@@ -91,7 +88,7 @@ export async function extractWithEvaluation(
             column: startColumn,
           });
           if (startMapped.line !== null) {
-            startLine = startMapped.line + 1;
+            startLine = startMapped.line;
             startColumn = startMapped.column;
           }
           const endMapped = originalPositionFor(sourceMap, {
@@ -99,7 +96,7 @@ export async function extractWithEvaluation(
             column: endColumn,
           });
           if (endMapped.line !== null) {
-            endLine = endMapped.line + 1;
+            endLine = endMapped.line;
             endColumn = endMapped.column;
           }
         } catch (e) {
@@ -107,12 +104,16 @@ export async function extractWithEvaluation(
         }
       }
 
+      if (endLine === startLine) {
+        endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
+      }
+
       const node: IParsedNode = {
         name,
         kind,
-        startLine,
+        startLine: startLine - 1,
         startColumn,
-        endLine,
+        endLine: endLine - 1,
         endColumn,
         children: [],
       };
