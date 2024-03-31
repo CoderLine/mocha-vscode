@@ -63,7 +63,8 @@ const config = [
 ];
 
 if (process.env.VSCODE_CONFIG_LOG) {
-  console.log(config);
+  const util = require('util');
+  console.log(util.inspect(config, { showHidden: false, depth: null, colors: true }));
 }
 
 export default defineConfig(config);
