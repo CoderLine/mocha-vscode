@@ -27,7 +27,7 @@ describe('evaluate', () => {
         kind: NodeKind.Suite,
         startLine: 0,
         startColumn: 0,
-        endColumn: 0,
+        endColumn: 1,
         endLine: 2,
         children: [
           {
@@ -63,7 +63,7 @@ describe('evaluate', () => {
         kind: NodeKind.Suite,
         startLine: 0,
         startColumn: 0,
-        endColumn: 0,
+        endColumn: 1,
         endLine: 4,
         children: [
           {
@@ -115,7 +115,7 @@ describe('evaluate', () => {
         startLine: 0,
         startColumn: 0,
         endLine: 2,
-        endColumn: 0,
+        endColumn: 1,
         children: [],
         error: 'whoops',
       },
@@ -140,7 +140,7 @@ describe('evaluate', () => {
         startLine: 0,
         startColumn: 0,
         endLine: 3,
-        endColumn: 0,
+        endColumn: 1,
         children: [
           {
             name: 'a',

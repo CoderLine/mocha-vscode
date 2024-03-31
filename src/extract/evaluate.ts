@@ -73,13 +73,15 @@ export async function extractWithEvaluation(
         return placeholder();
       }
 
+      //
+      // On error stack and source maps we are working on 1-based postitions
       let startLine = frame.lineNumber || 1;
       let startColumn = frame.columnNumber || 1;
 
       // approximate the length of the test case:
       let functionLines = String(callback).split('\n');
       let endLine = startLine + functionLines.length - 1;
-      let endColumn = functionLines[functionLines.length - 1].length;
+      let endColumn = functionLines[functionLines.length - 1].length + 1;
 
       if (sourceMap) {
         try {
@@ -89,7 +91,7 @@ export async function extractWithEvaluation(
           });
           if (startMapped.line !== null) {
             startLine = startMapped.line;
-            startColumn = startMapped.column;
+            startColumn = startMapped.column + 1; // columns are 0-based in trace-mapping lib
           }
           const endMapped = originalPositionFor(sourceMap, {
             line: endLine,
@@ -97,7 +99,7 @@ export async function extractWithEvaluation(
           });
           if (endMapped.line !== null) {
             endLine = endMapped.line;
-            endColumn = endMapped.column;
+            endColumn = endMapped.column + 1; // columns are 0-based in trace-mapping lib
           }
         } catch (e) {
           console.error('error mapping source', e);
