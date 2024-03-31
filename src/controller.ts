@@ -94,6 +94,8 @@ export class Controller {
       await this.readConfig();
     }
 
+    this.logChannel.debug('Syncing file', uri);
+
     const includeViaConfigs = this.currentConfig?.includesTestFile(uri);
     if (!includeViaConfigs) {
       return;
@@ -106,6 +108,7 @@ export class Controller {
     const previous = this.testsInFiles.get(uri.toString());
     const hash = createHash('sha256').update(contents).digest().readInt32BE(0);
     if (hash === previous?.hash) {
+      this.logChannel.debug('Cache not changed skipping update ', uri);
       return;
     }
 
@@ -113,6 +116,7 @@ export class Controller {
     try {
       tree = await extract(this.logChannel, uri.fsPath, contents, this.extractMode.value);
     } catch (e) {
+      this.logChannel.error('Error while test extracting ', e);
       this.deleteFileTests(uri.toString());
       return;
     }
