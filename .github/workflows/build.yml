@@ -43,6 +43,6 @@ jobs:
       - uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: VS Code Tests ${{matrix.os}}-${{matrix.vscode-version}}-${{matrix.vscode-platform}}
+          name: VS Code Test Results (${{matrix.os}}, ${{matrix.vscode-version}}, ${{matrix.vscode-platform}})
           path: 'test-results/*.json'
           reporter: mocha-json
