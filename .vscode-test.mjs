@@ -7,17 +7,45 @@ const dirname = fileURLToPath(new URL('.', import.meta.url));
 const integrationTestDir = path.join(dirname, 'out/test/integration');
 const workspaceBaseDir = path.join(dirname, 'test-workspaces');
 
-
 const vsCodeVersion = process.env.VSCODE_TEST_VERSION ?? 'stable';
 const vsCodePlatform = process.env.VSCODE_TEST_PLATFORM ?? 'desktop';
 
+let createCommonOptions = (label) => {
+  if (process.env.GITHUB_ACTIONS) {
+    return {
+      platform: vsCodePlatform,
+      version: vsCodeVersion,
+      env: {
+        MOCHA_COLORS: 'true',
+      },
+      mocha: {
+        ui: 'bdd',
+
+        reporter: path.join(dirname, '.vscode-ci-test-reporter.js'),
+        reporterOption: {
+          jsonReporterOption: {
+            output: path.join(dirname, 'test-results', `${label}.json`),
+          },
+        },
+      },
+    };
+  } else {
+    return {
+      platform: vsCodePlatform,
+      version: vsCodeVersion,
+
+      mocha: {
+        ui: 'bdd',
+      },
+    };
+  }
+};
+
 export default defineConfig([
   {
-    platform: vsCodePlatform,
-    version: vsCodeVersion,
     label: 'unit',
     files: 'out/test/unit/**/*.test.js',
-    mocha: { ui: 'bdd' },
+    ...createCommonOptions('unit'),
   },
   ...fs
     .readdirSync(integrationTestDir)
@@ -25,12 +53,10 @@ export default defineConfig([
     .map((file) => {
       const label = path.basename(file, '.test.js');
       return {
-        platform: vsCodePlatform,
-        version: vsCodeVersion,
         label,
         files: path.join(integrationTestDir, file),
-        mocha: { ui: 'bdd', timeout: 60_000 },
         workspaceFolder: path.join(workspaceBaseDir, label),
+        ...createCommonOptions(label),
       };
     }),
 ]);
