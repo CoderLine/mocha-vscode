@@ -32,12 +32,9 @@ jobs:
         if: runner.os == 'Linux'
       - run: npm test
         if: runner.os != 'Linux'
-      - run: tree -L 2
-        if: runner.os == 'Linux'
       - uses: dorny/test-reporter@v1
         if: always()
         with:
-          artifact: test-results
           name: VS Code Tests
           path: 'test-results/*.json'
           reporter: mocha-json
