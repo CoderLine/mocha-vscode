@@ -52,15 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
         logChannel.debug('Checking workspace folder for config files', folder);
 
         for (const file of files) {
-          const rel = path.relative(folder.uri.fsPath, path.dirname(file.fsPath));
-          const ctrl = vscode.tests.createTestController(
-            file.toString(),
-            rel
-              ? folders.length > 1
-                ? `Extension (${folder.name}: ${rel})`
-                : `Extension (${rel})`
-              : folder.name,
-          );
+          const ctrl = vscode.tests.createTestController(file.toString(), file.fsPath);
 
           ctrls.push(new Controller(logChannel, ctrl, folder, smStore, file, runner));
         }
