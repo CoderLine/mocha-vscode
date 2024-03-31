@@ -13,7 +13,7 @@ const smUrlComment = '//# sourceMappingURL=';
 
 export interface IMappingAccessor {
   /**
-   * @param line base-1 line
+   * @param line base-0 line
    * @param col base-0 column
    */
   originalPositionFor(line: number, col: number): vscode.Location;
@@ -21,16 +21,18 @@ export interface IMappingAccessor {
 
 export const identityMapping = (file: vscode.Uri): IMappingAccessor => ({
   originalPositionFor(line, col) {
-    // VS Code positions are base 0, adjust the line
     return new vscode.Location(file, new vscode.Position(line, col));
   },
 });
 
 const smMappingAccessor = (file: vscode.Uri, sm: TraceMap): IMappingAccessor => ({
   originalPositionFor(line, column) {
-    const { source, line: smLine, column: smCol } = originalPositionFor(sm, { line, column });
+    const {
+      source,
+      line: smLine,
+      column: smCol,
+    } = originalPositionFor(sm, { line: line + 1, column: column });
     if (!source) {
-      // VS Code positions are base 0, adjust the line
       return new vscode.Location(file, new vscode.Position(line, column));
     }
 

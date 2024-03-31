@@ -37,6 +37,7 @@ let createCommonOptions = (label) => {
 
       mocha: {
         ui: 'bdd',
+        timeout: 60_000,
       },
     };
   }

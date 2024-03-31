@@ -87,7 +87,7 @@ export async function extractWithEvaluation(
         try {
           const startMapped = originalPositionFor(sourceMap, {
             line: startLine,
-            column: startColumn,
+            column: startColumn - 1,
           });
           if (startMapped.line !== null) {
             startLine = startMapped.line;
@@ -95,7 +95,7 @@ export async function extractWithEvaluation(
           }
           const endMapped = originalPositionFor(sourceMap, {
             line: endLine,
-            column: endColumn,
+            column: endColumn - 1,
           });
           if (endMapped.line !== null) {
             endLine = endMapped.line;
