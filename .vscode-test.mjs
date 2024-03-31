@@ -27,6 +27,7 @@ let createCommonOptions = (label) => {
             output: path.join(dirname, 'test-results', `${label}.json`),
           },
         },
+        timeout: 60_000,
       },
     };
   } else {
