@@ -19,7 +19,9 @@ export function integrationTestPrepare(name: string) {
 
   const workspaceFolder = path.resolve(__dirname, '..', '..', 'test-workspaces', name);
   if (!fs.existsSync(workspaceFolder)) {
-    assert.fail(`Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`);
+    assert.fail(
+      `Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`,
+    );
   }
 
   beforeEach(async () => {
@@ -32,7 +34,6 @@ export function integrationTestPrepare(name: string) {
 
   return workspaceFolder;
 }
-
 
 async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
   // vscode behaves badly when we delete the workspace folder; delete contents instead.
@@ -55,7 +56,6 @@ async function backupWorkspace(source: string) {
   return backupFolder;
 }
 
-
 export async function getController() {
   const c = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
@@ -66,7 +66,7 @@ export async function getController() {
   const controller = c[0];
   await controller.scanFiles();
   return controller;
-};
+}
 
 type TestTreeExpectation = [string, TestTreeExpectation[]?];
 
@@ -82,7 +82,7 @@ function buildTreeExpectation(entry: TestTreeExpectation, c: vscode.TestItemColl
   }
 
   entry[1]?.sort(([a], [b]) => a.localeCompare(b));
-};
+}
 
 export function onceChanged(controller: Controller, timeout: number = 10000) {
   return new Promise<void>((resolve, reject) => {
@@ -98,7 +98,7 @@ export async function expectTestTree({ ctrl }: Controller, tree: TestTreeExpecta
   const e = ['root', []] satisfies TestTreeExpectation;
   buildTreeExpectation(e, ctrl.items);
   assert.deepStrictEqual(e[1], tree, JSON.stringify(e[1]));
-};
+}
 
 /** Retries deletion a few times since directories may still be in use briefly during test shutdown */
 async function rmrf(path: string) {
@@ -112,7 +112,7 @@ async function rmrf(path: string) {
       }
     }
   }
-};
+}
 
 type TestState = 'enqueued' | 'started' | 'skipped' | 'failed' | 'errored' | 'passed';
 
@@ -213,4 +213,4 @@ export async function captureTestRun(ctrl: Controller, req: vscode.TestRunReques
   } finally {
     createTestRun.restore();
   }
-};
+}

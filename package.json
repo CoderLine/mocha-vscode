@@ -38,7 +38,7 @@
         "title": "Extension Test Runner",
         "properties": {
           "mocha-vscode.extractSettings": {
-            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
+            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.\n- The `test` and `suite` identifiers the process extracts.",
             "type": "object",
             "properties": {
               "suite": {
@@ -59,6 +59,9 @@
                   "evaluation",
                   "syntax"
                 ]
+              },
+              "extractTimeout": {
+                "type": "number"
               }
             },
             "default": {
@@ -70,12 +73,14 @@
                 "it",
                 "test"
               ],
-              "extractWith": "evaluation"
+              "extractWith": "evaluation",
+              "extractTimeout": 10000
             },
             "required": [
               "suite",
               "test",
-              "extractWith"
+              "extractWith",
+              "extractTimeout"
             ]
           },
           "mocha-vscode.debugOptions": {

@@ -13,6 +13,7 @@ export const defaultTestSymbols: ITestSymbols = {
   suite: ['describe', 'suite'],
   test: ['it', 'test'],
   extractWith: 'evaluation',
+  extractTimeout: 10_000,
 };
 
 export const showConfigErrorCommand = 'mocha-vscode.showConfigError';
@@ -25,12 +26,17 @@ function equalsIgnoreCase(a: string, b: string) {
 export function isTypeScript(filePath: string) {
   const ext = path.extname(filePath);
   // TODO: configuration for this extension list?
-  return equalsIgnoreCase(ext, '.ts') || equalsIgnoreCase(ext, '.mts') || equalsIgnoreCase(ext, '.tsx') || equalsIgnoreCase(ext, '.cts') || equalsIgnoreCase(ext, '.jsx');
+  return (
+    equalsIgnoreCase(ext, '.ts') ||
+    equalsIgnoreCase(ext, '.mts') ||
+    equalsIgnoreCase(ext, '.tsx') ||
+    equalsIgnoreCase(ext, '.cts') ||
+    equalsIgnoreCase(ext, '.jsx')
+  );
 }
-
 
 export function isEsm(filePath: string, code: string): boolean {
   const ext = path.extname(filePath);
   // very basic detection
-  return equalsIgnoreCase(ext, '.mjs') || code.includes("import ") || code.includes("export ");
+  return equalsIgnoreCase(ext, '.mjs') || code.includes('import ') || code.includes('export ');
 }

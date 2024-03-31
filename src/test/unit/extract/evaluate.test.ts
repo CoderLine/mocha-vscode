@@ -11,12 +11,9 @@ import { extractWithEvaluation } from '../../../extract/evaluate';
 describe('evaluate', () => {
   it('extracts basic suite', async () => {
     const src = await extractWithEvaluation(
+      undefined,
       'test.js',
-      [
-        "suite('hello', () => {",
-        "  it('works', () => {});",
-        "})"
-      ].join('\n'),
+      ["suite('hello', () => {", "  it('works', () => {});", '})'].join('\n'),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -44,13 +41,14 @@ describe('evaluate', () => {
 
   it('can evaluate and extract a test table', async () => {
     const src = await extractWithEvaluation(
+      undefined,
       'test.js',
       [
         "suite('hello', () => {",
         "  for (const name of ['foo', 'bar', 'baz']) {",
-        "    it(name, () => {});",
-        "  }",
-        "})"
+        '    it(name, () => {});',
+        '  }',
+        '})',
       ].join('\n'),
       defaultTestSymbols,
     );
@@ -96,13 +94,9 @@ describe('evaluate', () => {
   });
   it('handles errors appropriately', async () => {
     const src = await extractWithEvaluation(
+      undefined,
       'test.js',
-      [
-        "suite('hello', () => {",
-        "  throw new Error('whoops');",
-        "})"
-      ].join('\n')
-      ,
+      ["suite('hello', () => {", "  throw new Error('whoops');", '})'].join('\n'),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -120,14 +114,11 @@ describe('evaluate', () => {
   });
   it('works with skip/only', async () => {
     const src = await extractWithEvaluation(
+      undefined,
       'test.js',
-      [
-        "suite('hello', () => {",
-        "  it.only('a', ()=>{});",
-        "  it.skip('a', ()=>{});",
-        "})"
-      ].join('\n')
-      ,
+      ["suite('hello', () => {", "  it.only('a', ()=>{});", "  it.skip('a', ()=>{});", '})'].join(
+        '\n',
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -166,6 +157,7 @@ describe('evaluate', () => {
 
   it('stubs out requires and placeholds correctly', async () => {
     const src = await extractWithEvaluation(
+      undefined,
       'test.js',
       `require("some invalid module").doing().other.things()`,
       defaultTestSymbols,
@@ -175,6 +167,7 @@ describe('evaluate', () => {
 
   it('runs esbuild-style modules', async () => {
     const src = await extractWithEvaluation(
+      undefined,
       'test.js',
       `var foo = () => suite('hello', () => {}); foo();`,
       defaultTestSymbols,

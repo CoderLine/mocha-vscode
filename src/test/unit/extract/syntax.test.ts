@@ -12,11 +12,7 @@ describe('syntax', () => {
   it('extracts basic suite', () => {
     const src = extractWithAst(
       'test.js',
-      [
-        "suite('hello', () => {",
-        "  it('works', () => {});",
-        "})"
-      ].join('\n'),
+      ["suite('hello', () => {", "  it('works', () => {});", '})'].join('\n'),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -45,12 +41,9 @@ describe('syntax', () => {
   it('works with skip/only', () => {
     const src = extractWithAst(
       'test.js',
-      [
-        "suite('hello', () => {",
-        "  it.only('a', ()=>{});",
-        "  it.skip('a', ()=>{});",
-        "})"
-      ].join('\n'),
+      ["suite('hello', () => {", "  it.only('a', ()=>{});", "  it.skip('a', ()=>{});", '})'].join(
+        '\n',
+      ),
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([
@@ -93,9 +86,9 @@ describe('syntax', () => {
       [
         "suite('hello', () => {",
         "  for (const name of ['foo', 'bar', 'baz']) {",
-        "    it(name, () => {});",
-        "  }",
-        "})"
+        '    it(name, () => {});',
+        '  }',
+        '})',
       ].join('\n'),
       defaultTestSymbols,
     );

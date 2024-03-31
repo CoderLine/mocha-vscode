@@ -16,6 +16,7 @@ import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
 import { MochaEvent, MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
 import { SourceMapStore } from './source-map-store';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 
 interface ISpawnOptions {
   config: ConfigurationFile;
@@ -31,16 +32,19 @@ export type RunHandler = (
 
 export class TestRunner {
   constructor(
+    private readonly logChannel: vscode.LogOutputChannel,
     private readonly smStore: SourceMapStore,
     private readonly launchConfig: ConfigValue<Record<string, any>>,
-  ) { }
+  ) {}
 
   public makeHandler(
     ctrl: vscode.TestController,
     config: ConfigurationFile,
-    debug: boolean
+    debug: boolean,
   ): RunHandler {
     return async (request) => {
+      this.logChannel.debug('Creating new test run ', request);
+
       const run = ctrl.createTestRun(request);
       const { args, compiledFileTests, leafTests } = await this.prepareArguments(
         ctrl,
@@ -92,7 +96,8 @@ export class TestRunner {
               const { path } = parsed[1];
               if (path.length > 0) {
                 enqueueLine(
-                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
+                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
+                    path[path.length - 1]
                   }`,
                 );
               }
@@ -102,7 +107,8 @@ export class TestRunner {
               ranAnyTest = true;
               const { file, path } = parsed[1];
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
+                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
+                  path[path.length - 1]
                 }`,
               );
               const test = compiledFileTests.lookup(file, path);
@@ -118,7 +124,8 @@ export class TestRunner {
               const tcase = compiledFileTests.lookup(file, path);
 
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${styles.red.close
+                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${
+                  styles.red.close
                 }`,
               );
               const rawErr = stack || err;
@@ -177,7 +184,9 @@ export class TestRunner {
       };
 
       run.appendOutput(
-        `${styles.inverse.open} > ${styles.inverse.close} ${(await config.getMochaSpawnArgs(spawnOpts.args)).join(' ')}}\r\n`,
+        `${styles.inverse.open} > ${styles.inverse.close} ${(
+          await config.getMochaSpawnArgs(spawnOpts.args)
+        ).join(' ')}}\r\n`,
       );
 
       try {
@@ -187,6 +196,8 @@ export class TestRunner {
           await this.runWithoutDebug(spawnOpts);
         }
       } catch (e) {
+        const errorMessage = e instanceof Error ? e : `Error executing tests ${e}`;
+        this.logChannel.error(errorMessage);
         if (!spawnCts.token.isCancellationRequested) {
           enqueueLine(String(e));
         }
@@ -209,6 +220,7 @@ export class TestRunner {
       }
 
       if (!ranAnyTest) {
+        this.logChannel.debug('No tests ran, show error');
         await vscode.commands.executeCommand('testing.showMostRecentOutput');
       }
 
@@ -221,12 +233,12 @@ export class TestRunner {
     const ds = new DisposableStore();
 
     const spawnArgs = await config.getMochaSpawnArgs(args);
+    this.logChannel.debug('Start test debugging with args', spawnArgs);
 
     return new Promise<void>((resolve, reject) => {
       const sessionKey = randomUUID();
       const includedSessions = new Set<vscode.DebugSession | undefined>();
       const launchConfig = this.launchConfig.value || {};
-
 
       Promise.resolve(
         vscode.debug.startDebugging(config.wf, {
@@ -235,10 +247,7 @@ export class TestRunner {
           request: 'launch',
           name: `Mocha Test (${config.uri.fsPath})`,
           program: spawnArgs[1],
-          args: [
-            ...spawnArgs.slice(2),
-            ...(launchConfig.args || [])
-          ],
+          args: [...spawnArgs.slice(2), ...(launchConfig.args || [])],
           env: { ...launchConfig.env },
 
           __extensionSessionKey: sessionKey,
@@ -304,12 +313,23 @@ export class TestRunner {
         }),
       );
     }).finally(() => {
-      ds.dispose()
+      ds.dispose();
     });
   }
 
   private async runWithoutDebug({ args, config, onLine, token }: ISpawnOptions) {
-    const cli = await config.spawnMocha(args);
+    const spawnArgs = await config.getMochaSpawnArgs(args);
+    this.logChannel.debug('Start test execution with args', spawnArgs);
+
+    const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
+      const p = spawn(spawnArgs[0], spawnArgs.slice(1), {
+        cwd: path.dirname(config.uri.fsPath),
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      });
+      p.on('spawn', () => resolve(p));
+      p.on('error', reject);
+    });
+
     if (token.isCancellationRequested) {
       return cli.kill();
     }
@@ -381,7 +401,7 @@ export class TestRunner {
     }
 
     // if there's no include, omit --run so that every file is executed
-    // TODO[mocha]: expose an "--include" variant which allows limiting the tests to individual files independent from the loaded config 
+    // TODO[mocha]: expose an "--include" variant which allows limiting the tests to individual files independent from the loaded config
     if (!request.include || !exclude.size) {
       for (const path of compiledFileTests.value.keys()) {
         args.push('--run', path);

@@ -5,12 +5,11 @@
 
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
 import * as errorParser from 'error-stack-parser';
-import {
-  transform as esbuildTransform
-} from 'esbuild';
+import { transform as esbuildTransform } from 'esbuild';
 import * as vm from 'vm';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
 import { isEsm, isTypeScript } from '../constants';
+import * as vscode from 'vscode';
 
 /**
  * Honestly kind of amazed this works. We can use a Proxy as our globalThis
@@ -25,7 +24,12 @@ import { isEsm, isTypeScript } from '../constants';
  * is also effective in stubbing require() so we know code is nicely isolated.
  */
 
-export async function extractWithEvaluation(filePath: string, code: string, symbols: ITestSymbols) {
+export async function extractWithEvaluation(
+  logChannel: vscode.LogOutputChannel | undefined,
+  filePath: string,
+  code: string,
+  symbols: ITestSymbols,
+) {
   /**
    * Note: the goal is not to sandbox test code (workspace trust is required
    * for this extension) but rather to avoid side-effects from evaluation which
@@ -54,7 +58,11 @@ export async function extractWithEvaluation(filePath: string, code: string, symb
       set: () => true,
     });
 
-  function makeTesterFunction(kind: NodeKind, sourceMap?: TraceMap | undefined, directive?: string) {
+  function makeTesterFunction(
+    kind: NodeKind,
+    sourceMap?: TraceMap | undefined,
+    directive?: string,
+  ) {
     const fn = (name: string, callback: () => void) => {
       if (typeof name !== 'string' || typeof callback !== 'function') {
         return placeholder();
@@ -80,7 +88,7 @@ export async function extractWithEvaluation(filePath: string, code: string, symb
         try {
           const startMapped = originalPositionFor(sourceMap, {
             line: startLine,
-            column: startColumn
+            column: startColumn,
           });
           if (startMapped.line !== null) {
             startLine = startMapped.line + 1;
@@ -88,14 +96,13 @@ export async function extractWithEvaluation(filePath: string, code: string, symb
           }
           const endMapped = originalPositionFor(sourceMap, {
             line: endLine,
-            column: endColumn
-          })
+            column: endColumn,
+          });
           if (endMapped.line !== null) {
             endLine = endMapped.line + 1;
             endColumn = endMapped.column;
           }
-        }
-        catch (e) {
+        } catch (e) {
           console.error('error mapping source', e);
         }
       }
@@ -107,7 +114,7 @@ export async function extractWithEvaluation(filePath: string, code: string, symb
         startColumn,
         endLine,
         endColumn,
-        children: []
+        children: [],
       };
       if (directive) {
         node.directive = directive;
@@ -144,16 +151,15 @@ export async function extractWithEvaluation(filePath: string, code: string, symb
       minify: false,
       keepNames: true, // reduce CPU
       sourcefile: filePath, // for auto-detection of the loader
-      platform: "node", // we will evaluate here in node
-      loader: 'default' // use the default loader
+      platform: 'node', // we will evaluate here in node
+      loader: 'default', // use the default loader
     });
 
     code = result.code;
     try {
       sourceMap = new TraceMap(result.map, filePath);
-    }
-    catch (e) {
-      // TODO[log output]: invalid source map? -> ignore for now
+    } catch (e) {
+      logChannel?.error('Error parsing source map of TypeScript output', e);
     }
   }
 
@@ -177,11 +183,9 @@ export async function extractWithEvaluation(filePath: string, code: string, symb
     },
   });
 
-
   vm.runInNewContext(code, contextObj, {
-    timeout: 10000 // TODO: setting? 
+    timeout: symbols.extractTimeout,
   });
 
   return stack[0].children;
-};
-
+}

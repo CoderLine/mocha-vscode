@@ -5,12 +5,7 @@
 
 import { expect } from 'chai';
 import * as vscode from 'vscode';
-import {
-  captureTestRun,
-  expectTestTree,
-  getController,
-  integrationTestPrepare
-} from '../util';
+import { captureTestRun, expectTestTree, getController, integrationTestPrepare } from '../util';
 
 describe('typescript', () => {
   const workspaceFolder = integrationTestPrepare('typescript');
@@ -18,9 +13,7 @@ describe('typescript', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    await expectTestTree(c, [
-      ['hello.test.ts', [['math', [['addition'], ['subtraction']]]]],
-    ]);
+    await expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
   });
 
   it('runs tests', async () => {

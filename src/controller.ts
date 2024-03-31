@@ -60,6 +60,7 @@ export class Controller {
   }
 
   constructor(
+    private readonly logChannel: vscode.LogOutputChannel,
     public readonly ctrl: vscode.TestController,
     private readonly wf: vscode.WorkspaceFolder,
     private readonly smStore: SourceMapStore,
@@ -110,7 +111,7 @@ export class Controller {
 
     let tree: IParsedNode[];
     try {
-      tree = await extract(uri.fsPath, contents, this.extractMode.value);
+      tree = await extract(this.logChannel, uri.fsPath, contents, this.extractMode.value);
     } catch (e) {
       this.deleteFileTests(uri.toString());
       return;
@@ -175,8 +176,7 @@ export class Controller {
         node.endLine !== undefined && node.endColumn !== undefined
           ? sourceMap.originalPositionFor(node.endLine, node.endColumn)
           : start;
-      const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri }))!
-        .item!;
+      const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri }))!.item!;
       diagnosticCollection.delete(start.uri);
       newTestsInFile.set(node.name, add(file, node, start, end));
     }
@@ -280,14 +280,14 @@ export class Controller {
     if (prev) {
       this.runProfiles.set(name, prev);
       oldRunHandlers.delete(name);
-      return
+      return;
     }
 
     const run = this.runner.makeHandler(this.ctrl, this.configFile, false);
     const debug = this.runner.makeHandler(this.ctrl, this.configFile, true);
     const profiles = [
       this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Run, run, true),
-      this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true)
+      this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true),
     ];
 
     this.runProfiles.set(name, profiles);

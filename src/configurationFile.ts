@@ -14,14 +14,17 @@ import { DisposableStore } from './disposable';
 import { HumanError } from './errors';
 
 type OptionsModule = {
-  loadOptions(): IResolvedConfiguration
+  loadOptions(): IResolvedConfiguration;
 };
 
 type ConfigModule = {
-  findConfig(): string
+  findConfig(): string;
 };
 
-export type IResolvedConfiguration = Mocha.MochaOptions & { "_": string[] | undefined, "node-option": string[] | undefined }
+export type IResolvedConfiguration = Mocha.MochaOptions & {
+  _: string[] | undefined;
+  'node-option': string[] | undefined;
+};
 
 export class ConfigurationFile implements vscode.Disposable {
   private readonly ds = new DisposableStore();
@@ -89,29 +92,20 @@ export class ConfigurationFile implements vscode.Disposable {
     // We cannot use process.execPath as this points to code.exe which is an electron application
     // also with ELECTRON_RUN_AS_NODE this can lead to errors (e.g. with the --import option)
     // we prefer to use the system level node
-    this._pathToNode ??= (await which("node", { nothrow: true })) ?? process.execPath;
+    this._pathToNode ??= (await which('node', { nothrow: true })) ?? process.execPath;
     return this._pathToNode;
   }
 
   async getMochaSpawnArgs(customArgs: readonly string[]): Promise<string[]> {
-    // TODO: resolve from package.json? 
     this._pathToMocha ??= await this._resolveLocalMochaPath('/bin/mocha.js');
 
-    return [await this.getPathToNode(), this._pathToMocha, '--config', this.uri.fsPath, ...customArgs];
-  }
-
-  public async spawnMocha(args: readonly string[]) {
-
-    const spawnArgs = await this.getMochaSpawnArgs(args);
-
-    return await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
-      const p = spawn(spawnArgs[0], spawnArgs.slice(1), {
-        cwd: path.dirname(this.uri.fsPath),
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      });
-      p.on('spawn', () => resolve(p));
-      p.on('error', reject);
-    });
+    return [
+      await this.getPathToNode(),
+      this._pathToMocha,
+      '--config',
+      this.uri.fsPath,
+      ...customArgs,
+    ];
   }
 
   private async _resolveLocalMochaPath(suffix?: string): Promise<string> {
@@ -124,11 +118,17 @@ export class ConfigurationFile implements vscode.Disposable {
       this._resolver!.resolve(
         {},
         path.dirname(this.uri.fsPath),
-        'mocha' + (suffix ?? ""),
+        'mocha' + (suffix ?? ''),
         {},
         (err, res) => {
           if (err) {
-            reject(new HumanError(`Could not find mocha in working directory '${path.dirname(this.uri.fsPath)}', please install mocha to run tests.`));
+            reject(
+              new HumanError(
+                `Could not find mocha in working directory '${path.dirname(
+                  this.uri.fsPath,
+                )}', please install mocha to run tests.`,
+              ),
+            );
           } else {
             resolve(res as string);
           }
@@ -138,13 +138,17 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   private async _read() {
-    this._optionsModule ??= require(await this._resolveLocalMochaPath('/lib/cli/options')) as OptionsModule;
-    this._configModule ??= require(await this._resolveLocalMochaPath('/lib/cli/config')) as ConfigModule;
+    this._optionsModule ??= require(
+      await this._resolveLocalMochaPath('/lib/cli/options'),
+    ) as OptionsModule;
+    this._configModule ??= require(
+      await this._resolveLocalMochaPath('/lib/cli/config'),
+    ) as ConfigModule;
     let config: IResolvedConfiguration;
 
-    // need to change to the working dir for loading the config, 
+    // need to change to the working dir for loading the config,
     // TODO[mocha]: allow specifying the cwd in loadOptions()
-    const currentCwd = process.cwd();;
+    const currentCwd = process.cwd();
     try {
       process.chdir(path.dirname(this.uri.fsPath));
 
@@ -154,14 +158,12 @@ export class ConfigurationFile implements vscode.Disposable {
       try {
         const resolved = require.resolve(configFile);
         delete require.cache[resolved];
-      }
-      catch (e) {
+      } catch (e) {
         // ignore
       }
 
       config = this._optionsModule.loadOptions();
-    }
-    finally {
+    } finally {
       process.chdir(currentCwd);
     }
 
@@ -199,7 +201,7 @@ export class ConfigurationList {
       positional = ['./test/*.{js,cjs,mjs}'];
     }
 
-    this.patterns = positional.map(f => {
+    this.patterns = positional.map((f) => {
       if (path.isAbsolute(f)) {
         return { glob: false, value: path.normalize(f) };
       } else {

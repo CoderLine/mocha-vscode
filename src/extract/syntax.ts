@@ -27,7 +27,7 @@ export const acornOptions: AcornOptions = {
 };
 
 export const esTreeOptions: TSESTreeOptions = {
-  jsDocParsingMode: 'none'
+  jsDocParsingMode: 'none',
 };
 
 const getStringish = (nameArg: Node | undefined): string | undefined => {
@@ -63,17 +63,18 @@ const traverse = (
   visitor.leave(node);
 };
 
-
 export const extractWithAst = (filePath: string, text: string, symbols: ITestSymbols) => {
   // TODO: pull some parsing options from the input config (e.g. package.json or .tsconfig beside it)
-  const ast = isTypeScript(filePath) ? esTreeParse(text, esTreeOptions) as Node : acornParse(text, acornOptions) as Node;
+  const ast = isTypeScript(filePath)
+    ? (esTreeParse(text, esTreeOptions) as Node)
+    : (acornParse(text, acornOptions) as Node);
 
   const interestingName = (name: string) =>
     symbols.suite.includes(name)
       ? NodeKind.Suite
       : symbols.test.includes(name)
-        ? NodeKind.Test
-        : undefined;
+      ? NodeKind.Test
+      : undefined;
   const stack: { node: Node; r: IParsedNode }[] = [];
   stack.push({ node: undefined, r: { children: [] } } as any);
 

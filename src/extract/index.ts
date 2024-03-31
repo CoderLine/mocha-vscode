@@ -6,13 +6,19 @@
 import { extractWithEvaluation } from './evaluate';
 import { extractWithAst } from './syntax';
 import { ITestSymbols } from './types';
+import * as vscode from 'vscode';
 
 export * from './types';
 
-export const extract = async (filePath: string, code: string, symbols: ITestSymbols) => {
+export const extract = async (
+  logChannel: vscode.LogOutputChannel,
+  filePath: string,
+  code: string,
+  symbols: ITestSymbols,
+) => {
   if (symbols.extractWith === 'evaluation') {
     try {
-      return await extractWithEvaluation(filePath, code, symbols);
+      return await extractWithEvaluation(logChannel, filePath, code, symbols);
     } catch (e) {
       console.warn('error evaluating, will fallback', e);
       // fall through

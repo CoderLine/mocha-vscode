@@ -4,7 +4,7 @@
  *--------------------------------------------------------*/
 
 /** Errors with a human-readable message. */
-export class HumanError extends Error { }
+export class HumanError extends Error {}
 
 export class ConfigProcessReadError extends HumanError {
   constructor(output: string) {
