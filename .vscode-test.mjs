@@ -42,7 +42,7 @@ let createCommonOptions = (label) => {
   }
 };
 
-export default defineConfig([
+const config = [
   {
     label: 'unit',
     files: 'out/test/unit/**/*.test.js',
@@ -60,4 +60,10 @@ export default defineConfig([
         ...createCommonOptions(label),
       };
     }),
-]);
+];
+
+if (process.env.VSCODE_CONFIG_LOG) {
+  console.log(config);
+}
+
+export default defineConfig(config);

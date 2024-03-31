@@ -23,6 +23,10 @@ jobs:
         with:
           node-version: lts/*
       - run: npm install
+      - name: Print Test Config
+        run: node ./.vscode-test.mjs
+        env:
+          VSCODE_CONFIG_LOG: true
       - run: xvfb-run -a npm test
         if: runner.os == 'Linux'
       - run: npm test
