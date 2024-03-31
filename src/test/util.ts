@@ -13,6 +13,7 @@ import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
 import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
+import { IParsedNode, NodeKind } from '../extract';
 
 export function source(...lines: string[]) {
   return lines.join('\n');
@@ -70,6 +71,31 @@ export async function getController() {
   const controller = c[0];
   await controller.scanFiles();
   return controller;
+}
+
+export function extractParsedNodes(vsItems: vscode.TestItemCollection): IParsedNode[] {
+  const items: IParsedNode[] = [];
+
+  for (const vsItem of vsItems) {
+    const hasChildren = vsItem[1].children.size > 0;
+
+    const item: IParsedNode = {
+      name: vsItem[1].label,
+      kind: hasChildren ? NodeKind.Suite : NodeKind.Test,
+      startLine: vsItem[1].range?.start.line ?? -1,
+      startColumn: vsItem[1].range?.start.character ?? -1,
+      endLine: vsItem[1].range?.end.line ?? -1,
+      endColumn: vsItem[1].range?.end.character ?? -1,
+      children: [],
+    };
+
+    items.push(item);
+    if (hasChildren) {
+      item.children = extractParsedNodes(vsItem[1].children);
+    }
+  }
+
+  return items;
 }
 
 type TestTreeExpectation = [string, TestTreeExpectation[]?];

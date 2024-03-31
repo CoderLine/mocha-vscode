@@ -36,7 +36,7 @@ const smMappingAccessor = (file: vscode.Uri, sm: TraceMap): IMappingAccessor => 
       return new vscode.Location(file, new vscode.Position(line, column));
     }
 
-    return new vscode.Location(vscode.Uri.parse(source), new vscode.Position(smLine, smCol));
+    return new vscode.Location(vscode.Uri.parse(source), new vscode.Position(smLine - 1, smCol));
   },
 });
 
