@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
 jobs:
   build:
     name: Build and Test
@@ -15,6 +20,9 @@ jobs:
         vscode-version: ['stable', 'insiders']
         vscode-platform: ['desktop']
     runs-on: ${{ matrix.os }}
+    env:
+      VSCODE_TEST_VERSION: ${{matrix.vscode-version}}
+      VSCODE_TEST_PLATFORM: ${{matrix.vscode-platform}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,6 +43,6 @@ jobs:
       - uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: VS Code Tests
+          name: VS Code Tests ${{matrix.os}}-${{matrix.vscode-version}}-${{matrix.vscode-platform}}
           path: 'test-results/*.json'
           reporter: mocha-json
