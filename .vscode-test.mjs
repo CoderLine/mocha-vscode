@@ -63,7 +63,7 @@ const config = [
 ];
 
 if (process.env.VSCODE_CONFIG_LOG) {
-  const util = require('util');
+  const util = await import('util');
   console.log(util.inspect(config, { showHidden: false, depth: null, colors: true }));
 }
 
