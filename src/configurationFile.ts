@@ -24,6 +24,7 @@ type ConfigModule = {
 export type IResolvedConfiguration = Mocha.MochaOptions & {
   _: string[] | undefined;
   'node-option': string[] | undefined;
+  ignore: string[] | undefined;
 };
 
 export class ConfigurationFile implements vscode.Disposable {
@@ -215,6 +216,25 @@ export class ConfigurationList {
         };
       }
     });
+
+    if (value.ignore) {
+      this.patterns.push(
+        ...value.ignore.map((f) => {
+          if (path.isAbsolute(f)) {
+            return { glob: false as false, value: '!' + path.normalize(f) };
+          } else {
+            const cfgDir = path.dirname(this.uri.fsPath);
+            return {
+              glob: true as true,
+              value: '!' + toForwardSlashes(path.join(cfgDir, f)),
+              workspaceFolderRelativeGlob: toForwardSlashes(
+                path.join(path.relative(wf.uri.fsPath, cfgDir), f),
+              ),
+            };
+          }
+        }),
+      );
+    }
   }
 
   /**
