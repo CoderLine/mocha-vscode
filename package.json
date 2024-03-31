@@ -103,7 +103,7 @@
   "scripts": {
     "package": "vsce package --no-dependencies",
     "vscode:prepublish": "npm run compile",
-    "postinstall": "cd src/typings && vscode-dts main && vscode-dts dev",
+    "postinstall": "cd src/typings && npx @vscode/dts main && npx @vscode/dts dev",
     "clean": "node -e \"fs.rmSync('out',{force:true,recursive:true})\"",
     "compile": "npm run clean && tsc --noEmit && node .esbuild.js --minify",
     "watch:esbuild": "npm run clean && node .esbuild.js --watch",
