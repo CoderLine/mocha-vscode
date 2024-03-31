@@ -106,15 +106,17 @@ export async function extractWithEvaluation(
 
       if (endLine === startLine) {
         endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
+      } else {
+        endColumn -= 1;
       }
 
       const node: IParsedNode = {
         name,
         kind,
         startLine: startLine - 1,
-        startColumn,
+        startColumn: startColumn - 1,
         endLine: endLine - 1,
-        endColumn,
+        endColumn: endColumn,
         children: [],
       };
       if (directive) {
