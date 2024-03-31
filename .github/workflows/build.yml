@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: lts/*
       - run: npm install
+      - run: npm run compile:test
       - name: Print Test Config
         run: node ./.vscode-test.mjs
         env:
