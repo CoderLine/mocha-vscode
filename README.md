@@ -23,9 +23,7 @@ The main credits of this extension go over to the folks at Microsoft (and their 
 
 Please follow the [general Mocha documentation](https://mochajs.org/) to initially set up tests using the command line. Then, [install this extension](https://marketplace.visualstudio.com/items?itemName=mocha.mocha-vscode).
 
-This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/yml/json/jsonc` files found in your workspace. It requires minimal to no extra configuration. It works by looking at test files in your JavaScript code. If you write tests in TypeScript, you will want to:
-
-1. Modify your tsconfig.json and add `"sourceMap": true`
+This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/yml/json/jsonc` files found in your workspace. It requires minimal to no extra configuration. It works by looking at test files in your JavaScript and TypeScript code.
 
 ## Configuration
 
