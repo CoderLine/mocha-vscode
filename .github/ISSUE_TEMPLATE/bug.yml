@@ -1,0 +1,91 @@
+name: ' Bug report'
+description: Template for bug reports
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      description: >-
+        Please provide us all details here marked as mandatory so we can help
+        you efficiently. Missing information might lead to reports being closed
+        without solution.
+      options:
+        - label: I have read and agree to the [Code of Conduct](code-of-conduct)
+          required: true
+        - label: >-
+            I have searched for [related
+            issues](https://github.com/CoderLine/mocha-vscode/issues) and
+            [discussions](https://github.com/CoderLine/mocha-vscode/discussions)
+            but they did not match this problem.
+          required: true
+        - label: I want to contribute a bugfix myself.
+          required: false
+  - type: textarea
+    attributes:
+      label: Actual behavior
+      description: Describe what is happening.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: Describe what you would expect to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal, Reproducible Example
+      description: >-
+        Provide us details how to reproduce this issue on our side with a
+        [MCVE](https://stackoverflow.com/help/minimal-reproducible-example). A
+        link to the repository you're testing with and steps how to get to the
+        problem help a lot.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Output
+      description: >-
+        Provide us any output you can see in the VS Code Output window when selecting `Mocha Test Runner`
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Plugin Version Details
+      description: >-
+        Go to Extensions in VS Code, select this extension, click on the gear
+        icon beside the uninstall button, click copy and then paste the infos
+        here.
+      placeholder: >-
+        Name: Mocha Test Runner
+        Id: coderline.mocha-vscode
+        Description: Run and debug Mocha tests right within VS Code.
+        Version: 1.0.0
+        Publisher: CoderLine
+        VS Marketplace Link: https://marketplace.visualstudio.com/items?itemName=coderline.mocha-vscode
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: VS Code Version Details
+      description: Go to Help > About, click copy and then paste the details here
+      placeholder: >-
+        Version: 1.87.2 (user setup)
+        Commit: 863d2581ecda6849923a2118d93a088b0745d9d6
+        Date: 2024-03-08T15:20:17.278Z
+        Electron: 27.3.2
+        ElectronBuildId: 26836302
+        Chromium: 118.0.5993.159
+        Node.js: 18.17.1
+        V8: 11.8.172.18-electron.0
+        OS: Windows_NT x64 10.0.22631
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Further details
+      description: >-
+        Provide us any further information which might help solving this
+        problem.
