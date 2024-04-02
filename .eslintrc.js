@@ -1,3 +1,12 @@
+/**
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
 module.exports = {
   env: {
     browser: true,
@@ -15,13 +24,13 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['out/**', 'test-workspaces/**', 'src/typings/**'],
+  ignorePatterns: ['out/**', 'test-workspaces/**', 'src/typings/**', 'resources/**'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'license-header'],
   rules: {
     indent: ['error', 2],
     'linebreak-style': ['error', 'unix'],
@@ -30,5 +39,6 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-var-requires': 'off',
     'prefer-const': ['error', { destructuring: 'all' }],
+    'license-header/header': ['error', './resources/license-header.js'],
   },
 };
