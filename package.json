@@ -131,7 +131,7 @@
     "@vscode/test-cli": "^0.0.8",
     "@vscode/test-electron": "^2.3.9",
     "acorn": "^8.11.3",
-    "chai": "^4.3.10",
+    "chai": "^5.1.0",
     "esbuild": "^0.19.4",
     "glob": "^10.3.10",
     "mocha": "^10.2.0",
