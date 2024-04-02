@@ -19,7 +19,7 @@ export interface IParsedNode {
   error?: string;
 }
 
-export interface ITestSymbols {
+export interface IExtensionSettings {
   suite: readonly string[];
   test: readonly string[];
   extractWith: 'evaluation' | 'syntax';
@@ -29,4 +29,8 @@ export interface ITestSymbols {
 export const enum NodeKind {
   Suite,
   Test,
+}
+
+export interface ITestDiscoverer {
+  discover(filePath: string, code: string): Promise<IParsedNode[]>;
 }

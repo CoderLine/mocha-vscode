@@ -6,6 +6,9 @@ function topLevel(a: number): string {
   return a.toString() as string;
 }
 
+const fn = async () => {};
+await fn();
+
 describe('math', () => {
   function inDescribe(a: number): string {
     return a.toString() as string;

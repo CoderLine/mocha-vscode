@@ -13,17 +13,19 @@ import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
 import { ConfigurationFile, ConfigurationList } from './configurationFile';
 import { defaultTestSymbols, showConfigErrorCommand } from './constants';
+import { SettingsBasedFallbackTestDiscoverer } from './discoverer/settings';
+import { IParsedNode, NodeKind } from './discoverer/types';
 import { DisposableStore, MutableDisposable } from './disposable';
-import { IParsedNode, NodeKind, extract } from './extract';
 import { last } from './iterable';
 import { ICreateOpts, ItemType, getContainingItemsForFile, testMetadata } from './metadata';
 import { TestRunner } from './runner';
 import { ISourceMapMaintainer, SourceMapStore } from './source-map-store';
+import { TsConfigStore } from './tsconfig-store';
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('ext-test-duplicates');
 
 export class Controller {
-  private readonly disposable = new DisposableStore();
+  private readonly disposables = new DisposableStore();
   public readonly configFile: ConfigurationFile;
 
   /**
@@ -32,13 +34,15 @@ export class Controller {
    */
   private currentConfig?: ConfigurationList;
 
+  private discoverer!: SettingsBasedFallbackTestDiscoverer;
+
   /** Fired when the file associated with the controller is deleted. */
   public readonly onDidDelete: vscode.Event<void>;
 
-  private readonly extractMode = this.disposable.add(
+  private readonly settings = this.disposables.add(
     new ConfigValue('extractSettings', defaultTestSymbols),
   );
-  private readonly watcher = this.disposable.add(new MutableDisposable());
+  private readonly watcher = this.disposables.add(new MutableDisposable());
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
   private runProfiles = new Map<string, vscode.TestRunProfile[]>();
 
@@ -57,6 +61,7 @@ export class Controller {
 
   /** Change emitter used for testing, to pick up when the file watcher detects a chagne */
   public readonly onDidChange = this.didChangeEmitter.event;
+  private tsconfigStore?: TsConfigStore;
 
   /** Gets run profiles the controller has registerd. */
   public get profiles() {
@@ -76,13 +81,18 @@ export class Controller {
       wf.uri.fsPath,
       configFileUri.fsPath,
     );
-    this.disposable.add(ctrl);
-    this.configFile = this.disposable.add(new ConfigurationFile(configFileUri, wf));
+    this.disposables.add(ctrl);
+    this.configFile = this.disposables.add(new ConfigurationFile(configFileUri, wf));
     this.onDidDelete = this.configFile.onDidDelete;
 
-    const rescan = () => this.scanFiles();
-    this.disposable.add(this.configFile.onDidChange(rescan));
-    this.disposable.add(this.extractMode.onDidChange(rescan));
+    this.recreateDiscoverer();
+
+    const rescan = () => {
+      this.recreateDiscoverer();
+      this.scanFiles();
+    };
+    this.disposables.add(this.configFile.onDidChange(rescan));
+    this.disposables.add(this.settings.onDidChange(rescan));
     ctrl.refreshHandler = () => {
       this.configFile.forget();
       rescan();
@@ -90,8 +100,30 @@ export class Controller {
     this.scanFiles();
   }
 
+  recreateDiscoverer(newTsConfig: boolean = true) {
+    if (!this.tsconfigStore) {
+      newTsConfig = true;
+    }
+
+    if (newTsConfig) {
+      const oldStore = this.tsconfigStore;
+      if (oldStore) {
+        this.disposables.remove(oldStore);
+        oldStore.dispose();
+      }
+      this.tsconfigStore = new TsConfigStore();
+      this.disposables.add(this.tsconfigStore);
+    }
+
+    this.discoverer = new SettingsBasedFallbackTestDiscoverer(
+      this.logChannel,
+      this.settings.value,
+      this.tsconfigStore!,
+    );
+  }
+
   public dispose() {
-    this.disposable.dispose();
+    this.disposables.dispose();
   }
 
   public async syncFile(uri: vscode.Uri, contents?: () => string) {
@@ -123,7 +155,7 @@ export class Controller {
 
     let tree: IParsedNode[];
     try {
-      tree = await extract(this.logChannel, uri.fsPath, contents, this.extractMode.value);
+      tree = await this.discoverer.discover(uri.fsPath, contents);
     } catch (e) {
       this.logChannel.error('Error while test extracting ', e);
       this.deleteFileTests(uri.toString());

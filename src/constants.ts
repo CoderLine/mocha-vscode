@@ -8,12 +8,12 @@
  */
 
 import path from 'path';
-import type { ITestSymbols } from './extract/types';
+import type { IExtensionSettings } from './discoverer/types';
 
 /** Pattern of files the CLI looks for */
 export const configFilePattern = '**/.mocharc.{js,cjs,yaml,yml,json,jsonc}';
 
-export const defaultTestSymbols: ITestSymbols = {
+export const defaultTestSymbols: IExtensionSettings = {
   suite: ['describe', 'suite'],
   test: ['it', 'test'],
   extractWith: 'evaluation',

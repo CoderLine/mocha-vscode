@@ -9,8 +9,8 @@
 
 import { expect } from 'chai';
 import * as vscode from 'vscode';
+import { NodeKind } from '../../discoverer/types';
 import { captureTestRun, expectTestTree, extractParsedNodes, getController } from '../util';
-import { NodeKind } from '../../extract';
 
 describe('source mapped', () => {
   it('discovers tests', async () => {

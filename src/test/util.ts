@@ -17,7 +17,7 @@ import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
 import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
-import { IParsedNode, NodeKind } from '../extract';
+import { IParsedNode, NodeKind } from '../discoverer/types';
 
 export function source(...lines: string[]) {
   return lines.join('\n');

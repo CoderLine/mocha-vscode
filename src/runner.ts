@@ -8,6 +8,7 @@
  */
 
 import styles from 'ansi-styles';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import split2 from 'split2';
@@ -20,7 +21,6 @@ import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
 import { MochaEvent, MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
 import { SourceMapStore } from './source-map-store';
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 
 interface ISpawnOptions {
   config: ConfigurationFile;
@@ -87,66 +87,66 @@ export class TestRunner {
             return;
           }
           switch (parsed[0]) {
-          case MochaEvent.Start:
-            isOutsideTestRun = false;
-            break;
-          case MochaEvent.TestStart: {
-            const { file, path } = parsed[1];
-            const test = compiledFileTests.lookup(file, path);
-            if (test) run.started(test);
-            break;
-          }
-          case MochaEvent.SuiteStart: {
-            const { path } = parsed[1];
-            if (path.length > 0) {
+            case MochaEvent.Start:
+              isOutsideTestRun = false;
+              break;
+            case MochaEvent.TestStart: {
+              const { file, path } = parsed[1];
+              const test = compiledFileTests.lookup(file, path);
+              if (test) run.started(test);
+              break;
+            }
+            case MochaEvent.SuiteStart: {
+              const { path } = parsed[1];
+              if (path.length > 0) {
+                enqueueLine(
+                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
+                    path[path.length - 1]
+                  }`,
+                );
+              }
+              break;
+            }
+            case MochaEvent.Pass: {
+              ranAnyTest = true;
+              const { file, path } = parsed[1];
               enqueueLine(
                 `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
                   path[path.length - 1]
                 }`,
               );
+              const test = compiledFileTests.lookup(file, path);
+              if (test) {
+                run.passed(test);
+                leafTests.delete(test);
+              }
+              break;
             }
-            break;
-          }
-          case MochaEvent.Pass: {
-            ranAnyTest = true;
-            const { file, path } = parsed[1];
-            enqueueLine(
-              `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
-                path[path.length - 1]
-              }`,
-            );
-            const test = compiledFileTests.lookup(file, path);
-            if (test) {
-              run.passed(test);
-              leafTests.delete(test);
-            }
-            break;
-          }
-          case MochaEvent.Fail: {
-            ranAnyTest = true;
-            const { err, path, stack, duration, expected, actual, file } = parsed[1];
-            const tcase = compiledFileTests.lookup(file, path);
+            case MochaEvent.Fail: {
+              ranAnyTest = true;
+              const { err, path, stack, duration, expected, actual, file } = parsed[1];
+              const tcase = compiledFileTests.lookup(file, path);
 
-            enqueueLine(
-              `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${
-                styles.red.close
-              }`,
-            );
-            const rawErr = stack || err;
-            const locationsReplaced = replaceAllLocations(this.smStore, forceCRLF(rawErr));
-            if (rawErr) {
-              outputQueue.enqueue(async () =>
-                run.appendOutput(await locationsReplaced, undefined, tcase),
+              enqueueLine(
+                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${
+                  styles.red.close
+                }`,
               );
-            }
+              const rawErr = stack || err;
+              const locationsReplaced = replaceAllLocations(this.smStore, forceCRLF(rawErr));
+              if (rawErr) {
+                outputQueue.enqueue(async () =>
+                  run.appendOutput(await locationsReplaced, undefined, tcase),
+                );
+              }
 
-            if (!tcase) {
-              return;
-            }
+              if (!tcase) {
+                return;
+              }
 
-            leafTests.delete(tcase);
-            const hasDiff = actual !== expected;
-            const testFirstLine =
+              leafTests.delete(tcase);
+              const hasDiff = actual !== expected;
+              const testFirstLine =
                 tcase.range &&
                 new vscode.Location(
                   tcase.uri!,
@@ -156,32 +156,32 @@ export class TestRunner {
                   ),
                 );
 
-            const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase!);
-            outputQueue.enqueue(async () => {
-              const location = await locationProm;
-              let message: vscode.TestMessage;
+              const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase!);
+              outputQueue.enqueue(async () => {
+                const location = await locationProm;
+                let message: vscode.TestMessage;
 
-              if (hasDiff) {
-                message = new vscode.TestMessage(tryMakeMarkdown(err));
-                message.actualOutput = outputToString(actual);
-                message.expectedOutput = outputToString(expected);
-              } else {
-                message = new vscode.TestMessage(
-                  stack ? await sourcemapStack(this.smStore, stack) : await locationsReplaced,
-                );
-              }
+                if (hasDiff) {
+                  message = new vscode.TestMessage(tryMakeMarkdown(err));
+                  message.actualOutput = outputToString(actual);
+                  message.expectedOutput = outputToString(expected);
+                } else {
+                  message = new vscode.TestMessage(
+                    stack ? await sourcemapStack(this.smStore, stack) : await locationsReplaced,
+                  );
+                }
 
-              message.location = location ?? testFirstLine;
-              run.failed(tcase!, message, duration);
-            });
-            break;
-          }
-          case MochaEvent.End:
-            isOutsideTestRun = true;
-            break;
-          default:
-            // just normal output
-            outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`));
+                message.location = location ?? testFirstLine;
+                run.failed(tcase!, message, duration);
+              });
+              break;
+            }
+            case MochaEvent.End:
+              isOutsideTestRun = true;
+              break;
+            default:
+              // just normal output
+              outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`));
           }
         },
         token: spawnCts.token,
