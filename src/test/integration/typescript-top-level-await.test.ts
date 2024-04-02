@@ -7,12 +7,22 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import { expectTestTree, getController } from '../util';
+import { expect } from 'chai';
+import { buildTestTreeExpectation, getController } from '../util';
 
 describe('typescript top level await', () => {
   it('discovers tests fails', async () => {
     const c = await getController();
 
-    await expectTestTree(c, []);
+    const e = buildTestTreeExpectation(c);
+
+    expect(e).to.have.length(1);
+    expect(e[0][0]).to.equal('hello.test.ts');
+    expect(e[0][1])
+      .to.be.a('string')
+      .and.to.include('Transform failed with')
+      .and.to.include(
+        'ERROR: Top-level await is currently not supported with the "cjs" output format',
+      );
   });
 });

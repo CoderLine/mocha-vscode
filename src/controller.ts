@@ -159,6 +159,10 @@ export class Controller {
     } catch (e) {
       this.logChannel.error('Error while test extracting ', e);
       this.deleteFileTests(uri.toString());
+
+      const errorFile = last(this.getContainingItemsForFile(uri, { compiledFile: uri }))!.item!;
+      errorFile.error = String(e);
+
       return;
     }
 
