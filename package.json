@@ -2,7 +2,7 @@
   "name": "mocha-vscode",
   "displayName": "Mocha Test Runner",
   "description": "Run and debug Mocha tests right within VS Code.",
-  "publisher": "danielku15",
+  "publisher": "coderline",
   "version": "1.0.0",
   "icon": "icon.png",
   "engines": {
@@ -107,7 +107,7 @@
   "main": "./out/extension.js",
   "scripts": {
     "package": "vsce package --no-dependencies",
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && tsx ./scripts/prerelease.mts",
     "postinstall": "cd src/typings && npx @vscode/dts main && npx @vscode/dts dev",
     "clean": "node -e \"fs.rmSync('out',{force:true,recursive:true})\"",
     "compile": "npm run clean && tsc --noEmit && node .esbuild.js --minify",
@@ -115,7 +115,8 @@
     "watch:esbuild": "npm run clean && node .esbuild.js --watch",
     "watch": "npm run clean && tsc --watch",
     "test": "tsc && vscode-test",
-    "prettier": "prettier --write src"
+    "prettier": "prettier --write src",
+    "lint": "eslint . --ext .ts,.tsx,.js"
   },
   "devDependencies": {
     "@types/chai": "^4.3.7",
@@ -127,12 +128,16 @@
     "@types/sinon": "^10.0.19",
     "@types/split2": "^4.2.1",
     "@types/yargs": "^17.0.32",
+    "@typescript-eslint/eslint-plugin": "^7.5.0",
+    "@typescript-eslint/parser": "^7.5.0",
     "@vscode/dts": "^0.4.0",
     "@vscode/test-cli": "^0.0.8",
     "@vscode/test-electron": "^2.3.9",
     "acorn": "^8.11.3",
     "chai": "^5.1.0",
     "esbuild": "^0.19.4",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
     "glob": "^10.3.12",
     "mocha": "^10.2.0",
     "prettier": "^3.0.3",
@@ -161,5 +166,9 @@
     "supports-color": "^9.4.0",
     "which": "^4.0.0",
     "yargs": "^17.7.2"
+  },
+  "mocha-vscode": {
+    "version": "1.0.0-preview+FFFFFFF",
+    "date": "2024-04-02T14:30:00Z"
   }
 }

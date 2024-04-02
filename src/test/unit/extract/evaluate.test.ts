@@ -15,8 +15,8 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it('works', () => {});",
+        'suite(\'hello\', () => {', //
+        '  it(\'works\', () => {});',
         '})',
       ),
       defaultTestSymbols,
@@ -49,8 +49,8 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  for (const name of ['foo', 'bar', 'baz']) {",
+        'suite(\'hello\', () => {', //
+        '  for (const name of [\'foo\', \'bar\', \'baz\']) {',
         '    it(name, () => {});',
         '  }',
         '})',
@@ -102,8 +102,8 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  throw new Error('whoops');",
+        'suite(\'hello\', () => {', //
+        '  throw new Error(\'whoops\');',
         '})',
       ),
       defaultTestSymbols,
@@ -126,9 +126,9 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it.only('a', ()=>{});",
-        "  it.skip('a', ()=>{});",
+        'suite(\'hello\', () => {', //
+        '  it.only(\'a\', ()=>{});',
+        '  it.skip(\'a\', ()=>{});',
         '})',
       ),
       defaultTestSymbols,
@@ -171,7 +171,7 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      `require("some invalid module").doing().other.things()`,
+      'require("some invalid module").doing().other.things()',
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([]);
@@ -181,7 +181,7 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      `var foo = () => suite('hello', () => {}); foo();`,
+      'var foo = () => suite(\'hello\', () => {}); foo();',
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([

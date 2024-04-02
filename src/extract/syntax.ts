@@ -73,8 +73,8 @@ export const extractWithAst = (filePath: string, text: string, symbols: ITestSym
     symbols.suite.includes(name)
       ? NodeKind.Suite
       : symbols.test.includes(name)
-      ? NodeKind.Test
-      : undefined;
+        ? NodeKind.Test
+        : undefined;
   const stack: { node: Node; r: IParsedNode }[] = [];
   stack.push({ node: undefined, r: { children: [] } } as any);
 

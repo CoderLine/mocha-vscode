@@ -189,13 +189,11 @@ describe('simple', () => {
     let updated = original.replace('**/*.test.js', '*.test.js');
 
     // the vscode file watcher is set up async and does not always catch the change, keep changing the file
-    while (true) {
+    let ok: boolean | void = false;
+    while (!ok) {
       updated += '\n//';
       await fs.writeFile(configPath, updated);
-      const ok = await Promise.race([onChange.then(() => true), setTimeout(500)]);
-      if (ok) {
-        break;
-      }
+      ok = await Promise.race([onChange.then(() => true), setTimeout(500)]);
     }
 
     await expectTestTree(c, [

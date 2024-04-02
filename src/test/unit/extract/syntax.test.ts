@@ -14,8 +14,8 @@ describe('syntax', () => {
     const src = extractWithAst(
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it('works', () => {});",
+        'suite(\'hello\', () => {', //
+        '  it(\'works\', () => {});',
         '})',
       ),
       defaultTestSymbols,
@@ -47,9 +47,9 @@ describe('syntax', () => {
     const src = extractWithAst(
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it.only('a', ()=>{});",
-        "  it.skip('a', ()=>{});",
+        'suite(\'hello\', () => {', //
+        '  it.only(\'a\', ()=>{});',
+        '  it.skip(\'a\', ()=>{});',
         '})',
       ),
       defaultTestSymbols,
@@ -92,8 +92,8 @@ describe('syntax', () => {
     const src = extractWithAst(
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  for (const name of ['foo', 'bar', 'baz']) {",
+        'suite(\'hello\', () => {', //
+        '  for (const name of [\'foo\', \'bar\', \'baz\']) {',
         '    it(name, () => {});',
         '  }',
         '})',
@@ -116,7 +116,7 @@ describe('syntax', () => {
   it('stubs out requires and placeholds correctly', () => {
     const src = extractWithAst(
       'test.js',
-      `require("some invalid module").doing().other.things()`,
+      'require("some invalid module").doing().other.things()',
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([]);

@@ -3,7 +3,6 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import resolveModule from 'enhanced-resolve';
 import * as fs from 'fs';
 import { minimatch } from 'minimatch';
@@ -139,12 +138,12 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   private async _read() {
-    this._optionsModule ??= require(
-      await this._resolveLocalMochaPath('/lib/cli/options'),
-    ) as OptionsModule;
-    this._configModule ??= require(
-      await this._resolveLocalMochaPath('/lib/cli/config'),
-    ) as ConfigModule;
+    this._optionsModule ??= (await import(
+      await this._resolveLocalMochaPath('/lib/cli/options')
+    )) as OptionsModule;
+    this._configModule ??= (await import(
+      await this._resolveLocalMochaPath('/lib/cli/config')
+    )) as ConfigModule;
     let config: IResolvedConfiguration;
 
     // need to change to the working dir for loading the config,
@@ -221,11 +220,11 @@ export class ConfigurationList {
       this.patterns.push(
         ...value.ignore.map((f) => {
           if (path.isAbsolute(f)) {
-            return { glob: false as false, value: '!' + path.normalize(f) };
+            return { glob: false as const, value: '!' + path.normalize(f) };
           } else {
             const cfgDir = path.dirname(this.uri.fsPath);
             return {
-              glob: true as true,
+              glob: true as const,
               value: '!' + toForwardSlashes(path.join(cfgDir, f)),
               workspaceFolderRelativeGlob: toForwardSlashes(
                 path.join(path.relative(wf.uri.fsPath, cfgDir), f),

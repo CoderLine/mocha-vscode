@@ -5,7 +5,7 @@
 
 import { expect } from 'chai';
 import * as vscode from 'vscode';
-import { captureTestRun, expectTestTree, getController, integrationTestPrepare } from '../util';
+import { captureTestRun, expectTestTree, getController } from '../util';
 
 describe('typescript', () => {
   it('discovers tests', async () => {

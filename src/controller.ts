@@ -243,7 +243,7 @@ export class Controller {
   private async startWatchingWorkspace() {
     // we need to watch for *every* change due to https://github.com/microsoft/vscode/issues/60813
     const watcher = (this.watcher.value = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(this.wf, `**/*`),
+      new vscode.RelativePattern(this.wf, '**/*'),
     ));
 
     watcher.onDidCreate((uri) => this._syncFile(uri));
@@ -279,7 +279,7 @@ export class Controller {
   private applyRunHandlers() {
     const oldRunHandlers = this.runProfiles;
     this.runProfiles = new Map();
-    const originalName = `Mocha Config`;
+    const originalName = 'Mocha Config';
     let name = originalName;
     for (let i = 2; this.runProfiles.has(name); i++) {
       name = `${originalName} #${i}`;
