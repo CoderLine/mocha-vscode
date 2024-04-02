@@ -138,12 +138,12 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   private async _read() {
-    this._optionsModule ??= (await import(
-      await this._resolveLocalMochaPath('/lib/cli/options')
-    )) as OptionsModule;
-    this._configModule ??= (await import(
-      await this._resolveLocalMochaPath('/lib/cli/config')
-    )) as ConfigModule;
+    this._optionsModule ??= require(
+      await this._resolveLocalMochaPath('/lib/cli/options'),
+    ) as OptionsModule;
+    this._configModule ??= require(
+      await this._resolveLocalMochaPath('/lib/cli/config'),
+    ) as ConfigModule;
     let config: IResolvedConfiguration;
 
     // need to change to the working dir for loading the config,
