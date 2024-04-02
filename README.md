@@ -5,6 +5,9 @@ This is the Mocha extension for VS Code enabling developers to run and debug tes
 > [!NOTE]
 > This extension is in a fairly early development stage but mostly functional. We soon
 > will start to publish some pre-release versions to the VS Code Extension gallery.
+>
+> Follow our progress at https://github.com/orgs/CoderLine/projects/15/views/1
+>
 > Please provide feedback and discuss improvements over at https://github.com/CoderLine/mocha-vscode/discussions
 
 ## Credits
