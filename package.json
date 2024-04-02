@@ -160,7 +160,7 @@
     "data-uri-to-buffer": "^6.0.2",
     "enhanced-resolve": "^5.16.0",
     "error-stack-parser": "^2.1.4",
-    "eslint-visitor-keys": "^3.4.3",
+    "eslint-visitor-keys": "^4.0.0",
     "minimatch": "^9.0.3",
     "split2": "^4.2.0",
     "stacktrace-parser": "^0.1.10",
