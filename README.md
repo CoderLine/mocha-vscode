@@ -2,6 +2,11 @@
 
 This is the Mocha extension for VS Code enabling developers to run and debug tests right within VS Code using the built-in test explorer.
 
+> [!NOTE]
+> This extension is in a fairly early development stage but mostly functional. We soon
+> will start to publish some pre-release versions to the VS Code Extension gallery.
+> Please provide feedback and discuss improvements over at https://github.com/CoderLine/mocha-vscode/discussions
+
 ## Credits
 
 This project started as a fork of the `Extension Test Runner` and `Command-line runner for VS Code tests` developed by Microsoft and then was adapted to work with Mocha directly.
