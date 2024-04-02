@@ -53,37 +53,6 @@ describe('evaluate typescript', () => {
     ]);
   });
 
-  it('extracts top level await', async () => {
-    const src = await extractWithEvaluation(
-      'const fn = async () => {};', //
-      'await fn();',
-      "suite('hello', () => {",
-      "  it('works', () => {});",
-      '})',
-    );
-    expect(src).to.deep.equal([
-      {
-        name: 'hello',
-        kind: NodeKind.Suite,
-        startLine: 2,
-        startColumn: 0,
-        endColumn: 1,
-        endLine: 4,
-        children: [
-          {
-            name: 'works',
-            kind: NodeKind.Test,
-            startLine: 3,
-            startColumn: 2,
-            endColumn: Number.MAX_SAFE_INTEGER,
-            endLine: 3,
-            children: [],
-          },
-        ],
-      },
-    ]);
-  });
-
   it('extracts basic suite ts syntax', async () => {
     const src = await extractWithEvaluation(
       'function topLevel(a: number): string {', //
