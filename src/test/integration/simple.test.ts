@@ -1,5 +1,5 @@
 /*---------------------------------------------------------
- * Copyright (C) OpenJS Foundation and contributors, https://openjsf.org
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 

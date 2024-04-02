@@ -2,7 +2,7 @@
   "name": "mocha-vscode",
   "displayName": "Mocha Test Runner",
   "description": "Run and debug Mocha tests right within VS Code.",
-  "publisher": "mocha",
+  "publisher": "danielku15",
   "version": "1.0.0",
   "icon": "icon.png",
   "engines": {
