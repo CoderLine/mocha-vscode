@@ -4,3 +4,9 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    ignore:
+      # VS Code doesn't support ESM and Chai, need to stay on chai 4.x
+      # https://github.com/microsoft/vscode/issues/160416
+      # https://github.com/microsoft/vscode/issues/130367
+      # https://github.com/microsoft/vscode-loader/issues/56
+      - dependency-name: 'chai'
