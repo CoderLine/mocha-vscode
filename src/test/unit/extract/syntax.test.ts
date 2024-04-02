@@ -20,8 +20,8 @@ describe('syntax', () => {
     return discoverer.discover('test.js', source(...lines));
   }
 
-  it('extracts basic suite', () => {
-    const src = extractWithAst(
+  it('extracts basic suite', async () => {
+    const src = await extractWithAst(
       "suite('hello', () => {", //
       "  it('works', () => {});",
       '})',
@@ -49,8 +49,8 @@ describe('syntax', () => {
     ]);
   });
 
-  it('works with skip/only', () => {
-    const src = extractWithAst(
+  it('works with skip/only', async () => {
+    const src = await extractWithAst(
       "suite('hello', () => {", //
       "  it.only('a', ()=>{});",
       "  it.skip('a', ()=>{});",
@@ -90,8 +90,8 @@ describe('syntax', () => {
     ]);
   });
 
-  it('can detect suite but not dynamic tests', () => {
-    const src = extractWithAst(
+  it('can detect suite but not dynamic tests', async () => {
+    const src = await extractWithAst(
       "suite('hello', () => {", //
       "  for (const name of ['foo', 'bar', 'baz']) {",
       '    it(name, () => {});',
@@ -111,8 +111,8 @@ describe('syntax', () => {
     ]);
   });
 
-  it('stubs out requires and placeholds correctly', () => {
-    const src = extractWithAst('require("some invalid module").doing().other.things()');
+  it('stubs out requires and placeholds correctly', async () => {
+    const src = await extractWithAst('require("some invalid module").doing().other.things()');
     expect(src).to.deep.equal([]);
   });
 });

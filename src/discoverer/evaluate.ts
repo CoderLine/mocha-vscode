@@ -30,8 +30,6 @@ import { IExtensionSettings, IParsedNode, ITestDiscoverer, NodeKind } from './ty
  */
 
 export class EvaluationTestDiscoverer implements ITestDiscoverer {
-  private static readonly asyncEntryStart = '(async function(){';
-  private static readonly asyncEntryEnd = '})()';
   constructor(
     private logChannel: vscode.LogOutputChannel | undefined,
     private symbols: IExtensionSettings,
@@ -122,14 +120,6 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         startLine--;
         endLine--;
 
-        // top level await wrapper begin
-        if (startLine === 0) {
-          startColumn -= EvaluationTestDiscoverer.asyncEntryStart.length;
-        }
-        if (endLine === 0) {
-          endColumn -= EvaluationTestDiscoverer.asyncEntryStart.length;
-        }
-
         if (endLine === startLine) {
           endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
         } else {
@@ -169,12 +159,10 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     }
 
     let sourceMap: TraceMap | undefined;
+    const needsTranspile = isTypeScript(filePath) || isEsm(filePath, code);
     // transpile typescript or ESM via esbuild if needed
-    if (isTypeScript(filePath) || isEsm(filePath, code)) {
+    if (needsTranspile) {
       const tsconfig = this.tsconfigStore.getTsconfig(filePath);
-
-      // NOTE: CJS does not support top level awaits, we add a wrapper for that.
-      code = `${EvaluationTestDiscoverer.asyncEntryStart}${code}${EvaluationTestDiscoverer.asyncEntryEnd}`;
 
       const result = await esbuildTransform(code, {
         target: `node${process.versions.node.split('.')[0]}`, // target current runtime
