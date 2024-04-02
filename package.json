@@ -1,20 +1,27 @@
 {
-  "name": "extension-test-runner",
-  "displayName": "Extension Test Runner",
-  "description": "Runs tests in VS Code extensions",
-  "publisher": "ms-vscode",
-  "version": "0.0.7",
+  "name": "mocha-vscode",
+  "displayName": "Mocha Test Runner",
+  "description": "Run and debug Mocha tests right within VS Code.",
+  "publisher": "danielku15",
+  "version": "1.0.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.83.0"
   },
   "keywords": [
-    "vscode",
+    "mocha",
     "test",
-    "cli"
-  ],
-  "enabledApiProposals": [
-    "testCoverage"
+    "bdd",
+    "tdd",
+    "tap",
+    "testing",
+    "chai",
+    "assertion",
+    "ava",
+    "jest",
+    "tape",
+    "jasmine",
+    "karma"
   ],
   "categories": [
     "Testing"
@@ -30,8 +37,8 @@
       {
         "title": "Extension Test Runner",
         "properties": {
-          "extension-test-runner.extractSettings": {
-            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `test` and `suite` identifiers the process extracts.",
+          "mocha-vscode.extractSettings": {
+            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.\n- The `test` and `suite` identifiers the process extracts.",
             "type": "object",
             "properties": {
               "suite": {
@@ -52,6 +59,9 @@
                   "evaluation",
                   "syntax"
                 ]
+              },
+              "extractTimeout": {
+                "type": "number"
               }
             },
             "default": {
@@ -63,15 +73,17 @@
                 "it",
                 "test"
               ],
-              "extractWith": "evaluation"
+              "extractWith": "evaluation",
+              "extractTimeout": 10000
             },
             "required": [
               "suite",
               "test",
-              "extractWith"
+              "extractWith",
+              "extractTimeout"
             ]
           },
-          "extension-test-runner.debugOptions": {
+          "mocha-vscode.debugOptions": {
             "type": "object",
             "additionalProperties": true,
             "markdownDescription": "Options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options."
@@ -81,24 +93,25 @@
     ]
   },
   "activationEvents": [
-    "workspaceContains:**/.vscode-test.{js,cjs,mjs}",
-    "onCommand:extension-test-runner.get-controllers-for-test"
+    "workspaceContains:**/.mocharc.{js,cjs,yaml,yml,json,jsonc}",
+    "onCommand:mocha-vscode.get-controllers-for-test"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/microsoft/vscode-test-runner-ext.git"
+    "url": "https://github.com/mocha/mocha-vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/microsoft/vscode-test-runner-ext/issues"
+    "url": "https://github.com/mocha/mocha-vscode/issues"
   },
-  "homepage": "https://github.com/microsoft/vscode-test-runner-ext#readme",
+  "homepage": "https://github.com/mocha/mocha-vscode#readme",
   "main": "./out/extension.js",
   "scripts": {
     "package": "vsce package --no-dependencies",
     "vscode:prepublish": "npm run compile",
-    "postinstall": "cd src/typings && vscode-dts main && vscode-dts dev",
+    "postinstall": "cd src/typings && npx @vscode/dts main && npx @vscode/dts dev",
     "clean": "node -e \"fs.rmSync('out',{force:true,recursive:true})\"",
-    "compile": "npm run clean && node .esbuild.js --minify",
+    "compile": "npm run clean && tsc --noEmit && node .esbuild.js --minify",
+    "compile:test": "tsc",
     "watch:esbuild": "npm run clean && node .esbuild.js --watch",
     "watch": "npm run clean && tsc --watch",
     "test": "tsc && vscode-test",
@@ -113,7 +126,9 @@
     "@types/picomatch": "^2.3.1",
     "@types/sinon": "^10.0.19",
     "@types/split2": "^4.2.1",
-    "@vscode/test-cli": "^0.0.4",
+    "@types/yargs": "^17.0.32",
+    "@vscode/dts": "^0.4.0",
+    "@vscode/test-cli": "^0.0.8",
     "@vscode/test-electron": "^2.3.9",
     "acorn": "^8.10.0",
     "chai": "^4.3.10",
@@ -122,8 +137,8 @@
     "mocha": "^10.2.0",
     "prettier": "^3.0.3",
     "sinon": "^16.1.0",
-    "typescript": "^5.2.2",
-    "vscode-dts": "^0.3.3"
+    "tsx": "^4.7.1",
+    "typescript": "^5.2.2"
   },
   "prettier": {
     "printWidth": 100,
@@ -131,15 +146,20 @@
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.19",
+    "@types/which": "^3.0.3",
+    "@typescript-eslint/typescript-estree": "^7.3.1",
     "acorn-loose": "^8.3.0",
     "ansi-colors": "^4.1.3",
+    "c8": "^9.1.0",
     "data-uri-to-buffer": "^6.0.1",
     "enhanced-resolve": "^5.15.0",
     "error-stack-parser": "^2.1.4",
     "eslint-visitor-keys": "^3.4.3",
-    "istanbul-to-vscode": "^1.0.1",
     "minimatch": "^9.0.3",
     "split2": "^4.2.0",
-    "stacktrace-parser": "^0.1.10"
+    "stacktrace-parser": "^0.1.10",
+    "supports-color": "^9.4.0",
+    "which": "^4.0.0",
+    "yargs": "^17.7.2"
   }
 }

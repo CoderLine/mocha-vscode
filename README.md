@@ -1,43 +1,38 @@
-# VS Code Extension Test Runner
+# Mocha VS Code Extension
 
-This is a VS Code extension for other extension authors, that runs tests as you develop extensions. It requires use of the new extension test API and configuration file. For more information, see our [testing guide for extension authors](https://code.visualstudio.com/api/working-with-extensions/testing-extension).
+This is the Mocha extension for VS Code enabling developers to run and debug tests right within VS Code using the built-in test explorer.
+
+> [!NOTE]
+> This extension is in a fairly early development stage but mostly functional. We soon
+> will start to publish some pre-release versions to the VS Code Extension gallery.
+>
+> Follow our progress at https://github.com/orgs/CoderLine/projects/15/views/1
+>
+> Please provide feedback and discuss improvements over at https://github.com/CoderLine/mocha-vscode/discussions
+
+## Credits
+
+This project started as a fork of the `Extension Test Runner` and `Command-line runner for VS Code tests` developed by Microsoft and then was adapted to work with Mocha directly.
+The main credits of this extension go over to the folks at Microsoft (and their contributors) and without them it would have been a lot more effort to ship a Mocha test runner for VS Code.
+
+- https://marketplace.visualstudio.com/items?itemName=ms-vscode.extension-test-runner
+- https://github.com/microsoft/vscode-extension-test-runner
+- https://github.com/microsoft/vscode-test-cl
 
 ## Getting Started
 
-Please follow the [testing guide for extension authors](https://code.visualstudio.com/api/working-with-extensions/testing-extension) to initially set up tests using the command line. Then, [install this extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.extension-test-runner).
+Please follow the [general Mocha documentation](https://mochajs.org/) to initially set up tests using the command line. Then, [install this extension](https://marketplace.visualstudio.com/items?itemName=mocha.mocha-vscode).
 
-This extension automatically discovers and works with the `.vscode-test.js/mjs/cjs` files found in your workspace. It requires minimal to no extra configuration. It works by looking at test files in your JavaScript code. If you write tests in TypeScript, you will want to:
+This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/yml/json/jsonc` files found in your workspace. It requires minimal to no extra configuration. It works by looking at test files in your JavaScript code. If you write tests in TypeScript, you will want to:
 
 1. Modify your tsconfig.json and add `"sourceMap": true`
-1. Add `**/*.js.map` to your `.vscodeignore` file to avoid bloating the published extension.
 
 ## Configuration
 
-- `extension-test-runner.extractSettings`: configures how tests get extracted. You can configure:
+- `mocha-vscode.extractSettings`: configures how tests get extracted. You can configure:
 
   - The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing. Evaluation is likely to lead to better results, but may have side-effects. Defaults to `evaluation`.
+  - The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.
   - The `test` and `suite` identifiers the process extracts. Defaults to `["it", "test"]` and `["describe", "suite"]` respectively, covering Mocha's common interfaces.
 
-- `extension-test-runner.debugOptions`: options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options.
-
-## Contributing
-
-This project welcomes contributions and suggestions. Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
-
-## Trademarks
-
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
-trademarks or logos is subject to and must follow
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
+- `mocha-vscode.debugOptions`: options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options.

@@ -1,12 +1,13 @@
+/*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as path from 'path';
 import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
-import {
-  configFilePattern,
-  getControllersForTestCommand,
-  showConfigErrorCommand,
-} from './constants';
+import { configFilePattern, getControllersForTestCommand } from './constants';
 import { Controller } from './controller';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
@@ -18,13 +19,17 @@ const enum FolderSyncState {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  const logChannel = vscode.window.createOutputChannel('Mocha VS Code Extension', { log: true });
+
   const smStore = new SourceMapStore();
-  const runner = new TestRunner(smStore, new ConfigValue('debugOptions', {}));
+  const runner = new TestRunner(logChannel, smStore, new ConfigValue('debugOptions', {}));
 
   let ctrls: Controller[] = [];
   let resyncState: FolderSyncState = FolderSyncState.Idle;
 
   const syncWorkspaceFolders = async () => {
+    logChannel.debug('Syncing workspace folders', resyncState);
+
     if (resyncState === FolderSyncState.Syncing) {
       resyncState = FolderSyncState.ReSyncNeeded;
     }
@@ -41,19 +46,15 @@ export function activate(context: vscode.ExtensionContext) {
       folders.map(async (folder) => {
         const files = await vscode.workspace.findFiles(
           new vscode.RelativePattern(folder, configFilePattern),
+          '**/node_modules/**',
         );
-        for (const file of files) {
-          const rel = path.relative(folder.uri.fsPath, path.dirname(file.fsPath));
-          const ctrl = vscode.tests.createTestController(
-            file.toString(),
-            rel
-              ? folders.length > 1
-                ? `Extension (${folder.name}: ${rel})`
-                : `Extension (${rel})`
-              : folder.name,
-          );
 
-          ctrls.push(new Controller(ctrl, folder, smStore, file, runner));
+        logChannel.debug('Checking workspace folder for config files', folder);
+
+        for (const file of files) {
+          const ctrl = vscode.tests.createTestController(file.toString(), file.fsPath);
+
+          ctrls.push(new Controller(logChannel, ctrl, folder, smStore, file, runner));
         }
       }),
     );
@@ -64,24 +65,6 @@ export function activate(context: vscode.ExtensionContext) {
     if (prevState === FolderSyncState.ReSyncNeeded) {
       syncWorkspaceFolders();
     }
-  };
-
-  const openUntitledEditor = async (contents: string) => {
-    const untitledDoc = await vscode.workspace.openTextDocument({ content: contents });
-    await vscode.window.showTextDocument(untitledDoc);
-  };
-
-  const showConfigError = async (configUriStr: string) => {
-    const configUri = vscode.Uri.parse(configUriStr);
-    const ctrl = ctrls.find((c) => c.configFile.uri.toString() === configUri.toString());
-    try {
-      await ctrl?.configFile.read();
-    } catch (e) {
-      await openUntitledEditor(String(e));
-      return;
-    }
-
-    vscode.window.showInformationMessage('No configuration error detected');
   };
 
   const initialSync = (async () => {
@@ -100,11 +83,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(syncWorkspaceFolders),
-    vscode.commands.registerCommand(showConfigErrorCommand, showConfigError),
     vscode.commands.registerCommand(getControllersForTestCommand, () =>
       initialSync.then(() => ctrls),
     ),
     new vscode.Disposable(() => ctrls.forEach((c) => c.dispose())),
+    logChannel,
   );
 }
 

@@ -1,12 +1,15 @@
 /*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import type { Options } from 'acorn';
-import { parse } from 'acorn-loose';
+import { parse as esTreeParse, type TSESTreeOptions } from '@typescript-eslint/typescript-estree';
+import type { Options as AcornOptions } from 'acorn';
+import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
 import { Node } from 'estree';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
+import { isTypeScript } from '../constants';
 
 const enum C {
   MemberExpression = 'MemberExpression',
@@ -17,10 +20,14 @@ const enum C {
   Identifier = 'Identifier',
 }
 
-export const acornOptions: Options = {
+export const acornOptions: AcornOptions = {
   ecmaVersion: 'latest',
   locations: true,
   allowReserved: true,
+};
+
+export const esTreeOptions: TSESTreeOptions = {
+  jsDocParsingMode: 'none',
 };
 
 const getStringish = (nameArg: Node | undefined): string | undefined => {
@@ -56,8 +63,11 @@ const traverse = (
   visitor.leave(node);
 };
 
-export const extractWithAst = (text: string, symbols: ITestSymbols) => {
-  const ast = parse(text, acornOptions);
+export const extractWithAst = (filePath: string, text: string, symbols: ITestSymbols) => {
+  // TODO: pull some parsing options from the input config (e.g. package.json or .tsconfig beside it)
+  const ast = isTypeScript(filePath)
+    ? (esTreeParse(text, esTreeOptions) as Node)
+    : (acornParse(text, acornOptions) as Node);
 
   const interestingName = (name: string) =>
     symbols.suite.includes(name)
@@ -99,10 +109,10 @@ export const extractWithAst = (text: string, symbols: ITestSymbols) => {
       const child: IParsedNode = {
         children: [],
         kind,
-        startLine: node.loc!.start.line,
-        startColumn: node.loc!.start.column + 1,
-        endLine: node.loc!.end.line,
-        endColumn: node.loc!.end.column + 1,
+        startLine: node.loc!.start.line - 1,
+        startColumn: node.loc!.start.column,
+        endLine: node.loc!.end.line - 1,
+        endColumn: node.loc!.end.column,
         name,
       };
       if (directive) {

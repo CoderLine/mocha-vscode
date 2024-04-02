@@ -4,26 +4,68 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const dirname = fileURLToPath(new URL('.', import.meta.url));
-const testCaseRunnerDir = path.join(dirname, 'out/test/testCases');
+const integrationTestDir = path.join(dirname, 'out/test/integration');
+const workspaceBaseDir = path.join(dirname, 'test-workspaces');
 
-// @ts-check
+const vsCodeVersion = process.env.VSCODE_TEST_VERSION ?? 'stable';
+const vsCodePlatform = process.env.VSCODE_TEST_PLATFORM ?? 'desktop';
 
-export default defineConfig([
+let createCommonOptions = (label) => {
+  if (process.env.GITHUB_ACTIONS) {
+    return {
+      platform: vsCodePlatform,
+      version: vsCodeVersion,
+      env: {
+        MOCHA_COLORS: 'true',
+      },
+      mocha: {
+        ui: 'bdd',
+
+        reporter: path.join(dirname, '.vscode-ci-test-reporter.js'),
+        reporterOption: {
+          jsonReporterOption: {
+            output: path.join(dirname, 'test-results', `${label}.json`),
+          },
+        },
+        timeout: 60_000,
+      },
+    };
+  } else {
+    return {
+      platform: vsCodePlatform,
+      version: vsCodeVersion,
+
+      mocha: {
+        ui: 'bdd',
+        timeout: 60_000,
+      },
+    };
+  }
+};
+
+const config = [
   {
-    label: 'core',
-    files: 'out/**/*.test.js',
-    mocha: { ui: 'bdd' },
+    label: 'unit',
+    files: 'out/test/unit/**/*.test.js',
+    ...createCommonOptions('unit'),
   },
   ...fs
-    .readdirSync(testCaseRunnerDir)
-    .filter((f) => f.endsWith('.js'))
+    .readdirSync(integrationTestDir)
+    .filter((f) => f.endsWith('.test.js'))
     .map((file) => {
-      const label = path.basename(file, '.js');
+      const label = path.basename(file, '.test.js');
       return {
         label,
-        files: path.join(testCaseRunnerDir, file),
-        workspaceFolder: path.join(dirname, `testCases/${label}`),
-        mocha: { ui: 'bdd', timeout: 60_000 },
+        files: path.join(integrationTestDir, file),
+        workspaceFolder: path.join(workspaceBaseDir, label),
+        ...createCommonOptions(label),
       };
     }),
-]);
+];
+
+if (process.env.VSCODE_CONFIG_LOG) {
+  const util = await import('util');
+  console.log(util.inspect(config, { showHidden: false, depth: null, colors: true }));
+}
+
+export default defineConfig(config);

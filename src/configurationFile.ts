@@ -1,34 +1,42 @@
 /*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
-import type { TestConfiguration } from '@vscode/test-cli';
+
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import resolveModule from 'enhanced-resolve';
 import * as fs from 'fs';
 import { minimatch } from 'minimatch';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { cliPackageName } from './constants';
+import which from 'which';
 import { DisposableStore } from './disposable';
-import { CliPackageMissing, ConfigProcessReadError, HumanError } from './errors';
+import { HumanError } from './errors';
 
-export interface IResolvedConfiguration {
-  env: Record<string, string>;
-  extensionTestsPath: string;
-  extensionDevelopmentPath: string;
-  config: TestConfiguration;
-  path: string;
-}
+type OptionsModule = {
+  loadOptions(): IResolvedConfiguration;
+};
 
-const resolver = resolveModule.ResolverFactory.createResolver({
-  fileSystem: new resolveModule.CachedInputFileSystem(fs, 4000),
-  conditionNames: ['node', 'require', 'module'],
-});
+type ConfigModule = {
+  findConfig(): string;
+};
+
+export type IResolvedConfiguration = Mocha.MochaOptions & {
+  _: string[] | undefined;
+  'node-option': string[] | undefined;
+  ignore: string[] | undefined;
+};
 
 export class ConfigurationFile implements vscode.Disposable {
   private readonly ds = new DisposableStore();
   private readonly didDeleteEmitter = this.ds.add(new vscode.EventEmitter<void>());
   private readonly didChangeEmitter = this.ds.add(new vscode.EventEmitter<void>());
+
+  private _resolver?: resolveModule.Resolver;
+  private _optionsModule?: OptionsModule;
+  private _configModule?: ConfigModule;
+  private _pathToNode?: string;
+  private _pathToMocha?: string;
 
   /** Cached read promise, invalided on file change. */
   private readPromise?: Promise<ConfigurationList>;
@@ -81,73 +89,93 @@ export class ConfigurationFile implements vscode.Disposable {
     this.readPromise = undefined;
   }
 
-  /**
-   * Spawns the test CLI associated with the configuration file using the
-   * given args.
-   */
-  public async spawnCli(args: readonly string[]) {
-    const cliPath = await this.resolveCli();
-    return await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
-      const p = spawn(process.execPath, [cliPath, '--config', this.uri.fsPath, ...args], {
-        cwd: path.dirname(this.uri.fsPath),
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      });
-      p.on('spawn', () => resolve(p));
-      p.on('error', reject);
+  async getPathToNode() {
+    // We cannot use process.execPath as this points to code.exe which is an electron application
+    // also with ELECTRON_RUN_AS_NODE this can lead to errors (e.g. with the --import option)
+    // we prefer to use the system level node
+    this._pathToNode ??= (await which('node', { nothrow: true })) ?? process.execPath;
+    return this._pathToNode;
+  }
+
+  async getMochaSpawnArgs(customArgs: readonly string[]): Promise<string[]> {
+    this._pathToMocha ??= await this._resolveLocalMochaPath('/bin/mocha.js');
+
+    return [
+      await this.getPathToNode(),
+      this._pathToMocha,
+      '--config',
+      this.uri.fsPath,
+      ...customArgs,
+    ];
+  }
+
+  private async _resolveLocalMochaPath(suffix?: string): Promise<string> {
+    this._resolver ??= resolveModule.ResolverFactory.createResolver({
+      fileSystem: new resolveModule.CachedInputFileSystem(fs, 4000),
+      conditionNames: ['node', 'require', 'module'],
     });
-  }
 
-  /**
-   * Spawns the test CLI associated with the configuration file using the
-   * given args, and captures its output.
-   */
-  public async captureCliJson<T>(args: readonly string[]) {
-    const p = await this.spawnCli(args);
-    return await new Promise<T>((resolve, reject) => {
-      const output: Buffer[] = [];
-      p.stdout.on('data', (chunk) => output.push(chunk));
-      p.stderr.on('data', (chunk) => output.push(chunk));
-      p.on('error', reject);
-      p.on('close', (code) => {
-        const joined = Buffer.concat(output).toString();
-        if (code !== 0) {
-          return reject(new ConfigProcessReadError(joined));
-        }
-
-        try {
-          resolve(JSON.parse(joined));
-        } catch {
-          reject(new ConfigProcessReadError(`invalid JSON: ${joined}`));
-        }
-      });
-    });
-  }
-
-  private async _read() {
-    const configs = await this.captureCliJson<IResolvedConfiguration[]>(['--list-configuration']);
-    return new ConfigurationList(this.uri, configs, this.wf);
-  }
-
-  /**
-   * Resolves the path to the test runner CLI, a JavaScript file.
-   * @throws {HumanError} if the module isn't found
-   */
-  public async resolveCli(suffix?: string) {
     return new Promise<string>((resolve, reject) =>
-      resolver.resolve(
+      this._resolver!.resolve(
         {},
-        this.uri.fsPath,
-        suffix ? `${cliPackageName}/${suffix}` : cliPackageName,
+        path.dirname(this.uri.fsPath),
+        'mocha' + (suffix ?? ''),
         {},
         (err, res) => {
           if (err) {
-            reject(new CliPackageMissing(err));
+            reject(
+              new HumanError(
+                `Could not find mocha in working directory '${path.dirname(
+                  this.uri.fsPath,
+                )}', please install mocha to run tests.`,
+              ),
+            );
           } else {
-            resolve(suffix ? (res as string) : path.join(path.dirname(res as string), 'bin.mjs'));
+            resolve(res as string);
           }
         },
       ),
     );
+  }
+
+  private async _read() {
+    this._optionsModule ??= require(
+      await this._resolveLocalMochaPath('/lib/cli/options'),
+    ) as OptionsModule;
+    this._configModule ??= require(
+      await this._resolveLocalMochaPath('/lib/cli/config'),
+    ) as ConfigModule;
+    let config: IResolvedConfiguration;
+
+    // need to change to the working dir for loading the config,
+    // TODO[mocha]: allow specifying the cwd in loadOptions()
+    const currentCwd = process.cwd();
+    try {
+      process.chdir(path.dirname(this.uri.fsPath));
+
+      // we need to ensure a reload for javascript files
+      // as they are in the require cache https://github.com/mochajs/mocha/blob/e263c7a722b8c2fcbe83596836653896a9e0258b/lib/cli/config.js#L37
+      const configFile = this._configModule.findConfig();
+      try {
+        const resolved = require.resolve(configFile);
+        delete require.cache[resolved];
+      } catch (e) {
+        // ignore
+      }
+
+      config = this._optionsModule.loadOptions();
+    } finally {
+      process.chdir(currentCwd);
+    }
+
+    return new ConfigurationList(this.uri, config, this.wf);
+  }
+
+  /**
+   * Resolves the path to the package.json.
+   */
+  public resolvePackageJson() {
+    return path.join(path.dirname(this.uri.fsPath), 'package.json');
   }
 
   /** @inheritdoc */
@@ -162,30 +190,51 @@ export class ConfigurationList {
   private readonly patterns: (
     | { glob: false; value: string }
     | { glob: true; value: string; workspaceFolderRelativeGlob: string }
-  )[][];
+  )[];
 
   constructor(
     public readonly uri: vscode.Uri,
-    public readonly value: IResolvedConfiguration[],
+    public readonly value: IResolvedConfiguration,
     wf: vscode.WorkspaceFolder,
   ) {
-    this.patterns = value.map(({ config }) => {
-      const files = typeof config.files === 'string' ? [config.files] : config.files;
-      return files.map((f) => {
-        if (path.isAbsolute(f)) {
-          return { glob: false, value: path.normalize(f) };
-        } else {
-          const cfgDir = path.dirname(this.uri.fsPath);
-          return {
-            glob: true,
-            value: toForwardSlashes(path.join(cfgDir, f)),
-            workspaceFolderRelativeGlob: toForwardSlashes(
-              path.join(path.relative(wf.uri.fsPath, cfgDir), f),
-            ),
-          };
-        }
-      });
+    let positional = value._;
+    if (!positional) {
+      positional = ['./test/*.{js,cjs,mjs}'];
+    }
+
+    this.patterns = positional.map((f) => {
+      if (path.isAbsolute(f)) {
+        return { glob: false, value: path.normalize(f) };
+      } else {
+        const cfgDir = path.dirname(this.uri.fsPath);
+        return {
+          glob: true,
+          value: toForwardSlashes(path.join(cfgDir, f)),
+          workspaceFolderRelativeGlob: toForwardSlashes(
+            path.join(path.relative(wf.uri.fsPath, cfgDir), f),
+          ),
+        };
+      }
     });
+
+    if (value.ignore) {
+      this.patterns.push(
+        ...value.ignore.map((f) => {
+          if (path.isAbsolute(f)) {
+            return { glob: false as false, value: '!' + path.normalize(f) };
+          } else {
+            const cfgDir = path.dirname(this.uri.fsPath);
+            return {
+              glob: true as true,
+              value: '!' + toForwardSlashes(path.join(cfgDir, f)),
+              workspaceFolderRelativeGlob: toForwardSlashes(
+                path.join(path.relative(wf.uri.fsPath, cfgDir), f),
+              ),
+            };
+          }
+        }),
+      );
+    }
   }
 
   /**
@@ -195,17 +244,15 @@ export class ConfigurationList {
   public roughIncludedFiles() {
     const patterns = new Set<string>();
     const files = new Set<string>();
-    for (const patternList of this.patterns) {
-      for (const p of patternList) {
-        if (p.value.startsWith('!')) {
-          continue;
-        }
+    for (const p of this.patterns) {
+      if (p.value.startsWith('!')) {
+        continue;
+      }
 
-        if (p.glob) {
-          patterns.add(p.workspaceFolderRelativeGlob);
-        } else {
-          files.add(p.value);
-        }
+      if (p.glob) {
+        patterns.add(p.workspaceFolderRelativeGlob);
+      } else {
+        files.add(p.value);
       }
     }
 
@@ -215,28 +262,20 @@ export class ConfigurationList {
   /** Gets the configs the given test file is included by, if any. */
   public includesTestFile(uri: vscode.Uri) {
     const file = toForwardSlashes(uri.fsPath);
-    let indexes: number[] | undefined;
+    let matched = false;
 
-    for (const [i, patterns] of this.patterns.entries()) {
-      let matched = false;
-      for (let { glob, value } of patterns) {
-        let negated = false;
-        if (value.startsWith('!')) {
-          negated = true;
-          value = value.slice(1);
-        }
-
-        if (glob ? minimatch(file, value) : value === path.normalize(file)) {
-          matched = !negated;
-        }
+    for (let { glob, value } of this.patterns.values()) {
+      let negated = false;
+      if (value.startsWith('!')) {
+        negated = true;
+        value = value.slice(1);
       }
 
-      if (matched) {
-        indexes ??= [];
-        indexes.push(i);
+      if (glob ? minimatch(file, value) : value === path.normalize(file)) {
+        matched = !negated;
       }
     }
 
-    return indexes;
+    return matched;
   }
 }

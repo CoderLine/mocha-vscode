@@ -1,42 +1,29 @@
 /*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
 import { extractWithEvaluation } from './evaluate';
 import { extractWithAst } from './syntax';
+import { ITestSymbols } from './types';
+import * as vscode from 'vscode';
 
-export interface IParsedNode {
-  name: string;
-  kind: NodeKind;
-  startLine: number; // base 1
-  startColumn: number; // base 1
-  endLine?: number; // base 1
-  endColumn?: number; // base 1
-  directive?: 'skip' | 'only' | string;
-  children: IParsedNode[];
-  error?: string;
-}
+export * from './types';
 
-export interface ITestSymbols {
-  suite: readonly string[];
-  test: readonly string[];
-  extractWith: 'evaluation' | 'syntax';
-}
-
-export const enum NodeKind {
-  Suite,
-  Test,
-}
-
-export const extract = (code: string, symbols: ITestSymbols) => {
+export const extract = async (
+  logChannel: vscode.LogOutputChannel,
+  filePath: string,
+  code: string,
+  symbols: ITestSymbols,
+) => {
   if (symbols.extractWith === 'evaluation') {
     try {
-      return extractWithEvaluation(code, symbols);
+      return await extractWithEvaluation(logChannel, filePath, code, symbols);
     } catch (e) {
       console.warn('error evaluating, will fallback', e);
       // fall through
     }
   }
 
-  return extractWithAst(code, symbols);
+  return extractWithAst(filePath, code, symbols);
 };

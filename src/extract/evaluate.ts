@@ -1,19 +1,15 @@
+/*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
+import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
 import * as errorParser from 'error-stack-parser';
+import { transform as esbuildTransform } from 'esbuild';
 import * as vm from 'vm';
 import { IParsedNode, ITestSymbols, NodeKind } from '.';
-
-/**
- * Note: the goal is not to sandbox test code (workspace trust is required
- * for this extension) but rather to avoid side-effects from evaluation which
- * are much more likely when other code is required.
- */
-const replacedGlobals = new Set([
-  // avoid side-effects:
-  'require',
-  'process',
-  // avoid printing to the console from tests:
-  'console',
-]);
+import { isEsm, isTypeScript } from '../constants';
+import * as vscode from 'vscode';
 
 /**
  * Honestly kind of amazed this works. We can use a Proxy as our globalThis
@@ -27,7 +23,26 @@ const replacedGlobals = new Set([
  * Since extension host tests are always common.js (at least for now) this
  * is also effective in stubbing require() so we know code is nicely isolated.
  */
-export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
+
+export async function extractWithEvaluation(
+  logChannel: vscode.LogOutputChannel | undefined,
+  filePath: string,
+  code: string,
+  symbols: ITestSymbols,
+) {
+  /**
+   * Note: the goal is not to sandbox test code (workspace trust is required
+   * for this extension) but rather to avoid side-effects from evaluation which
+   * are much more likely when other code is required.
+   */
+  const replacedGlobals = new Set([
+    // avoid side-effects:
+    'require',
+    'process',
+    // avoid printing to the console from tests:
+    'console',
+  ]);
+
   const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
 
   // A placeholder object that returns itself for all functions calls and method accesses.
@@ -43,7 +58,11 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
       set: () => true,
     });
 
-  function makeTesterFunction(kind: NodeKind, directive?: string) {
+  function makeTesterFunction(
+    kind: NodeKind,
+    sourceMap?: TraceMap | undefined,
+    directive?: string,
+  ) {
     const fn = (name: string, callback: () => void) => {
       if (typeof name !== 'string' || typeof callback !== 'function') {
         return placeholder();
@@ -54,24 +73,52 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
         return placeholder();
       }
 
-      const startLine = frame.lineNumber;
-      const startColumn = frame.columnNumber || 1;
+      //
+      // On error stack and source maps we are working on 1-based postitions
+      let startLine = frame.lineNumber || 1;
+      let startColumn = frame.columnNumber || 1;
 
       // approximate the length of the test case:
-      const functionLines = String(callback).split('\n');
-      const endLine = frame.lineNumber + functionLines.length - 1;
-      let endColumn = functionLines[functionLines.length - 1].length;
+      let functionLines = String(callback).split('\n');
+      let endLine = startLine + functionLines.length - 1;
+      let endColumn = functionLines[functionLines.length - 1].length + 1;
+
+      if (sourceMap) {
+        try {
+          const startMapped = originalPositionFor(sourceMap, {
+            line: startLine,
+            column: startColumn - 1,
+          });
+          if (startMapped.line !== null) {
+            startLine = startMapped.line;
+            startColumn = startMapped.column + 1; // columns are 0-based in trace-mapping lib
+          }
+          const endMapped = originalPositionFor(sourceMap, {
+            line: endLine,
+            column: endColumn - 1,
+          });
+          if (endMapped.line !== null) {
+            endLine = endMapped.line;
+            endColumn = endMapped.column + 1; // columns are 0-based in trace-mapping lib
+          }
+        } catch (e) {
+          console.error('error mapping source', e);
+        }
+      }
+
       if (endLine === startLine) {
         endColumn = Number.MAX_SAFE_INTEGER; // assume it takes the entire line of a single-line test case
+      } else {
+        endColumn -= 1;
       }
 
       const node: IParsedNode = {
         name,
         kind,
-        startLine,
-        startColumn,
-        endLine,
-        endColumn,
+        startLine: startLine - 1,
+        startColumn: startColumn - 1,
+        endLine: endLine - 1,
+        endColumn: endColumn,
         children: [],
       };
       if (directive) {
@@ -81,7 +128,7 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
       if (kind === NodeKind.Suite) {
         stack.push(node);
         try {
-          callback.call(placeholder());
+          return callback.call(placeholder());
         } catch (e) {
           node.error = e instanceof Error ? e.message : String(e);
         } finally {
@@ -90,16 +137,40 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
       }
     };
     if (!directive) {
-      fn.skip = makeTesterFunction(kind, 'skip');
-      fn.only = makeTesterFunction(kind, 'only');
+      fn.skip = makeTesterFunction(kind, sourceMap, 'skip');
+      fn.only = makeTesterFunction(kind, sourceMap, 'only');
     }
 
     return fn;
   }
 
+  let sourceMap: TraceMap | undefined;
+  // transpile typescript or ESM via esbuild if needed
+  if (isTypeScript(filePath) || isEsm(filePath, code)) {
+    const result = await esbuildTransform(code, {
+      target: `node${process.versions.node.split('.')[0]}`, // target current runtime
+      sourcemap: true, // need source map for correct test positions
+      format: 'cjs', // vm.runInNewContext only supports CJS
+      sourcesContent: false, // optimize source maps
+      minifyWhitespace: false,
+      minify: false,
+      keepNames: true, // reduce CPU
+      sourcefile: filePath, // for auto-detection of the loader
+      platform: 'node', // we will evaluate here in node
+      loader: 'default', // use the default loader
+    });
+
+    code = result.code;
+    try {
+      sourceMap = new TraceMap(result.map, filePath);
+    } catch (e) {
+      logChannel?.error('Error parsing source map of TypeScript output', e);
+    }
+  }
+
   // currently these are the same, but they might be different in the future?
-  const suiteFunction = makeTesterFunction(NodeKind.Suite);
-  const testFunction = makeTesterFunction(NodeKind.Test);
+  const suiteFunction = makeTesterFunction(NodeKind.Suite, sourceMap);
+  const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
 
   const contextObj = new Proxy({} as any, {
     get(target, prop, _receiver) {
@@ -118,8 +189,8 @@ export const extractWithEvaluation = (code: string, symbols: ITestSymbols) => {
   });
 
   vm.runInNewContext(code, contextObj, {
-    timeout: 1000,
+    timeout: symbols.extractTimeout,
   });
 
   return stack[0].children;
-};
+}

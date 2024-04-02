@@ -5,15 +5,24 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
 jobs:
   build:
     name: Build and Test
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         vscode-version: ['stable', 'insiders']
         vscode-platform: ['desktop']
     runs-on: ${{ matrix.os }}
+    env:
+      VSCODE_TEST_VERSION: ${{matrix.vscode-version}}
+      VSCODE_TEST_PLATFORM: ${{matrix.vscode-platform}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +31,18 @@ jobs:
         with:
           node-version: lts/*
       - run: npm install
+      - run: npm run compile:test
+      - name: Print Test Config
+        run: node ./.vscode-test.mjs
+        env:
+          VSCODE_CONFIG_LOG: true
       - run: xvfb-run -a npm test
         if: runner.os == 'Linux'
       - run: npm test
         if: runner.os != 'Linux'
+      - uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: VS Code Test Results (${{matrix.os}}, ${{matrix.vscode-version}}, ${{matrix.vscode-platform}})
+          path: 'test-results/*.json'
+          reporter: mocha-json

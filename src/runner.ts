@@ -1,23 +1,24 @@
 /*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { IDesktopTestConfiguration, MochaEvent, MochaEventTuple } from '@vscode/test-cli';
 import styles from 'ansi-styles';
 import { randomUUID } from 'crypto';
+import * as path from 'path';
 import split2 from 'split2';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
-import { ConfigurationFile, IResolvedConfiguration } from './configurationFile';
-import { Coverage } from './coverage';
+import { ConfigurationFile } from './configurationFile';
 import { DisposableStore } from './disposable';
 import { TestProcessExitedError } from './errors';
 import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
+import { MochaEvent, MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
 import { SourceMapStore } from './source-map-store';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 
 interface ISpawnOptions {
-  configIndex: number;
   config: ConfigurationFile;
   args: string[];
   onLine: (line: string) => void;
@@ -31,6 +32,7 @@ export type RunHandler = (
 
 export class TestRunner {
   constructor(
+    private readonly logChannel: vscode.LogOutputChannel,
     private readonly smStore: SourceMapStore,
     private readonly launchConfig: ConfigValue<Record<string, any>>,
   ) {}
@@ -38,23 +40,15 @@ export class TestRunner {
   public makeHandler(
     ctrl: vscode.TestController,
     config: ConfigurationFile,
-    configIndex: number,
     debug: boolean,
-    recordCoverage = false,
   ): RunHandler {
     return async (request) => {
-      const run = ctrl.createTestRun(request);
-      const baseArgs = ['--label', `${configIndex}`];
-      let coverage: Coverage | undefined;
-      if (recordCoverage) {
-        coverage = new Coverage(config);
-        baseArgs.push(...coverage.args);
-      }
+      this.logChannel.debug('Creating new test run ', request);
 
+      const run = ctrl.createTestRun(request);
       const { args, compiledFileTests, leafTests } = await this.prepareArguments(
         ctrl,
-        config,
-        baseArgs,
+        [],
         request,
         run,
       );
@@ -77,7 +71,6 @@ export class TestRunner {
       run.token.onCancellationRequested(() => spawnCts.cancel());
 
       const spawnOpts: ISpawnOptions = {
-        configIndex,
         args,
         config,
         onLine: (line) => {
@@ -191,9 +184,9 @@ export class TestRunner {
       };
 
       run.appendOutput(
-        `${styles.inverse.open} > ${styles.inverse.close} vscode-test ${spawnOpts.args.join(
-          ' ',
-        )}\r\n`,
+        `${styles.inverse.open} > ${styles.inverse.close} ${(
+          await config.getMochaSpawnArgs(spawnOpts.args)
+        ).join(' ')}}\r\n`,
       );
 
       try {
@@ -203,6 +196,8 @@ export class TestRunner {
           await this.runWithoutDebug(spawnOpts);
         }
       } catch (e) {
+        const errorMessage = e instanceof Error ? e : `Error executing tests ${e}`;
+        this.logChannel.error(errorMessage);
         if (!spawnCts.token.isCancellationRequested) {
           enqueueLine(String(e));
         }
@@ -225,9 +220,8 @@ export class TestRunner {
       }
 
       if (!ranAnyTest) {
+        this.logChannel.debug('No tests ran, show error');
         await vscode.commands.executeCommand('testing.showMostRecentOutput');
-      } else {
-        await coverage?.finalize(run);
       }
 
       await outputQueue.drain();
@@ -235,15 +229,12 @@ export class TestRunner {
     };
   }
 
-  private async runDebug({ args, config, onLine, token, configIndex }: ISpawnOptions) {
-    const thisConfig = (
-      await config.captureCliJson<IResolvedConfiguration[]>([...args, '--list-configuration'])
-    )?.[0];
-    if (token.isCancellationRequested || !thisConfig || token.isCancellationRequested) {
-      return;
-    }
-
+  private async runDebug({ args, config, onLine, token }: ISpawnOptions) {
     const ds = new DisposableStore();
+
+    const spawnArgs = await config.getMochaSpawnArgs(args);
+    this.logChannel.debug('Start test debugging with args', spawnArgs);
+
     return new Promise<void>((resolve, reject) => {
       const sessionKey = randomUUID();
       const includedSessions = new Set<vscode.DebugSession | undefined>();
@@ -252,16 +243,13 @@ export class TestRunner {
       Promise.resolve(
         vscode.debug.startDebugging(config.wf, {
           ...launchConfig,
-          type: 'extensionHost',
+          type: 'node',
           request: 'launch',
-          name: thisConfig.config.label || `Extension Test Config #${configIndex + 1}`,
-          args: [
-            `--extensionTestsPath=${thisConfig.extensionTestsPath}`,
-            `--extensionDevelopmentPath=${thisConfig.extensionDevelopmentPath}`,
-            ...(launchConfig.args || []),
-            ...((thisConfig.config as IDesktopTestConfiguration).launchArgs || []),
-          ],
-          env: { ...thisConfig.env, ...launchConfig.env },
+          name: `Mocha Test (${config.uri.fsPath})`,
+          program: spawnArgs[1],
+          args: [...spawnArgs.slice(2), ...(launchConfig.args || [])],
+          env: { ...launchConfig.env },
+
           __extensionSessionKey: sessionKey,
         }),
       ).catch(reject);
@@ -324,11 +312,24 @@ export class TestRunner {
           },
         }),
       );
-    }).finally(() => ds.dispose());
+    }).finally(() => {
+      ds.dispose();
+    });
   }
 
   private async runWithoutDebug({ args, config, onLine, token }: ISpawnOptions) {
-    const cli = await config.spawnCli(args);
+    const spawnArgs = await config.getMochaSpawnArgs(args);
+    this.logChannel.debug('Start test execution with args', spawnArgs);
+
+    const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
+      const p = spawn(spawnArgs[0], spawnArgs.slice(1), {
+        cwd: path.dirname(config.uri.fsPath),
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      });
+      p.on('spawn', () => resolve(p));
+      p.on('error', reject);
+    });
+
     if (token.isCancellationRequested) {
       return cli.kill();
     }
@@ -355,12 +356,11 @@ export class TestRunner {
    */
   private async prepareArguments(
     ctrl: vscode.TestController,
-    config: ConfigurationFile,
     baseArgs: ReadonlyArray<string>,
     request: vscode.TestRunRequest,
     run: vscode.TestRun,
   ) {
-    const reporter = await config.resolveCli('fullJsonStream');
+    const reporter = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporter.js');
     const args = [...baseArgs, '--reporter', reporter];
     const exclude = new Set(request.exclude);
     const leafTests = new Set<vscode.TestItem>();
@@ -401,6 +401,7 @@ export class TestRunner {
     }
 
     // if there's no include, omit --run so that every file is executed
+    // TODO[mocha]: expose an "--include" variant which allows limiting the tests to individual files independent from the loaded config
     if (!request.include || !exclude.size) {
       for (const path of compiledFileTests.value.keys()) {
         args.push('--run', path);
@@ -427,6 +428,8 @@ class CompiledFileTests {
    * this is not present and we need to iterate file in the controller.
    */
   public lookup(file: string | undefined, path: readonly string[]) {
+    file = this.sanitizePath(file);
+
     if (file) {
       const items = this.value.get(file);
       return items && this.getPathInTestItems(items, path);
@@ -456,13 +459,29 @@ class CompiledFileTests {
   }
 
   /** Associated a test with the given file path. */
-  public push(path: string, test: vscode.TestItem) {
-    let set = this.value.get(path);
+  public push(file: string, test: vscode.TestItem) {
+    file = this.sanitizePath(file)!;
+
+    let set = this.value.get(file);
     if (!set) {
-      this.value.set(path, (set = new Set()));
+      this.value.set(file, (set = new Set()));
     }
 
     set.add(test);
+  }
+
+  private sanitizePath(file: string | undefined): string | undefined {
+    if (file === undefined) {
+      return undefined;
+    }
+
+    // on windows paths are case insensitive and we sometimes get inconsistent
+    // casings (e.g. C:\ vs c:\) - happens especially on debugging
+    if (process.platform === 'win32') {
+      return file.toLowerCase();
+    }
+
+    return file;
   }
 }
 

@@ -1,3 +1,8 @@
+/*---------------------------------------------------------
+ * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+
 import * as vscode from 'vscode';
 
 const sectionName = 'extension-test-runner';
