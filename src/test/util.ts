@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import * as assert from 'assert';
 import * as crypto from 'crypto';
@@ -191,11 +195,7 @@ export class FakeTestRun implements vscode.TestRun {
   skipped(test: vscode.TestItem): void {
     this.states.push({ test, state: 'skipped' });
   }
-  failed(
-    test: vscode.TestItem,
-    message: vscode.TestMessage | readonly vscode.TestMessage[],
-    _duration?: number | undefined,
-  ): void {
+  failed(test: vscode.TestItem, message: vscode.TestMessage | readonly vscode.TestMessage[]): void {
     this.states.push({
       test,
       state: 'failed',
@@ -205,7 +205,6 @@ export class FakeTestRun implements vscode.TestRun {
   errored(
     test: vscode.TestItem,
     message: vscode.TestMessage | readonly vscode.TestMessage[],
-    _duration?: number | undefined,
   ): void {
     this.states.push({
       test,
@@ -213,7 +212,7 @@ export class FakeTestRun implements vscode.TestRun {
       message: message instanceof Array ? message[0] : message,
     });
   }
-  passed(test: vscode.TestItem, _duration?: number | undefined): void {
+  passed(test: vscode.TestItem): void {
     this.states.push({ test, state: 'passed' });
   }
   appendOutput(

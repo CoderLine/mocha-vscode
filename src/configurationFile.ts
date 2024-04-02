@@ -1,9 +1,12 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import resolveModule from 'enhanced-resolve';
 import * as fs from 'fs';
 import { minimatch } from 'minimatch';
@@ -221,11 +224,11 @@ export class ConfigurationList {
       this.patterns.push(
         ...value.ignore.map((f) => {
           if (path.isAbsolute(f)) {
-            return { glob: false as false, value: '!' + path.normalize(f) };
+            return { glob: false as const, value: '!' + path.normalize(f) };
           } else {
             const cfgDir = path.dirname(this.uri.fsPath);
             return {
-              glob: true as true,
+              glob: true as const,
               value: '!' + toForwardSlashes(path.join(cfgDir, f)),
               workspaceFolderRelativeGlob: toForwardSlashes(
                 path.join(path.relative(wf.uri.fsPath, cfgDir), f),

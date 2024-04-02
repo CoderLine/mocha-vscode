@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
@@ -14,8 +18,8 @@ describe('syntax', () => {
     const src = extractWithAst(
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it('works', () => {});",
+        'suite(\'hello\', () => {', //
+        '  it(\'works\', () => {});',
         '})',
       ),
       defaultTestSymbols,
@@ -47,9 +51,9 @@ describe('syntax', () => {
     const src = extractWithAst(
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it.only('a', ()=>{});",
-        "  it.skip('a', ()=>{});",
+        'suite(\'hello\', () => {', //
+        '  it.only(\'a\', ()=>{});',
+        '  it.skip(\'a\', ()=>{});',
         '})',
       ),
       defaultTestSymbols,
@@ -92,8 +96,8 @@ describe('syntax', () => {
     const src = extractWithAst(
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  for (const name of ['foo', 'bar', 'baz']) {",
+        'suite(\'hello\', () => {', //
+        '  for (const name of [\'foo\', \'bar\', \'baz\']) {',
         '    it(name, () => {});',
         '  }',
         '})',
@@ -116,7 +120,7 @@ describe('syntax', () => {
   it('stubs out requires and placeholds correctly', () => {
     const src = extractWithAst(
       'test.js',
-      `require("some invalid module").doing().other.things()`,
+      'require("some invalid module").doing().other.things()',
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([]);

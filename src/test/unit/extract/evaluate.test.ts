@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
@@ -15,8 +19,8 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it('works', () => {});",
+        'suite(\'hello\', () => {', //
+        '  it(\'works\', () => {});',
         '})',
       ),
       defaultTestSymbols,
@@ -49,8 +53,8 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  for (const name of ['foo', 'bar', 'baz']) {",
+        'suite(\'hello\', () => {', //
+        '  for (const name of [\'foo\', \'bar\', \'baz\']) {',
         '    it(name, () => {});',
         '  }',
         '})',
@@ -102,8 +106,8 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  throw new Error('whoops');",
+        'suite(\'hello\', () => {', //
+        '  throw new Error(\'whoops\');',
         '})',
       ),
       defaultTestSymbols,
@@ -126,9 +130,9 @@ describe('evaluate', () => {
       undefined,
       'test.js',
       source(
-        "suite('hello', () => {", //
-        "  it.only('a', ()=>{});",
-        "  it.skip('a', ()=>{});",
+        'suite(\'hello\', () => {', //
+        '  it.only(\'a\', ()=>{});',
+        '  it.skip(\'a\', ()=>{});',
         '})',
       ),
       defaultTestSymbols,
@@ -171,7 +175,7 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      `require("some invalid module").doing().other.things()`,
+      'require("some invalid module").doing().other.things()',
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([]);
@@ -181,7 +185,7 @@ describe('evaluate', () => {
     const src = await extractWithEvaluation(
       undefined,
       'test.js',
-      `var foo = () => suite('hello', () => {}); foo();`,
+      'var foo = () => suite(\'hello\', () => {}); foo();',
       defaultTestSymbols,
     );
     expect(src).to.deep.equal([

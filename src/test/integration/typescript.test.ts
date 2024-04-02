@@ -1,11 +1,15 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import { expect } from 'chai';
 import * as vscode from 'vscode';
-import { captureTestRun, expectTestTree, getController, integrationTestPrepare } from '../util';
+import { captureTestRun, expectTestTree, getController } from '../util';
 
 describe('typescript', () => {
   it('discovers tests', async () => {

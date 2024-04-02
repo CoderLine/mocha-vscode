@@ -5,7 +5,7 @@ describe('math', () => {
     strictEqual(1 + 1, 2);
   });
 
-  it(`subtraction`, async () => {
+  it('subtraction', async () => {
     strictEqual(1 - 1, 0);
   });
 });

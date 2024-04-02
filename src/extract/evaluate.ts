@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
 import * as errorParser from 'error-stack-parser';
@@ -79,7 +83,7 @@ export async function extractWithEvaluation(
       let startColumn = frame.columnNumber || 1;
 
       // approximate the length of the test case:
-      let functionLines = String(callback).split('\n');
+      const functionLines = String(callback).split('\n');
       let endLine = startLine + functionLines.length - 1;
       let endColumn = functionLines[functionLines.length - 1].length + 1;
 
@@ -173,7 +177,7 @@ export async function extractWithEvaluation(
   const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
 
   const contextObj = new Proxy({} as any, {
-    get(target, prop, _receiver) {
+    get(target, prop) {
       if (symbols.suite.includes(prop as string)) {
         return suiteFunction;
       } else if (symbols.test.includes(prop as string)) {

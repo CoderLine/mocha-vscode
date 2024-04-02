@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
@@ -15,8 +19,8 @@ describe('evaluate typescript', () => {
       undefined,
       'test.ts',
       source(
-        "suite('hello', () => {", //
-        "  it('works', () => {});",
+        'suite(\'hello\', () => {', //
+        '  it(\'works\', () => {});',
         '})',
       ),
       defaultTestSymbols,
@@ -53,11 +57,11 @@ describe('evaluate typescript', () => {
         '  return a.toString() as string;',
         '}',
         '',
-        "suite('hello', () => {",
+        'suite(\'hello\', () => {',
         '  function inDescribe(a: number): string {',
         '    return a.toString() as string;',
         '  }',
-        "  it('works', () => {});",
+        '  it(\'works\', () => {});',
         '})',
       ),
       defaultTestSymbols,
@@ -90,20 +94,20 @@ describe('evaluate typescript', () => {
       undefined,
       'test.ts',
       source(
-        "suite('hello', () => {", //
-        "  it('works', () => {});",
+        'suite(\'hello\', () => {', //
+        '  it(\'works\', () => {});',
         '',
         '',
-        "  it('works2', () => {});",
+        '  it(\'works2\', () => {});',
         '})',
         '',
         '  ',
         '// ',
-        "suite('hello2', () => {",
-        "  it('works', () => {});",
+        'suite(\'hello2\', () => {',
+        '  it(\'works\', () => {});',
         '',
         '',
-        "  it('works2', () => {});",
+        '  it(\'works2\', () => {});',
         '})',
       ),
       defaultTestSymbols,

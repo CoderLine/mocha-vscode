@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import { expect } from 'chai';
 import { promises as fs } from 'fs';
@@ -189,13 +193,11 @@ describe('simple', () => {
     let updated = original.replace('**/*.test.js', '*.test.js');
 
     // the vscode file watcher is set up async and does not always catch the change, keep changing the file
-    while (true) {
+    let ok: boolean | void = false;
+    while (!ok) {
       updated += '\n//';
       await fs.writeFile(configPath, updated);
-      const ok = await Promise.race([onChange.then(() => true), setTimeout(500)]);
-      if (ok) {
-        break;
-      }
+      ok = await Promise.race([onChange.then(() => true), setTimeout(500)]);
     }
 
     await expectTestTree(c, [

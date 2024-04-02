@@ -1,7 +1,11 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 import * as Mocha from 'mocha';
 import { inspect } from 'util';
@@ -60,7 +64,7 @@ const clean = (test: Mocha.Test) => {
       !test.duration || test.duration < test.slow() / 2
         ? ('fast' as const)
         : test.duration > test.slow()
-        ? ('slow' as const)
-        : ('medium' as const),
+          ? ('slow' as const)
+          : ('medium' as const),
   };
 };

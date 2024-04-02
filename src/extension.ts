@@ -1,9 +1,12 @@
-/*---------------------------------------------------------
+/**
  * Copyright (C) Daniel Kuschny (Danielku15) and contributors.
  * Copyright (C) Microsoft Corporation. All rights reserved.
- *--------------------------------------------------------*/
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
-import * as path from 'path';
 import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
@@ -19,7 +22,14 @@ const enum FolderSyncState {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const logChannel = vscode.window.createOutputChannel('Mocha VS Code Extension', { log: true });
+  const logChannel = vscode.window.createOutputChannel('Mocha Test Runner', { log: true });
+
+  const packageJson = context.extension.packageJSON;
+  const extensionInfo = context.extension.packageJSON['mocha-vscode'];
+  logChannel.info(
+    `Mocha Test Runner Started (id: ${context.extension.id}, version ${packageJson.version})`,
+    extensionInfo,
+  );
 
   const smStore = new SourceMapStore();
   const runner = new TestRunner(logChannel, smStore, new ConfigValue('debugOptions', {}));

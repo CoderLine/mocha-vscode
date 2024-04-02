@@ -5,7 +5,7 @@ describe('math', () => {
     it('addition', async () => {
         (0, node_assert_1.strictEqual)(1 + 1, 2);
     });
-    it(`subtraction`, async () => {
+    it('subtraction', async () => {
         (0, node_assert_1.strictEqual)(1 - 1, 0);
     });
 });

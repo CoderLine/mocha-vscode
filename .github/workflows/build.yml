@@ -26,20 +26,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-      - run: npm install
-      - run: npm run compile:test
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Compile
+        run: npm run compile:test
+
       - name: Print Test Config
         run: node ./.vscode-test.mjs
         env:
           VSCODE_CONFIG_LOG: true
-      - run: xvfb-run -a npm test
+
+      - name: Run Tests (Linux)
+        run: xvfb-run -a npm test
         if: runner.os == 'Linux'
-      - run: npm test
+      - name: Run Tests (Win/MacOS)
+        run: npm test
         if: runner.os != 'Linux'
+
+      - name: Run Linter
+        if: always()
+        run: npm run lint
+
       - uses: dorny/test-reporter@v1
         if: always()
         with:
