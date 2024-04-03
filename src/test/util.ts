@@ -19,6 +19,31 @@ import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
 import { IParsedNode, NodeKind } from '../discoverer/types';
 
+export function findTestItem(items: vscode.TestItemCollection, parts: string | string[]) {
+  if (!Array.isArray(parts)) {
+    parts = parts.split('/');
+  }
+
+  if (parts.length == 0) {
+    return undefined;
+  }
+
+  do {
+    const child = items.get(parts.shift()!);
+    if (!child) {
+      return undefined;
+    }
+
+    if (parts.length === 0) {
+      return child;
+    }
+
+    items = child.children;
+  } while (parts.length > 0);
+
+  return undefined;
+}
+
 export function source(...lines: string[]) {
   return lines.join('\n');
 }
@@ -162,7 +187,7 @@ async function rmrf(path: string) {
   }
 }
 
-type TestState = 'enqueued' | 'started' | 'skipped' | 'failed' | 'errored' | 'passed';
+export type TestState = 'enqueued' | 'started' | 'skipped' | 'failed' | 'errored' | 'passed';
 
 export class FakeTestRun implements vscode.TestRun {
   public output: { output: string; location?: vscode.Location; test?: vscode.TestItem }[] = [];

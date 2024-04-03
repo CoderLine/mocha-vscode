@@ -171,6 +171,10 @@ export class Controller {
       return;
     }
 
+    // reset errors
+    const fileNode = last(this.getContainingItemsForFile(uri, { compiledFile: uri }))!.item!;
+    fileNode.error = undefined;
+
     const smMaintainer = previous?.sourceMap ?? this.smStore.maintain(uri);
     const sourceMap = await smMaintainer.refresh(contents);
     const add = (
