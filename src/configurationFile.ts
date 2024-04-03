@@ -51,6 +51,7 @@ export class ConfigurationFile implements vscode.Disposable {
   public readonly onDidChange = this.didChangeEmitter.event;
 
   constructor(
+    private readonly logChannel: vscode.LogOutputChannel,
     public readonly uri: vscode.Uri,
     public readonly wf: vscode.WorkspaceFolder,
   ) {
@@ -96,7 +97,16 @@ export class ConfigurationFile implements vscode.Disposable {
     // We cannot use process.execPath as this points to code.exe which is an electron application
     // also with ELECTRON_RUN_AS_NODE this can lead to errors (e.g. with the --import option)
     // we prefer to use the system level node
-    this._pathToNode ??= (await which('node', { nothrow: true })) ?? process.execPath;
+    if (!this._pathToNode) {
+      this.logChannel.debug('Resolving Node.js executable');
+      this._pathToNode = await which('node', { nothrow: true });
+      if (this._pathToNode) {
+        this.logChannel.debug(`Found Node.js in PATH at '${this._pathToNode}'`);
+      } else {
+        this._pathToNode = process.execPath;
+        this.logChannel.debug(`Node.js not found in PATH using '${this._pathToNode}' as fallback`);
+      }
+    }
     return this._pathToNode;
   }
 
@@ -113,32 +123,33 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   private async _resolveLocalMochaPath(suffix?: string): Promise<string> {
-    this._resolver ??= resolveModule.ResolverFactory.createResolver({
-      fileSystem: new resolveModule.CachedInputFileSystem(fs, 4000),
-      conditionNames: ['node', 'require', 'module'],
-    });
+    if (!this._resolver) {
+      this.logChannel.debug('Creating new resolver for resolving Mocha');
+      this._resolver ??= resolveModule.ResolverFactory.createResolver({
+        fileSystem: new resolveModule.CachedInputFileSystem(fs, 4000),
+        conditionNames: ['node', 'require', 'module'],
+      });
+    }
 
-    return new Promise<string>((resolve, reject) =>
-      this._resolver!.resolve(
-        {},
-        path.dirname(this.uri.fsPath),
-        'mocha' + (suffix ?? ''),
-        {},
-        (err, res) => {
-          if (err) {
-            reject(
-              new HumanError(
-                `Could not find mocha in working directory '${path.dirname(
-                  this.uri.fsPath,
-                )}', please install mocha to run tests.`,
-              ),
-            );
-          } else {
-            resolve(res as string);
-          }
-        },
-      ),
-    );
+    return new Promise<string>((resolve, reject) => {
+      const dir = path.dirname(this.uri.fsPath);
+      this.logChannel.debug(`resolving 'mocha${suffix}' via ${dir}`);
+      this._resolver!.resolve({}, dir, 'mocha' + (suffix ?? ''), {}, (err, res) => {
+        if (err) {
+          this.logChannel.error(`resolving 'mocha${suffix}' failed with error ${err}`);
+          reject(
+            new HumanError(
+              `Could not find mocha in working directory '${path.dirname(
+                this.uri.fsPath,
+              )}', please install mocha to run tests.`,
+            ),
+          );
+        } else {
+          this.logChannel.debug(`'mocha${suffix}' resolved to '${res}'`);
+          resolve(res as string);
+        }
+      });
+    });
   }
 
   private async _read() {
@@ -154,7 +165,9 @@ export class ConfigurationFile implements vscode.Disposable {
     // TODO[mocha]: allow specifying the cwd in loadOptions()
     const currentCwd = process.cwd();
     try {
-      process.chdir(path.dirname(this.uri.fsPath));
+      const configSearchPath = path.dirname(this.uri.fsPath);
+      this.logChannel.debug(`Reading mocharc, changing working directory to ${configSearchPath}`);
+      process.chdir(configSearchPath);
 
       // we need to ensure a reload for javascript files
       // as they are in the require cache https://github.com/mochajs/mocha/blob/e263c7a722b8c2fcbe83596836653896a9e0258b/lib/cli/config.js#L37
@@ -167,11 +180,13 @@ export class ConfigurationFile implements vscode.Disposable {
       }
 
       config = this._optionsModule.loadOptions();
+      this.logChannel.debug(`Loaded mocharc via Mocha`);
     } finally {
+      this.logChannel.debug(`Reading mocharc, changing working directory back to ${currentCwd}`);
       process.chdir(currentCwd);
     }
 
-    return new ConfigurationList(this.uri, config, this.wf);
+    return new ConfigurationList(this.logChannel, this.uri, config, this.wf);
   }
 
   /**
@@ -196,6 +211,7 @@ export class ConfigurationList {
   )[];
 
   constructor(
+    private readonly logChannel: vscode.LogOutputChannel,
     public readonly uri: vscode.Uri,
     public readonly value: IResolvedConfiguration,
     wf: vscode.WorkspaceFolder,
@@ -238,6 +254,8 @@ export class ConfigurationList {
         }),
       );
     }
+
+    this.logChannel.debug(`Loaded mocharc via '${uri.fsPath}', with patterns`, this.patterns);
   }
 
   /**

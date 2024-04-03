@@ -24,6 +24,49 @@ import { TsConfigStore } from './tsconfig-store';
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('ext-test-duplicates');
 
+type TestNodeCountKind = '+' | '~' | '-';
+class TestNodeCounter {
+  private counts: Map<NodeKind, Map<TestNodeCountKind, number>> = new Map();
+
+  public add(kind: NodeKind) {
+    this.increment(kind, '+');
+  }
+
+  public update(kind: NodeKind) {
+    this.increment(kind, '~');
+  }
+
+  public remove(kind: NodeKind) {
+    this.increment(kind, '-');
+  }
+
+  increment(nodeKind: NodeKind, countKind: TestNodeCountKind) {
+    let counts = this.counts.get(nodeKind);
+    if (!counts) {
+      counts = new Map([
+        ['+', 0],
+        ['~', 0],
+        ['-', 0],
+      ]);
+      this.counts.set(nodeKind, counts);
+    }
+    counts.set(countKind, (counts.get(countKind) ?? 0) + 1);
+  }
+
+  toString() {
+    const s = [];
+    for (const [nodeKind, nodeKindV] of this.counts) {
+      const prefix = `${NodeKind[nodeKind]}:`;
+      const values = [];
+      for (const [countKind, count] of nodeKindV) {
+        values.push(`${countKind}${count}`);
+      }
+      s.push(`${prefix} ${values.join(' ')}`);
+    }
+    return s.join('; ');
+  }
+}
+
 export class Controller {
   private readonly disposables = new DisposableStore();
   public readonly configFile: ConfigurationFile;
@@ -82,20 +125,21 @@ export class Controller {
       configFileUri.fsPath,
     );
     this.disposables.add(ctrl);
-    this.configFile = this.disposables.add(new ConfigurationFile(configFileUri, wf));
+    this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf));
     this.onDidDelete = this.configFile.onDidDelete;
 
     this.recreateDiscoverer();
 
-    const rescan = () => {
+    const rescan = (reason: string) => {
+      logChannel.info(`Rescan of tests triggered (${reason})`);
       this.recreateDiscoverer();
       this.scanFiles();
     };
-    this.disposables.add(this.configFile.onDidChange(rescan));
-    this.disposables.add(this.settings.onDidChange(rescan));
+    this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
+    this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
     ctrl.refreshHandler = () => {
       this.configFile.forget();
-      rescan();
+      rescan('user');
     };
     this.scanFiles();
   }
@@ -167,12 +211,15 @@ export class Controller {
     }
 
     if (!tree.length) {
+      this.logChannel.info(`No tests found in '${uri.fsPath}'`);
       this.deleteFileTests(uri.toString());
       return;
     }
 
     const smMaintainer = previous?.sourceMap ?? this.smStore.maintain(uri);
     const sourceMap = await smMaintainer.refresh(contents);
+
+    const counter = new TestNodeCounter();
     const add = (
       parent: vscode.TestItem,
       node: IParsedNode,
@@ -182,10 +229,13 @@ export class Controller {
       let item = parent.children.get(node.name);
       if (!item) {
         item = this.ctrl.createTestItem(node.name, node.name, start.uri);
+        counter.add(node.kind);
         testMetadata.set(item, {
           type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test,
         });
         parent.children.add(item);
+      } else {
+        counter.update(node.kind);
       }
       item.range = new vscode.Range(start.range.start, end.range.end);
       item.error = node.error;
@@ -206,9 +256,15 @@ export class Controller {
         seen.set(child.name, add(item, child, start, end));
       }
 
-      for (const [id] of item.children) {
+      for (const [id, child] of item.children) {
         if (!seen.has(id)) {
+          const meta = testMetadata.get(child);
           item.children.delete(id);
+          if (meta?.type === ItemType.Test) {
+            counter.remove(NodeKind.Test);
+          } else if (meta?.type === ItemType.Suite) {
+            counter.remove(NodeKind.Suite);
+          }
         }
       }
 
@@ -234,10 +290,18 @@ export class Controller {
     if (previous) {
       for (const [id, test] of previous.items) {
         if (!newTestsInFile.has(id)) {
+          const meta = testMetadata.get(test);
           (test.parent?.children ?? this.ctrl.items).delete(id);
+          if (meta?.type === ItemType.Test) {
+            counter.remove(NodeKind.Test);
+          } else if (meta?.type === ItemType.Suite) {
+            counter.remove(NodeKind.Suite);
+          }
         }
       }
     }
+
+    this.logChannel.info(`Reloaded tests from '${uri.fsPath}' ${counter}`);
 
     this.testsInFiles.set(uri.toString(), { items: newTestsInFile, hash, sourceMap: smMaintainer });
     this.didChangeEmitter.fire();
@@ -353,7 +417,8 @@ export class Controller {
     let configs: ConfigurationList;
     try {
       configs = await this.configFile.read();
-    } catch {
+    } catch (e) {
+      this.logChannel.error(e as Error, 'Failed to read config file');
       this.handleScanError();
       return;
     }
