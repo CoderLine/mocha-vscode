@@ -26,7 +26,7 @@ export interface IExtensionSettings {
   extractTimeout: number;
 }
 
-export const enum NodeKind {
+export enum NodeKind {
   Suite,
   Test,
 }

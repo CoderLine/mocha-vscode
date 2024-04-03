@@ -238,7 +238,7 @@ export class TestRunner {
     const ds = new DisposableStore();
 
     const spawnArgs = await config.getMochaSpawnArgs(args);
-    this.logChannel.debug('Start test debugging with args', spawnArgs);
+    this.logChannel.info('Start test debugging with args', spawnArgs);
 
     return new Promise<void>((resolve, reject) => {
       const sessionKey = randomUUID();
@@ -324,7 +324,7 @@ export class TestRunner {
 
   private async runWithoutDebug({ args, config, onLine, token }: ISpawnOptions) {
     const spawnArgs = await config.getMochaSpawnArgs(args);
-    this.logChannel.debug('Start test execution with args', spawnArgs);
+    this.logChannel.info('Start test execution with args', spawnArgs);
 
     const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
       const p = spawn(spawnArgs[0], spawnArgs.slice(1), {
