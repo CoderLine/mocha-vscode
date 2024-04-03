@@ -171,10 +171,6 @@ export class Controller {
       return;
     }
 
-    // reset errors
-    const fileNode = last(this.getContainingItemsForFile(uri, { compiledFile: uri }))!.item!;
-    fileNode.error = undefined;
-
     const smMaintainer = previous?.sourceMap ?? this.smStore.maintain(uri);
     const sourceMap = await smMaintainer.refresh(contents);
     const add = (
@@ -230,6 +226,7 @@ export class Controller {
           ? sourceMap.originalPositionFor(node.endLine, node.endColumn)
           : start;
       const file = last(this.getContainingItemsForFile(start.uri, { compiledFile: uri }))!.item!;
+      file.error = undefined;
       diagnosticCollection.delete(start.uri);
       newTestsInFile.set(node.name, add(file, node, start, end));
     }
