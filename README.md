@@ -1,6 +1,6 @@
 # Mocha VS Code Extension
 
-This is the Mocha extension for VS Code enabling developers to run and debug tests right within VS Code using the built-in test explorer.
+This a community Mocha extension for VS Code enabling developers to run and debug tests right within VS Code using the built-in test explorer.
 
 > [!NOTE]
 > This extension is in a fairly early development stage but mostly functional. We soon

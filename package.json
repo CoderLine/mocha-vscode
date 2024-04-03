@@ -98,16 +98,19 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mocha/mocha-vscode.git"
+    "url": "https://github.com/CoderLine/mocha-vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/mocha/mocha-vscode/issues"
+    "url": "https://github.com/CoderLine/mocha-vscode/issues"
   },
-  "homepage": "https://github.com/mocha/mocha-vscode#readme",
+  "homepage": "https://github.com/CoderLine/mocha-vscode#readme",
   "main": "./out/extension.js",
   "scripts": {
-    "package": "vsce package --no-dependencies",
-    "vscode:prepublish": "npm run compile && tsx ./scripts/prerelease.mts",
+    "publish:release": "npm run compile && tsx ./scripts/prerelease.mts && npx @vscode/vsce publish",
+    "publish:prerelease": "npm run compile && tsx ./scripts/prerelease.mts --pre-release && npx @vscode/vsce publish --pre-release",
+    "package:release": "npm run compile && tsx ./scripts/prerelease.mts && npx @vscode/vsce package",
+    "package:prerelease": "npm run compile && tsx ./scripts/prerelease.mts --pre-release && npx @vscode/vsce package --pre-release",
+    "vscode:prepublish": "npm run compile",
     "postinstall": "cd src/typings && npx @vscode/dts main && npx @vscode/dts dev",
     "clean": "node -e \"fs.rmSync('out',{force:true,recursive:true})\"",
     "compile": "npm run clean && tsc --noEmit && node .esbuild.js --minify",
@@ -134,6 +137,7 @@
     "@vscode/dts": "^0.4.0",
     "@vscode/test-cli": "^0.0.8",
     "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^2.24.0",
     "acorn": "^8.11.3",
     "chai": "^4.4.1",
     "esbuild": "^0.20.2",
