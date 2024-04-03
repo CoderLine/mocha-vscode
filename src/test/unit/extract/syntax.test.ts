@@ -9,20 +9,22 @@
 
 import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
-import { NodeKind } from '../../../extract';
-import { extractWithAst } from '../../../extract/syntax';
+import { SyntaxTestDiscoverer } from '../../../discoverer/syntax';
+import { NodeKind } from '../../../discoverer/types';
+import { TsConfigStore } from '../../../tsconfig-store';
 import { source } from '../../util';
 
 describe('syntax', () => {
-  it('extracts basic suite', () => {
-    const src = extractWithAst(
-      'test.js',
-      source(
-        'suite(\'hello\', () => {', //
-        '  it(\'works\', () => {});',
-        '})',
-      ),
-      defaultTestSymbols,
+  function extractWithAst(...lines: string[]) {
+    const discoverer = new SyntaxTestDiscoverer(defaultTestSymbols, new TsConfigStore());
+    return discoverer.discover('test.js', source(...lines));
+  }
+
+  it('extracts basic suite', async () => {
+    const src = await extractWithAst(
+      "suite('hello', () => {", //
+      "  it('works', () => {});",
+      '})',
     );
     expect(src).to.deep.equal([
       {
@@ -47,16 +49,12 @@ describe('syntax', () => {
     ]);
   });
 
-  it('works with skip/only', () => {
-    const src = extractWithAst(
-      'test.js',
-      source(
-        'suite(\'hello\', () => {', //
-        '  it.only(\'a\', ()=>{});',
-        '  it.skip(\'a\', ()=>{});',
-        '})',
-      ),
-      defaultTestSymbols,
+  it('works with skip/only', async () => {
+    const src = await extractWithAst(
+      "suite('hello', () => {", //
+      "  it.only('a', ()=>{});",
+      "  it.skip('a', ()=>{});",
+      '})',
     );
     expect(src).to.deep.equal([
       {
@@ -92,17 +90,13 @@ describe('syntax', () => {
     ]);
   });
 
-  it('can detect suite but not dynamic tests', () => {
-    const src = extractWithAst(
-      'test.js',
-      source(
-        'suite(\'hello\', () => {', //
-        '  for (const name of [\'foo\', \'bar\', \'baz\']) {',
-        '    it(name, () => {});',
-        '  }',
-        '})',
-      ),
-      defaultTestSymbols,
+  it('can detect suite but not dynamic tests', async () => {
+    const src = await extractWithAst(
+      "suite('hello', () => {", //
+      "  for (const name of ['foo', 'bar', 'baz']) {",
+      '    it(name, () => {});',
+      '  }',
+      '})',
     );
     expect(src).to.deep.equal([
       {
@@ -117,12 +111,8 @@ describe('syntax', () => {
     ]);
   });
 
-  it('stubs out requires and placeholds correctly', () => {
-    const src = extractWithAst(
-      'test.js',
-      'require("some invalid module").doing().other.things()',
-      defaultTestSymbols,
-    );
+  it('stubs out requires and placeholds correctly', async () => {
+    const src = await extractWithAst('require("some invalid module").doing().other.things()');
     expect(src).to.deep.equal([]);
   });
 });

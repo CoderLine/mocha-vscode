@@ -17,7 +17,7 @@ import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
 import { getControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
-import { IParsedNode, NodeKind } from '../extract';
+import { IParsedNode, NodeKind } from '../discoverer/types';
 
 export function source(...lines: string[]) {
   return lines.join('\n');
@@ -102,20 +102,29 @@ export function extractParsedNodes(vsItems: vscode.TestItemCollection): IParsedN
   return items;
 }
 
-type TestTreeExpectation = [string, TestTreeExpectation[]?];
+type TestTreeExpectation = [string, (TestTreeExpectation[] | string)?];
 
 function buildTreeExpectation(entry: TestTreeExpectation, c: vscode.TestItemCollection) {
-  for (const [id, { children }] of c) {
+  for (const [id, { error, children }] of c) {
     const node: TestTreeExpectation = [id];
-    buildTreeExpectation(node, children);
+    if (error instanceof vscode.MarkdownString) {
+      node[1] = error.value;
+    } else if (typeof error === 'string') {
+      node[1] = error;
+    } else {
+      buildTreeExpectation(node, children);
+    }
+
     if (entry.length === 1) {
       entry[1] = [node];
-    } else {
-      entry[1]!.push(node);
+    } else if (Array.isArray(entry[1])) {
+      entry[1].push(node);
     }
   }
 
-  entry[1]?.sort(([a], [b]) => a.localeCompare(b));
+  if (Array.isArray(entry[1])) {
+    entry[1]?.sort(([a], [b]) => a.localeCompare(b));
+  }
 }
 
 export function onceChanged(controller: Controller, timeout: number = 10000) {
@@ -128,10 +137,15 @@ export function onceChanged(controller: Controller, timeout: number = 10000) {
   });
 }
 
-export async function expectTestTree({ ctrl }: Controller, tree: TestTreeExpectation[]) {
+export function buildTestTreeExpectation({ ctrl }: Controller) {
   const e = ['root', []] satisfies TestTreeExpectation;
   buildTreeExpectation(e, ctrl.items);
-  assert.deepStrictEqual(e[1], tree, JSON.stringify(e[1]));
+  return e[1];
+}
+
+export async function expectTestTree(c: Controller, tree: TestTreeExpectation[]) {
+  const e = buildTestTreeExpectation(c);
+  assert.deepStrictEqual(e, tree, JSON.stringify(e));
 }
 
 /** Retries deletion a few times since directories may still be in use briefly during test shutdown */

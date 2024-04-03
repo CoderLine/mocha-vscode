@@ -9,21 +9,26 @@
 
 import { expect } from 'chai';
 import { defaultTestSymbols } from '../../../constants';
-import { NodeKind } from '../../../extract';
-import { extractWithEvaluation } from '../../../extract/evaluate';
+import { EvaluationTestDiscoverer } from '../../../discoverer/evaluate';
+import { NodeKind } from '../../../discoverer/types';
+import { TsConfigStore } from '../../../tsconfig-store';
 import { source } from '../../util';
 
 describe('evaluate typescript', () => {
+  function extractWithEvaluation(...lines: string[]) {
+    const discoverer = new EvaluationTestDiscoverer(
+      undefined,
+      defaultTestSymbols,
+      new TsConfigStore(),
+    );
+    return discoverer.discover('test.ts', source(...lines));
+  }
+
   it('extracts basic suite', async () => {
     const src = await extractWithEvaluation(
-      undefined,
-      'test.ts',
-      source(
-        'suite(\'hello\', () => {', //
-        '  it(\'works\', () => {});',
-        '})',
-      ),
-      defaultTestSymbols,
+      "suite('hello', () => {", //
+      "  it('works', () => {});",
+      '})',
     );
     expect(src).to.deep.equal([
       {
@@ -50,21 +55,16 @@ describe('evaluate typescript', () => {
 
   it('extracts basic suite ts syntax', async () => {
     const src = await extractWithEvaluation(
-      undefined,
-      'test.ts',
-      source(
-        'function topLevel(a: number): string {', //
-        '  return a.toString() as string;',
-        '}',
-        '',
-        'suite(\'hello\', () => {',
-        '  function inDescribe(a: number): string {',
-        '    return a.toString() as string;',
-        '  }',
-        '  it(\'works\', () => {});',
-        '})',
-      ),
-      defaultTestSymbols,
+      'function topLevel(a: number): string {', //
+      '  return a.toString() as string;',
+      '}',
+      '',
+      "suite('hello', () => {",
+      '  function inDescribe(a: number): string {',
+      '    return a.toString() as string;',
+      '  }',
+      "  it('works', () => {});",
+      '})',
     );
     expect(src).to.deep.equal([
       {
@@ -91,26 +91,21 @@ describe('evaluate typescript', () => {
 
   it('extracts multiple suite', async () => {
     const src = await extractWithEvaluation(
-      undefined,
-      'test.ts',
-      source(
-        'suite(\'hello\', () => {', //
-        '  it(\'works\', () => {});',
-        '',
-        '',
-        '  it(\'works2\', () => {});',
-        '})',
-        '',
-        '  ',
-        '// ',
-        'suite(\'hello2\', () => {',
-        '  it(\'works\', () => {});',
-        '',
-        '',
-        '  it(\'works2\', () => {});',
-        '})',
-      ),
-      defaultTestSymbols,
+      "suite('hello', () => {", //
+      "  it('works', () => {});",
+      '',
+      '',
+      "  it('works2', () => {});",
+      '})',
+      '',
+      '  ',
+      '// ',
+      "suite('hello2', () => {",
+      "  it('works', () => {});",
+      '',
+      '',
+      "  it('works2', () => {});",
+      '})',
     );
     expect(src).to.deep.equal([
       {
