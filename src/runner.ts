@@ -55,6 +55,7 @@ export class TestRunner {
         [],
         request,
         run,
+        config,
       );
       if (run.token.isCancellationRequested) {
         return;
@@ -363,6 +364,7 @@ export class TestRunner {
     baseArgs: ReadonlyArray<string>,
     request: vscode.TestRunRequest,
     run: vscode.TestRun,
+    config: ConfigurationFile,
   ) {
     const reporter = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporter.js');
     const args = [...baseArgs, '--reporter', reporter];
@@ -404,11 +406,15 @@ export class TestRunner {
       }
     }
 
-    // if there's no include, omit --run so that every file is executed
-    // TODO[mocha]: expose an "--include" variant which allows limiting the tests to individual files independent from the loaded config
+    // we specify explicitly our own which files to run
+    // we ignore first all files and then re-add them via --file
+    args.push('--ignore', '**/*.*');
+    const configDir = path.dirname(config.uri.fsPath);
     if (!request.include || !exclude.size) {
-      for (const path of compiledFileTests.value.keys()) {
-        args.push('--run', path);
+      for (const filePath of compiledFileTests.value.keys()) {
+        // use relative paths to reduce number of chars passed on
+        const relativePath = path.relative(configDir, filePath);
+        args.push('--file', relativePath);
       }
     }
 
