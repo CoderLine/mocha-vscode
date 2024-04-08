@@ -10,6 +10,7 @@
 import styles from 'ansi-styles';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 import split2 from 'split2';
 import * as vscode from 'vscode';
@@ -366,8 +367,21 @@ export class TestRunner {
     run: vscode.TestRun,
     config: ConfigurationFile,
   ) {
-    const reporter = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporter.js');
-    const args = [...baseArgs, '--reporter', reporter];
+    const reporterSrc = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporter.js');
+
+    // need to copy the reporter to the node_moduules dir, otherwise mocha cannot be resolved
+    const reporterDest = await this.copyReporter(reporterSrc, config);
+
+    // unbundled compilation
+    const reporterTypesSrc = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporterTypes.js');
+    try {
+      await fs.access(reporterSrc);
+      await this.copyReporter(reporterTypesSrc, config);
+    } catch (e) {
+      // ignore
+    }
+
+    const args = [...baseArgs, '--reporter', reporterDest];
     const exclude = new Set(request.exclude);
     const leafTests = new Set<vscode.TestItem>();
     const include = request.include?.slice() ?? [...ctrl.items].map(([, item]) => item);
@@ -423,6 +437,17 @@ export class TestRunner {
     }
 
     return { args, compiledFileTests, leafTests };
+  }
+
+  async copyReporter(reporterSrc: string, config: ConfigurationFile) {
+    const nodeModules = await config.getMochaNodeModulesPath();
+    const reporterPath = path.join(nodeModules, '.mocha-vscode');
+    await fs.mkdir(reporterPath, { recursive: true });
+
+    const destPath = path.join(reporterPath, path.basename(reporterSrc));
+    await fs.copyFile(reporterSrc, destPath);
+
+    return destPath;
   }
 }
 

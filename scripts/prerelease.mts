@@ -14,16 +14,39 @@ import { fileURLToPath } from 'url';
 
 console.log('Preparing for extension publish');
 
+const gitHubContext = process.env.GITHUB_CONTEXT
+  ? JSON.parse(process.env.GITHUB_CONTEXT)
+  : undefined;
+
 const dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const packageJsonPath = path.join(dirname, '..', 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-const isPrerelease = process.argv.includes('--pre-release');
+let isPrerelease = process.argv.includes('--pre-release');
 
-const prereleaseTag = isPrerelease ? '-preview' : '';
+let semVer = packageJson.version;
+
 const build = `+${execSync('git rev-parse --short HEAD').toString().trim()}`;
-const semVer = packageJson.version + prereleaseTag + build;
+
+if (gitHubContext) {
+  const tag = gitHubContext.event.release.tag_name as string;
+  semVer = tag + build;
+
+  if (gitHubContext.event.release.prerelease) {
+    isPrerelease = true;
+  }
+
+  if (packageJson.version != tag.slice(1).split('-')[0]) {
+    console.error(
+      `Git Tag '${tag}' does not match version in package.json '${packageJson.version}', please correct it!`,
+    );
+    process.exit(1);
+  }
+} else {
+  const prereleaseTag = isPrerelease ? '-preview' : '';
+  semVer = 'v' + packageJson.version + prereleaseTag + build;
+}
 
 packageJson['mocha-vscode'] = {
   version: semVer,

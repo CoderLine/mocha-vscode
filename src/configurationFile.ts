@@ -122,7 +122,7 @@ export class ConfigurationFile implements vscode.Disposable {
     ];
   }
 
-  private async _resolveLocalMochaPath(suffix?: string): Promise<string> {
+  private getResolver() {
     if (!this._resolver) {
       this.logChannel.debug('Creating new resolver for resolving Mocha');
       this._resolver ??= resolveModule.ResolverFactory.createResolver({
@@ -130,11 +130,32 @@ export class ConfigurationFile implements vscode.Disposable {
         conditionNames: ['node', 'require', 'module'],
       });
     }
+    return this._resolver;
+  }
 
+  public async getMochaNodeModulesPath(): Promise<string> {
+    const mocha = await this._resolveLocalMochaPath();
+
+    let current = path.dirname(mocha);
+    let prev = current;
+    do {
+      prev = current;
+
+      if (path.basename(current) === 'node_modules') {
+        return current;
+      }
+
+      current = path.resolve(current, '..');
+    } while (current !== prev);
+
+    throw new HumanError(`Could not find node_modules above '${mocha}'`);
+  }
+
+  private _resolveLocalMochaPath(suffix?: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const dir = path.dirname(this.uri.fsPath);
       this.logChannel.debug(`resolving 'mocha${suffix}' via ${dir}`);
-      this._resolver!.resolve({}, dir, 'mocha' + (suffix ?? ''), {}, (err, res) => {
+      this.getResolver().resolve({}, dir, 'mocha' + (suffix ?? ''), {}, (err, res) => {
         if (err) {
           this.logChannel.error(`resolving 'mocha${suffix}' failed with error ${err}`);
           reject(
