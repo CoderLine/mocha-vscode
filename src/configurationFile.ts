@@ -12,9 +12,9 @@ import * as fs from 'fs';
 import { minimatch } from 'minimatch';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import which from 'which';
 import { DisposableStore } from './disposable';
 import { HumanError } from './errors';
+import { getPathToNode } from './node';
 
 type OptionsModule = {
   loadOptions(): IResolvedConfiguration;
@@ -38,7 +38,6 @@ export class ConfigurationFile implements vscode.Disposable {
   private _resolver?: resolveModule.Resolver;
   private _optionsModule?: OptionsModule;
   private _configModule?: ConfigModule;
-  private _pathToNode?: string;
   private _pathToMocha?: string;
 
   /** Cached read promise, invalided on file change. */
@@ -93,28 +92,11 @@ export class ConfigurationFile implements vscode.Disposable {
     this.readPromise = undefined;
   }
 
-  async getPathToNode() {
-    // We cannot use process.execPath as this points to code.exe which is an electron application
-    // also with ELECTRON_RUN_AS_NODE this can lead to errors (e.g. with the --import option)
-    // we prefer to use the system level node
-    if (!this._pathToNode) {
-      this.logChannel.debug('Resolving Node.js executable');
-      this._pathToNode = await which('node', { nothrow: true });
-      if (this._pathToNode) {
-        this.logChannel.debug(`Found Node.js in PATH at '${this._pathToNode}'`);
-      } else {
-        this._pathToNode = process.execPath;
-        this.logChannel.debug(`Node.js not found in PATH using '${this._pathToNode}' as fallback`);
-      }
-    }
-    return this._pathToNode;
-  }
-
   async getMochaSpawnArgs(customArgs: readonly string[]): Promise<string[]> {
     this._pathToMocha ??= await this._resolveLocalMochaPath('/bin/mocha.js');
 
     return [
-      await this.getPathToNode(),
+      await getPathToNode(this.logChannel),
       this._pathToMocha,
       '--config',
       this.uri.fsPath,

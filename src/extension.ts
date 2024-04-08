@@ -15,6 +15,7 @@ import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
 import { configFilePattern, getControllersForTestCommand } from './constants';
 import { Controller } from './controller';
+import { getPathToNode } from './node';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
 
@@ -113,13 +114,15 @@ export function deactivate() {}
 async function initESBuild(context: vscode.ExtensionContext, logChannel: vscode.LogOutputChannel) {
   logChannel.debug('Installing ESBuild binary');
 
+  const node = await getPathToNode(logChannel);
   const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
-    const p = spawn(process.execPath, ['install.js'], {
+    const p = spawn(node, ['install.js'], {
       cwd: path.join(context.extensionPath, 'node_modules', 'esbuild'),
       env: {
         ...process.env,
         ELECTRON_RUN_AS_NODE: '1',
       },
+      windowsHide: true,
     });
     p.on('spawn', () => resolve(p));
     p.on('error', reject);
