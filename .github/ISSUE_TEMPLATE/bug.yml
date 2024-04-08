@@ -12,7 +12,7 @@ body:
         you efficiently. Missing information might lead to reports being closed
         without solution.
       options:
-        - label: I have read and agree to the [Code of Conduct](code-of-conduct)
+        - label: I have read and agree to the [Code of Conduct](https://github.com/CoderLine/mocha-vscode/blob/main/code-of-conduct.md)
           required: true
         - label: >-
             I have searched for [related
