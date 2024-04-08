@@ -7,6 +7,9 @@
  * https://opensource.org/licenses/MIT.
  */
 
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import path from 'path';
+import split2 from 'split2';
 import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
@@ -39,6 +42,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   const syncWorkspaceFolders = async () => {
     logChannel.debug('Syncing workspace folders', resyncState);
+
+    await initESBuild(context, logChannel);
 
     if (resyncState === FolderSyncState.Syncing) {
       resyncState = FolderSyncState.ReSyncNeeded;
@@ -102,3 +107,40 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {}
+
+// ESBuild needs the platform specific binary for execution
+// here we run the init script coming with ESBuild
+async function initESBuild(context: vscode.ExtensionContext, logChannel: vscode.LogOutputChannel) {
+  logChannel.debug('Installing ESBuild binary');
+
+  const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
+    const p = spawn(process.execPath, ['install.js'], {
+      cwd: path.join(context.extensionPath, 'node_modules', 'esbuild'),
+      env: {
+        ...process.env,
+        ELECTRON_RUN_AS_NODE: '1',
+      },
+    });
+    p.on('spawn', () => resolve(p));
+    p.on('error', reject);
+  });
+
+  cli.stderr.pipe(split2()).on('data', (l) => {
+    logChannel.debug('[ESBuild-stderr]', l);
+  });
+  cli.stdout.pipe(split2()).on('data', (l) => {
+    logChannel.debug('[ESBuild-stdout]', l);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    cli.on('error', reject);
+    cli.on('exit', (code) => {
+      if (code === 0) {
+        logChannel.debug(`Installing ESBuild binary exited with code ${code}`);
+      } else {
+        logChannel.error(`Installing ESBuild binary exited with code ${code}`);
+      }
+      resolve();
+    });
+  });
+}

@@ -149,6 +149,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
             stack.pop();
           }
         }
+
+        return placeholder();
       };
       if (!directive) {
         fn.skip = makeTesterFunction(kind, sourceMap, 'skip');
