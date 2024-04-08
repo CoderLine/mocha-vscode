@@ -135,7 +135,7 @@
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@typescript-eslint/parser": "^7.5.0",
     "@vscode/dts": "^0.4.0",
-    "@vscode/test-cli": "^0.0.8",
+    "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.3.9",
     "@vscode/vsce": "^2.24.0",
     "acorn": "^8.11.3",
@@ -150,8 +150,8 @@
     "prettier-eslint-cli": "^8.0.1",
     "prettier-plugin-organize-imports": "^3.2.4",
     "sinon": "^17.0.1",
-    "tsx": "^4.7.1",
-    "typescript": "^5.4.3"
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.4"
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.25",
