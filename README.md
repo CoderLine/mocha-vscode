@@ -1,18 +1,15 @@
 # Mocha VS Code Extension
 
-This a community Mocha extension for VS Code enabling developers to run and debug tests right within VS Code using the built-in test explorer.
+This a community Visual Studio Code extension for enabling developers to run and debug [Mocha](https://mochajs.org/) tests right within VS Code using the built-in test explorer.
 
 > [!NOTE]
-> This extension is in a fairly early development stage but mostly functional. We soon
-> will start to publish some pre-release versions to the VS Code Extension gallery.
->
-> Follow our progress at https://github.com/orgs/CoderLine/projects/15/views/1
->
-> Please provide feedback and discuss improvements over at https://github.com/CoderLine/mocha-vscode/discussions
+> This extension is in a fairly early development stage but mostly functional. But watch out for any bugs 😉 
+> 
+> Please provide feedback and discuss improvements over at https://github.com/CoderLine/mocha-vscode/discussions and https://github.com/CoderLine/mocha-vscode/issues
 
 ## Getting Started
 
-Please follow the [general Mocha documentation](https://mochajs.org/) to initially set up tests using the command line. Then, [install this extension](https://marketplace.visualstudio.com/items?itemName=mocha.mocha-vscode).
+To get started follow the [general Mocha documentation](https://mochajs.org/) to set up testing for your project using the Mocha command line. Then, [install this extension](https://marketplace.visualstudio.com/items?itemName=coderline.mocha-vscode).
 
 This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/yml/json/jsonc` files found in your workspace. It requires minimal to no extra configuration. It works by looking at test files in your JavaScript and TypeScript code.
 
