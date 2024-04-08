@@ -148,7 +148,7 @@
     "prettier-eslint-cli": "^8.0.1",
     "prettier-plugin-organize-imports": "^3.2.4",
     "sinon": "^17.0.1",
-    "tsx": "^4.7.1",
+    "tsx": "^4.7.2",
     "typescript": "^5.4.3"
   },
   "dependencies": {
