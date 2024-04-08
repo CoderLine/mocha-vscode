@@ -12,7 +12,7 @@ body:
         you efficiently. Missing information might lead to reports being closed
         without solution.
       options:
-        - label: I have read and agree to the [Code of Conduct](code-of-conduct)
+        - label: I have read and agree to the [Code of Conduct](/code-of-conduct)
           required: true
         - label: >-
             I have searched for [related
