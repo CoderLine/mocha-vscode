@@ -22,27 +22,27 @@ module.exports = class MultiReporter extends BaseReporter {
             console.log(' '.repeat(indent * 2) + txt)
           }
 
-          runner.once(Mocha.Runner.constants.EVENT_RUN_BEGIN, () => {
+          runner.on(Mocha.Runner.constants.EVENT_RUN_BEGIN, () => {
             log('Begin Run')
             indent++;
           });
-          runner.once(Mocha.Runner.constants.EVENT_RUN_END, () => {
+          runner.on(Mocha.Runner.constants.EVENT_RUN_END, () => {
             indent--;
             log('End Run')
           });
-          runner.once(Mocha.Runner.constants.EVENT_SUITE_BEGIN, (suite) => {
+          runner.on(Mocha.Runner.constants.EVENT_SUITE_BEGIN, (suite) => {
             log(`Begin Suite '${suite.titlePath()}'`)
             indent++;
           });
-          runner.once(Mocha.Runner.constants.EVENT_SUITE_END, (suite) => {
+          runner.on(Mocha.Runner.constants.EVENT_SUITE_END, (suite) => {
             indent--;
             log(`End Suite '${suite.titlePath()}'`)
           });
-          runner.once(Mocha.Runner.constants.EVENT_TEST_BEGIN, (test) => {
+          runner.on(Mocha.Runner.constants.EVENT_TEST_BEGIN, (test) => {
             log(`Begin Test '${test.title}'`)
             indent++;
           });
-          runner.once(Mocha.Runner.constants.EVENT_TEST_END, (test) => {
+          runner.on(Mocha.Runner.constants.EVENT_TEST_END, (test) => {
             indent--;
             log(`End Test '${test.title}'`)
           });
