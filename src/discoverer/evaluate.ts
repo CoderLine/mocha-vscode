@@ -8,13 +8,32 @@
  */
 
 import { TraceMap, originalPositionFor } from '@jridgewell/trace-mapping';
+import type { Node } from 'acorn';
+import { parse as acornParse } from 'acorn-loose';
+import * as acornWalk from 'acorn-walk';
 import * as errorParser from 'error-stack-parser';
-import { TsconfigRaw, transform as esbuildTransform } from 'esbuild';
+import { CommonOptions, TsconfigRaw, transform as esbuildTransform } from 'esbuild';
+import * as path from 'path';
 import * as vm from 'vm';
 import * as vscode from 'vscode';
+import { ConfigValue } from '../configValue';
 import { isEsm, isTypeScript } from '../constants';
 import { TsConfigStore } from '../tsconfig-store';
+import { acornOptions } from './syntax';
 import { IExtensionSettings, IParsedNode, ITestDiscoverer, NodeKind } from './types';
+
+/**
+ * Note: the goal is not to sandbox test code (workspace trust is required
+ * for this extension) but rather to avoid side-effects from evaluation which
+ * are much more likely when other code is required.
+ */
+const replacedGlobals = new Set([
+  // avoid side-effects:
+  'require',
+  'process',
+  // avoid printing to the console from tests:
+  'console',
+]);
 
 /**
  * Honestly kind of amazed this works. We can use a Proxy as our globalThis
@@ -31,33 +50,17 @@ import { IExtensionSettings, IParsedNode, ITestDiscoverer, NodeKind } from './ty
 
 export class EvaluationTestDiscoverer implements ITestDiscoverer {
   constructor(
-    private logChannel: vscode.LogOutputChannel | undefined,
-    private symbols: IExtensionSettings,
-    private tsconfigStore: TsConfigStore,
+    protected logChannel: vscode.LogOutputChannel | undefined,
+    protected settings: ConfigValue<IExtensionSettings>,
+    protected tsconfigStore: TsConfigStore,
   ) {}
 
   async discover(filePath: string, code: string) {
-    const logChannel = this.logChannel;
-    const symbols = this.symbols;
-
-    /**
-     * Note: the goal is not to sandbox test code (workspace trust is required
-     * for this extension) but rather to avoid side-effects from evaluation which
-     * are much more likely when other code is required.
-     */
-    const replacedGlobals = new Set([
-      // avoid side-effects:
-      'require',
-      'process',
-      // avoid printing to the console from tests:
-      'console',
-    ]);
-
     const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
 
     // A placeholder object that returns itself for all functions calls and method accesses.
-    const placeholder: () => unknown = () =>
-      new Proxy(placeholder, {
+    function placeholder(): unknown {
+      return new Proxy(placeholder, {
         get: (obj, target) => {
           const desc = Object.getOwnPropertyDescriptor(obj, target);
           if (desc && !desc.writable && !desc.configurable) {
@@ -67,6 +70,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         },
         set: () => true,
       });
+    }
 
     function makeTesterFunction(
       kind: NodeKind,
@@ -161,57 +165,151 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     }
 
     let sourceMap: TraceMap | undefined;
+    [code, sourceMap] = await this.transpileCode(filePath, code);
+
+    // currently these are the same, but they might be different in the future?
+    const suiteFunction = makeTesterFunction(NodeKind.Suite, sourceMap);
+    const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
+
+    const symbols = this.settings;
+    const contextObj = new Proxy(
+      {
+        __dirname: path.dirname(filePath),
+        __filename: path.basename(filePath),
+      } as any,
+      {
+        get(target, prop) {
+          if (symbols.value.suite.includes(prop as string)) {
+            return suiteFunction;
+          } else if (symbols.value.test.includes(prop as string)) {
+            return testFunction;
+          } else if (prop in target) {
+            return target[prop]; // top-level `var` defined get set on the contextObj
+          } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
+            return (globalThis as any)[prop];
+          } else {
+            return placeholder();
+          }
+        },
+      },
+    );
+
+    await this.evaluate(contextObj, filePath, code);
+
+    return stack[0].children;
+  }
+
+  protected evaluate(contextObj: vm.Context, filePath: string, code: string) {
+    vm.runInNewContext(code, contextObj, {
+      timeout: this.settings.value.extractTimeout,
+      filename: filePath,
+    });
+  }
+
+  protected buildDynamicModules(code: string): Map<string, Set<string>> {
+    // while it is possible to dynamically react on modules imported
+    // we cannot dynamically access the imported items.
+    // e.g. on an 'import { a, b, c} from 'module';
+    // we get a dynamic callback for any imported module like 'module'
+    // but we don't get any info about the imported items like {a, b, c}
+    // Thats why we parse and walk the AST to collect all specifiers
+    // imported for a module to create vm.SyntheticModule instances on-the-fly
+
+    const parsed = acornParse(code, acornOptions) as Node;
+
+    const modules = new Map<string, Set<string>>();
+
+    acornWalk.recursive(
+      parsed,
+      {},
+      {
+        ImportDeclaration: (node) => {
+          if (typeof node.source.value === 'string') {
+            const module = node.source.value;
+            let specifiers = modules.get(module);
+            if (!specifiers) {
+              specifiers = new Set<string>();
+              modules.set(module, specifiers);
+            }
+
+            // for simplicity create a default and namespace for all
+            // modules. this keeps us safe on dynamic imports
+            specifiers.add('default');
+
+            if (node.specifiers.length === 0) {
+              // side effect import
+            } else {
+              for (const spec of node.specifiers) {
+                switch (spec.type) {
+                  case 'ImportSpecifier':
+                    switch (spec.imported.type) {
+                      case 'Identifier':
+                        // import { ident } from 'module';
+                        specifiers.add(spec.imported.name);
+                        break;
+                      case 'Literal':
+                        // import { "string name" } from 'module';
+                        if (typeof spec.imported.value === 'string') {
+                          specifiers.add(spec.imported.value);
+                        }
+                        break;
+                    }
+                    break;
+                  case 'ImportDefaultSpecifier':
+                    // import default from 'module'
+                    // import { default as alias } from 'module'
+                    break;
+                  case 'ImportNamespaceSpecifier':
+                    // import * as name from 'module';
+                    break;
+                }
+              }
+            }
+          }
+        },
+        // we don't handle dynamic import expressions here, they are exposed
+        ImportExpression: undefined,
+      },
+    );
+
+    return modules;
+  }
+
+  async transpileCode(filePath: string, code: string): Promise<[string, TraceMap | undefined]> {
+    let sourceMap: TraceMap | undefined;
     const needsTranspile = isTypeScript(filePath) || isEsm(filePath, code);
     // transpile typescript or ESM via esbuild if needed
     if (needsTranspile) {
-      const tsconfig = this.tsconfigStore.getTsconfig(filePath);
-
       const result = await esbuildTransform(code, {
-        target: `node${process.versions.node.split('.')[0]}`, // target current runtime
-        sourcemap: true, // need source map for correct test positions
-        format: 'cjs', // vm.runInNewContext only supports CJS
-        sourcesContent: false, // optimize source maps
-        minifyWhitespace: false,
-        minify: false,
-        keepNames: true, // reduce CPU
+        ...this.esbuildCommonOptions(filePath),
         sourcefile: filePath, // for auto-detection of the loader
-        platform: 'node', // we will evaluate here in node
         loader: 'default', // use the default loader
-        tsconfigRaw: tsconfig?.config as TsconfigRaw,
       });
 
       code = result.code;
       try {
         sourceMap = new TraceMap(result.map, filePath);
       } catch (e) {
-        logChannel?.error('Error parsing source map of TypeScript output', e);
+        this.logChannel?.error('Error parsing source map of TypeScript output', e);
       }
     }
 
-    // currently these are the same, but they might be different in the future?
-    const suiteFunction = makeTesterFunction(NodeKind.Suite, sourceMap);
-    const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
+    return [code, sourceMap];
+  }
 
-    const contextObj = new Proxy({} as any, {
-      get(target, prop) {
-        if (symbols.suite.includes(prop as string)) {
-          return suiteFunction;
-        } else if (symbols.test.includes(prop as string)) {
-          return testFunction;
-        } else if (prop in target) {
-          return target[prop]; // top-level `var` defined get set on the contextObj
-        } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
-          return (globalThis as any)[prop];
-        } else {
-          return placeholder();
-        }
-      },
-    });
+  protected esbuildCommonOptions(filePath: string): CommonOptions {
+    const tsconfig = this.tsconfigStore.getTsconfig(filePath);
 
-    vm.runInNewContext(code, contextObj, {
-      timeout: symbols.extractTimeout,
-    });
-
-    return stack[0].children;
+    return {
+      target: `node${process.versions.node.split('.')[0]}`, // target current runtime
+      sourcemap: true, // need source map for correct test positions
+      format: 'cjs', // vm.runInNewContext only supports CJS
+      sourcesContent: false, // optimize source maps
+      minifyWhitespace: false,
+      minify: false,
+      keepNames: true, // reduce CPU
+      platform: 'node', // we will evaluate here in node
+      tsconfigRaw: tsconfig?.config as TsconfigRaw,
+    };
   }
 }
