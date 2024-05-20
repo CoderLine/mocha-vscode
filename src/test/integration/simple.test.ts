@@ -18,6 +18,7 @@ import {
   getController,
   integrationTestPrepare,
   onceChanged,
+  onceScanComplete,
 } from '../util';
 
 describe('simple', () => {
@@ -186,7 +187,7 @@ describe('simple', () => {
 
   it('handles changes to .mocharc.js', async () => {
     const c = await getController();
-    const onChange = onceChanged(c);
+    const onChange = onceScanComplete(c);
 
     const configPath = path.join(workspaceFolder, '.mocharc.js');
     const original = await fs.readFile(configPath, 'utf-8');

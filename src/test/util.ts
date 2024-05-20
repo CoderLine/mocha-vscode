@@ -164,6 +164,16 @@ export function onceChanged(controller: Controller, timeout: number = 10000) {
   });
 }
 
+export function onceScanComplete(controller: Controller, timeout: number = 10000) {
+  return new Promise<void>((resolve, reject) => {
+    setTimeout(timeout).then(reject);
+    const l = controller.onScanComplete(() => {
+      l.dispose();
+      resolve();
+    });
+  });
+}
+
 export function buildTestTreeExpectation({ ctrl }: Controller) {
   const e = ['root', []] satisfies TestTreeExpectation;
   buildTreeExpectation(e, ctrl.items);

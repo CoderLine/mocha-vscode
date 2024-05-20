@@ -87,6 +87,7 @@ export class Controller {
   );
   private readonly watcher = this.disposables.add(new MutableDisposable());
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
+  private readonly scanCompleteEmitter = new vscode.EventEmitter<void>();
   private runProfiles = new Map<string, vscode.TestRunProfile[]>();
 
   /** Error item shown in the tree, if any. */
@@ -102,8 +103,9 @@ export class Controller {
     }
   >();
 
-  /** Change emitter used for testing, to pick up when the file watcher detects a chagne */
+  /** Change emitter used for testing, to pick up when the file watcher detects a change */
   public readonly onDidChange = this.didChangeEmitter.event;
+  public readonly onScanComplete = this.scanCompleteEmitter.event;
   private tsconfigStore?: TsConfigStore;
 
   /** Gets run profiles the controller has registerd. */
@@ -130,10 +132,14 @@ export class Controller {
 
     this.recreateDiscoverer();
 
-    const rescan = (reason: string) => {
-      logChannel.info(`Rescan of tests triggered (${reason})`);
-      this.recreateDiscoverer();
-      this.scanFiles();
+    const rescan = async (reason: string) => {
+      try {
+        logChannel.info(`Rescan of tests triggered (${reason})`);
+        this.recreateDiscoverer();
+        await this.scanFiles();
+      } catch (e) {
+        this.logChannel.error(e as Error, 'Failed to rescan tests');
+      }
     };
     this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
     this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
@@ -438,12 +444,14 @@ export class Controller {
     }
 
     if (!this.watcher.value) {
+      this.logChannel.trace('Missing watcher, creating it');
       // starting the watcher will call this again
       return this.startWatchingWorkspace();
     }
 
     const configs = await this.readConfig();
     if (!configs) {
+      this.logChannel.trace('Skipping scan, no configs');
       return;
     }
 
@@ -480,6 +488,8 @@ export class Controller {
     if (this.testsInFiles.size === 0) {
       this.watcher.clear(); // stop watching if there are no tests discovered
     }
+
+    this.scanCompleteEmitter.fire();
   }
 
   /** Gets the test collection for a file of the given URI, descending from the root. */
