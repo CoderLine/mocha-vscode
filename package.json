@@ -38,7 +38,7 @@
         "title": "Mocha for VS Code",
         "properties": {
           "mocha-vscode.extractSettings": {
-            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing.\n- The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.\n- The `test` and `suite` identifiers the process extracts.",
+            "markdownDescription": "Configures how tests get extracted. You can configure:\n\n- The `extractWith` mode, that specifies if tests are extracted.\n  - `evaluation-cjs` (default) Translate the test file to CommonJS and evaluate it with all dependencies mocked.\n  - `evaluation-cjs-full` Translate the test file to CommonJS and fully evaluate it with all dependencies.\n  - `syntax` Parse the file and try to extract the tests from the syntax tree.\n- The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.\n- The `test` and `suite` identifiers the process extracts. Defaults to `["it", "test"]` and `["describe", "suite"]` respectively, covering Mocha's common interfaces.\n\n- `mocha-vscode.debugOptions`: options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options.",
             "type": "object",
             "properties": {
               "suite": {
@@ -56,7 +56,8 @@
               "extractWith": {
                 "type": "string",
                 "enum": [
-                  "evaluation",
+                  "evaluation-cjs",
+                  "evaluation-cjs-full",
                   "syntax"
                 ]
               },
@@ -73,7 +74,7 @@
                 "it",
                 "test"
               ],
-              "extractWith": "evaluation",
+              "extractWith": "evaluation-cjs",
               "extractTimeout": 10000
             },
             "required": [
