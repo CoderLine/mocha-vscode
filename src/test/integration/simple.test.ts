@@ -30,7 +30,7 @@ describe('simple', () => {
     await expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
-      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
       [
         'skip.test.js',
         [
@@ -70,7 +70,7 @@ describe('simple', () => {
 
     await expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
-      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
       [
         'skip.test.js',
         [
@@ -127,6 +127,7 @@ describe('simple', () => {
       'goodbye.test.js/math/division': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
       'folder/nested.test.js/is nested': ['enqueued', 'started', 'passed'],
       'skip.test.js/skip-suite-1/addition': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
@@ -165,6 +166,7 @@ describe('simple', () => {
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
     });
   });
 
@@ -182,6 +184,7 @@ describe('simple', () => {
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
     });
   });
 
@@ -199,6 +202,31 @@ describe('simple', () => {
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
     });
+  });
+
+  it('correct failing test location', async () => {
+    const c = await getController();
+    const run = await captureTestRun(
+      c,
+      new vscode.TestRunRequest(
+        [c.ctrl.items.get('hello.test.js')!.children.get('math')!.children.get('failing')!],
+        undefined,
+        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
+      ),
+    );
+
+    run.expectStates({
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
+    });
+
+    const failed = run.states.find((s) => s.state === 'failed')!;
+
+    expect(failed.message).to.not.be.undefined;
+    expect(failed.message?.location).to.not.be.undefined;
+    expect(failed.message?.location?.uri.toString()).to.include('hello.test.js');
+    expect(path.isAbsolute(failed.message!.location!.uri.fsPath)).to.be.true;
+    expect(failed.message?.location?.range.start.line).to.equal(12);
+    expect(failed.message?.location?.range.start.character).to.equal(5);
   });
 
   it('handles file and directory excludes', async () => {
@@ -239,7 +267,7 @@ describe('simple', () => {
 
     await expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
-      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
       [
         'skip.test.js',
         [

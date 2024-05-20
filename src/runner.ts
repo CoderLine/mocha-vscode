@@ -47,6 +47,8 @@ export class TestRunner {
     config: ConfigurationFile,
     debug: boolean,
   ): RunHandler {
+    const workingDir = path.dirname(config.uri.fsPath);
+
     return async (request) => {
       this.logChannel.debug('Creating new test run ', request);
 
@@ -135,7 +137,12 @@ export class TestRunner {
                 }`,
               );
               const rawErr = stack || err;
-              const locationsReplaced = replaceAllLocations(this.smStore, forceCRLF(rawErr));
+
+              const locationsReplaced = replaceAllLocations(
+                this.smStore,
+                forceCRLF(rawErr),
+                workingDir,
+              );
               if (rawErr) {
                 outputQueue.enqueue(async () =>
                   run.appendOutput(await locationsReplaced, undefined, tcase),
@@ -158,7 +165,7 @@ export class TestRunner {
                   ),
                 );
 
-              const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase!);
+              const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase!, workingDir);
               outputQueue.enqueue(async () => {
                 const location = await locationProm;
                 let message: vscode.TestMessage;
@@ -169,7 +176,9 @@ export class TestRunner {
                   message.expectedOutput = outputToString(expected);
                 } else {
                   message = new vscode.TestMessage(
-                    stack ? await sourcemapStack(this.smStore, stack) : await locationsReplaced,
+                    stack
+                      ? await sourcemapStack(this.smStore, stack, workingDir)
+                      : await locationsReplaced,
                   );
                 }
 
@@ -545,17 +554,17 @@ const forEachLeaf = (test: vscode.TestItem, fn: (test: vscode.TestItem) => void)
 
 const escapeRe = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const forceCRLF = (str: string) => str.replace(/(?<!\r)\n/gm, '\r\n');
-const locationRe = /(file:\/{3}.+):([0-9]+):([0-9]+)/g;
+const locationRe = /\(([^):]+?):([0-9]+):([0-9]+)\)[ \t]*\r?\n?/g;
 
 /**
  * Replaces all stack frames in the stack with source-mapped equivalents.
  */
-async function sourcemapStack(store: SourceMapStore, str: string) {
+async function sourcemapStack(store: SourceMapStore, str: string, workingDir: string) {
   locationRe.lastIndex = 0;
 
   const replacements = await Promise.all(
     [...str.matchAll(locationRe)].map(async (match) => {
-      const location = await deriveSourceLocation(store, match);
+      const location = await deriveSourceLocation(store, match, workingDir);
       if (!location) {
         return;
       }
@@ -580,12 +589,12 @@ async function sourcemapStack(store: SourceMapStore, str: string) {
 /**
  * Replaces all file URIs in the string with the source-mapped equivalents.
  */
-async function replaceAllLocations(store: SourceMapStore, str: string) {
+async function replaceAllLocations(store: SourceMapStore, str: string, workingDir: string) {
   const output: (string | Promise<string>)[] = [];
   let lastIndex = 0;
 
   for (const match of str.matchAll(locationRe)) {
-    const locationPromise = deriveSourceLocation(store, match);
+    const locationPromise = deriveSourceLocation(store, match, workingDir);
     const startIndex = match.index || 0;
     const endIndex = startIndex + match[0].length;
 
@@ -622,6 +631,7 @@ async function tryDeriveStackLocation(
   store: SourceMapStore,
   stack: string,
   tcase: vscode.TestItem,
+  workingDir: string,
 ) {
   locationRe.lastIndex = 0;
 
@@ -634,7 +644,7 @@ async function tryDeriveStackLocation(
 
     let best: undefined | { location: vscode.Location; i: number; score: number };
     for (const [i, match] of matches.entries()) {
-      deriveSourceLocation(store, match)
+      deriveSourceLocation(store, match, workingDir)
         .catch(() => undefined)
         .then((location) => {
           if (location) {
@@ -658,11 +668,18 @@ async function tryDeriveStackLocation(
   });
 }
 
-async function deriveSourceLocation(store: SourceMapStore, parts: RegExpMatchArray) {
+async function deriveSourceLocation(
+  store: SourceMapStore,
+  parts: RegExpMatchArray,
+  workingDir: string,
+) {
   const [, fileUriStr, line, col] = parts;
   const fileUri = fileUriStr.startsWith('file:')
     ? vscode.Uri.parse(fileUriStr)
-    : vscode.Uri.file(fileUriStr);
+    : path.isAbsolute(fileUriStr)
+      ? vscode.Uri.file(fileUriStr)
+      : vscode.Uri.file(path.join(workingDir, fileUriStr));
+
   const maintainer = store.maintain(fileUri);
   const mapping = await (maintainer.value || maintainer.refresh());
   const value =

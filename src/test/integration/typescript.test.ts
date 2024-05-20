@@ -8,6 +8,7 @@
  */
 
 import { expect } from 'chai';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { captureTestRun, expectTestTree, getController } from '../util';
 
@@ -15,7 +16,9 @@ describe('typescript', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    await expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
+    await expectTestTree(c, [
+      ['hello.test.ts', [['math', [['addition'], ['failing'], ['subtraction']]]]],
+    ]);
   });
 
   it('runs tests', async () => {
@@ -35,6 +38,7 @@ describe('typescript', () => {
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed'],
     });
   });
 
@@ -55,6 +59,32 @@ describe('typescript', () => {
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed'],
     });
+  });
+
+  it('correct failing test location', async () => {
+    const c = await getController();
+    const run = await captureTestRun(
+      c,
+      new vscode.TestRunRequest(
+        [c.ctrl.items.get('hello.test.ts')!.children.get('math')!.children.get('failing')!],
+        undefined,
+        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
+      ),
+    );
+
+    run.expectStates({
+      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed'],
+    });
+
+    const failed = run.states.find((s) => s.state === 'failed')!;
+
+    expect(failed.message).to.not.be.undefined;
+    expect(failed.message?.location).to.not.be.undefined;
+    expect(failed.message?.location?.uri.toString()).to.include('hello.test.ts');
+    expect(path.isAbsolute(failed.message!.location!.uri.fsPath)).to.be.true;
+    expect(failed.message?.location?.range.start.line).to.equal(25);
+    expect(failed.message?.location?.range.start.character).to.equal(5);
   });
 });
