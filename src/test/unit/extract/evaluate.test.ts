@@ -8,6 +8,7 @@
  */
 
 import { expect } from 'chai';
+import { ConfigValue } from '../../../configValue';
 import { defaultTestSymbols } from '../../../constants';
 import { EvaluationTestDiscoverer } from '../../../discoverer/evaluate';
 import { NodeKind } from '../../../discoverer/types';
@@ -18,7 +19,7 @@ describe('evaluate', () => {
   function extractWithEvaluation(...lines: string[]) {
     const discoverer = new EvaluationTestDiscoverer(
       undefined,
-      defaultTestSymbols,
+      new ConfigValue('', defaultTestSymbols),
       new TsConfigStore(),
     );
     return discoverer.discover('test.js', source(...lines));
