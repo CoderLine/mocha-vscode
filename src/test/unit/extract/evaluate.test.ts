@@ -13,12 +13,13 @@ import { EvaluationTestDiscoverer } from '../../../discoverer/evaluate';
 import { NodeKind } from '../../../discoverer/types';
 import { TsConfigStore } from '../../../tsconfig-store';
 import { source } from '../../util';
+import { ConfigValue } from '../../../configValue';
 
 describe('evaluate', () => {
   function extractWithEvaluation(...lines: string[]) {
     const discoverer = new EvaluationTestDiscoverer(
       undefined,
-      defaultTestSymbols,
+      new ConfigValue('', defaultTestSymbols),
       new TsConfigStore(),
     );
     return discoverer.discover('test.js', source(...lines));

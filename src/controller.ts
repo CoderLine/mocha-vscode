@@ -82,7 +82,7 @@ export class Controller {
   /** Fired when the file associated with the controller is deleted. */
   public readonly onDidDelete: vscode.Event<void>;
 
-  private readonly settings = this.disposables.add(
+  public readonly settings = this.disposables.add(
     new ConfigValue('extractSettings', defaultTestSymbols),
   );
   private readonly watcher = this.disposables.add(new MutableDisposable());
@@ -161,7 +161,7 @@ export class Controller {
 
     this.discoverer = new SettingsBasedFallbackTestDiscoverer(
       this.logChannel,
-      this.settings.value,
+      this.settings,
       this.tsconfigStore!,
     );
   }

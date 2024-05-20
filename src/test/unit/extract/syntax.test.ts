@@ -8,6 +8,7 @@
  */
 
 import { expect } from 'chai';
+import { ConfigValue } from '../../../configValue';
 import { defaultTestSymbols } from '../../../constants';
 import { SyntaxTestDiscoverer } from '../../../discoverer/syntax';
 import { NodeKind } from '../../../discoverer/types';
@@ -16,7 +17,10 @@ import { source } from '../../util';
 
 describe('syntax', () => {
   function extractWithAst(...lines: string[]) {
-    const discoverer = new SyntaxTestDiscoverer(defaultTestSymbols, new TsConfigStore());
+    const discoverer = new SyntaxTestDiscoverer(
+      new ConfigValue('', defaultTestSymbols),
+      new TsConfigStore(),
+    );
     return discoverer.discover('test.js', source(...lines));
   }
 

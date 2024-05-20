@@ -90,7 +90,7 @@ async function backupWorkspace(source: string) {
   return backupFolder;
 }
 
-export async function getController() {
+export async function getController(scan: boolean = true) {
   const c = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
   if (!c.length) {
@@ -98,7 +98,9 @@ export async function getController() {
   }
 
   const controller = c[0];
-  await controller.scanFiles();
+  if (scan) {
+    await controller.scanFiles();
+  }
   return controller;
 }
 

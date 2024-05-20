@@ -11,7 +11,7 @@ import { expect } from 'chai';
 import { buildTestTreeExpectation, getController } from '../util';
 
 describe('typescript top level await', () => {
-  it('discovers tests fails', async () => {
+  it('discovers tests fails cjs', async () => {
     const c = await getController();
 
     const e = buildTestTreeExpectation(c);
