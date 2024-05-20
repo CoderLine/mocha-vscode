@@ -8,6 +8,7 @@
  */
 
 import { expect } from 'chai';
+import { ConfigValue } from '../../../configValue';
 import { defaultTestSymbols } from '../../../constants';
 import { EvaluationTestDiscoverer } from '../../../discoverer/evaluate';
 import { NodeKind } from '../../../discoverer/types';
@@ -18,7 +19,7 @@ describe('evaluate typescript', () => {
   function extractWithEvaluation(...lines: string[]) {
     const discoverer = new EvaluationTestDiscoverer(
       undefined,
-      defaultTestSymbols,
+      new ConfigValue('', defaultTestSymbols),
       new TsConfigStore(),
     );
     return discoverer.discover('test.ts', source(...lines));
@@ -46,6 +47,36 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 1,
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('extracts basic suite with import', async () => {
+    const src = await extractWithEvaluation(
+      "import a from './test';", //
+      "suite('hello', () => {",
+      "  it('works', () => { a() });",
+      '})',
+    );
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        kind: NodeKind.Suite,
+        startLine: 1,
+        startColumn: 0,
+        endColumn: 1,
+        endLine: 3,
+        children: [
+          {
+            name: 'works',
+            kind: NodeKind.Test,
+            startLine: 2,
+            startColumn: 2,
+            endColumn: Number.MAX_SAFE_INTEGER,
+            endLine: 2,
             children: [],
           },
         ],

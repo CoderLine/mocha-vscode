@@ -12,6 +12,7 @@ import type { Options as AcornOptions } from 'acorn';
 import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
 import { Node } from 'estree';
+import type { ConfigValue } from '../configValue';
 import { isTypeScript } from '../constants';
 import { TsConfigStore } from '../tsconfig-store';
 import { IExtensionSettings, IParsedNode, ITestDiscoverer, NodeKind } from './types';
@@ -25,7 +26,7 @@ const enum C {
   Identifier = 'Identifier',
 }
 
-const acornOptions: AcornOptions = {
+export const acornOptions: AcornOptions = {
   ecmaVersion: 'latest',
   locations: true,
   allowReserved: true,
@@ -70,7 +71,7 @@ const traverse = (
 
 export class SyntaxTestDiscoverer implements ITestDiscoverer {
   constructor(
-    private settings: IExtensionSettings,
+    private settings: ConfigValue<IExtensionSettings>,
     private tsconfigStore: TsConfigStore,
   ) {}
 
@@ -89,10 +90,10 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
     }
 
     const interestingName = (name: string) => {
-      if (settings.suite.includes(name)) {
+      if (settings.value.suite.includes(name)) {
         return NodeKind.Suite;
       }
-      if (settings.test.includes(name)) {
+      if (settings.value.test.includes(name)) {
         return NodeKind.Test;
       }
       return undefined;
