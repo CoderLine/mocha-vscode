@@ -21,7 +21,7 @@ export class ConsoleOuputChannel implements LogOutputChannel {
   }
   trace(message: string, ...args: any[]): void {
     this.inner.trace(message, ...args);
-    console.trace(`[Mocha VS Code] ${message}`, ...args);
+    console.debug(`[Mocha VS Code] ${message}`, ...args);
   }
   debug(message: string, ...args: any[]): void {
     this.inner.debug(message, ...args);

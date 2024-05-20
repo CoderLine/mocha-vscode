@@ -64,6 +64,12 @@ export function integrationTestPrepare(name: string) {
 
   afterEach(async () => {
     await restoreWorkspace(workspaceFolder, workspaceBackup);
+    try {
+      const c = getController(false);
+      (await c).scanFiles();
+    } catch (e) {
+      // ignore
+    }
   });
 
   return workspaceFolder;
@@ -91,10 +97,17 @@ async function backupWorkspace(source: string) {
 }
 
 export async function getController(scan: boolean = true) {
+  const c = await tryGetController(scan);
+  if (!c) {
+    throw new Error('no controllers registered');
+  }
+  return c;
+}
+export async function tryGetController(scan: boolean = true) {
   const c = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
-  if (!c.length) {
-    throw new Error('no controllers registered');
+  if (!c || !c.length) {
+    return undefined;
   }
 
   const controller = c[0];
@@ -158,6 +171,16 @@ export function onceChanged(controller: Controller, timeout: number = 10000) {
   return new Promise<void>((resolve, reject) => {
     setTimeout(timeout).then(reject);
     const l = controller.onDidChange(() => {
+      l.dispose();
+      resolve();
+    });
+  });
+}
+
+export function onceDisposed(controller: Controller, timeout: number = 10000) {
+  return new Promise<void>((resolve, reject) => {
+    setTimeout(timeout).then(reject);
+    const l = controller.onDidDispose(() => {
       l.dispose();
       resolve();
     });

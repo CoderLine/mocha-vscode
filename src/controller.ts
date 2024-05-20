@@ -79,15 +79,13 @@ export class Controller {
 
   private discoverer!: SettingsBasedFallbackTestDiscoverer;
 
-  /** Fired when the file associated with the controller is deleted. */
-  public readonly onDidDelete: vscode.Event<void>;
-
   public readonly settings = this.disposables.add(
     new ConfigValue('extractSettings', defaultTestSymbols),
   );
   private readonly watcher = this.disposables.add(new MutableDisposable());
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
   private readonly scanCompleteEmitter = new vscode.EventEmitter<void>();
+  private readonly disposeEmitter = new vscode.EventEmitter<void>();
   private runProfiles = new Map<string, vscode.TestRunProfile[]>();
 
   /** Error item shown in the tree, if any. */
@@ -106,7 +104,10 @@ export class Controller {
   /** Change emitter used for testing, to pick up when the file watcher detects a change */
   public readonly onDidChange = this.didChangeEmitter.event;
   public readonly onScanComplete = this.scanCompleteEmitter.event;
+  public readonly onDidDispose = this.disposeEmitter.event;
   private tsconfigStore?: TsConfigStore;
+
+  public ctrl: vscode.TestController;
 
   /** Gets run profiles the controller has registerd. */
   public get profiles() {
@@ -115,7 +116,6 @@ export class Controller {
 
   constructor(
     private readonly logChannel: vscode.LogOutputChannel,
-    public readonly ctrl: vscode.TestController,
     private readonly wf: vscode.WorkspaceFolder,
     private readonly smStore: SourceMapStore,
     configFileUri: vscode.Uri,
@@ -126,9 +126,12 @@ export class Controller {
       wf.uri.fsPath,
       configFileUri.fsPath,
     );
+    const ctrl = (this.ctrl = vscode.tests.createTestController(
+      configFileUri.toString(),
+      configFileUri.fsPath,
+    ));
     this.disposables.add(ctrl);
     this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf));
-    this.onDidDelete = this.configFile.onDidDelete;
 
     this.recreateDiscoverer();
 
@@ -174,6 +177,7 @@ export class Controller {
 
   public dispose() {
     this.disposables.dispose();
+    this.disposeEmitter.fire();
   }
 
   public async syncFile(uri: vscode.Uri, contents?: () => string) {
