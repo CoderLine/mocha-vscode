@@ -17,6 +17,7 @@ let createCommonOptions = (label) => {
       version: vsCodeVersion,
       env: {
         MOCHA_COLORS: 'true',
+        MOCHA_VSCODE_TEST: 'true'
       },
       mocha: {
         ui: 'bdd',
@@ -34,7 +35,9 @@ let createCommonOptions = (label) => {
     return {
       platform: vsCodePlatform,
       version: vsCodeVersion,
-
+      env: {
+        MOCHA_VSCODE_TEST: 'true'
+      },
       mocha: {
         ui: 'bdd',
         timeout: 60_000,

@@ -9,7 +9,7 @@
 
 import * as vscode from 'vscode';
 
-const sectionName = 'extension-test-runner';
+const sectionName = 'mocha-vscode';
 
 export class ConfigValue<T> {
   private readonly changeEmitter = new vscode.EventEmitter<T>();
@@ -49,7 +49,7 @@ export class ConfigValue<T> {
     this.changeEmitter.dispose();
   }
 
-  private setValue(value: T) {
+  public setValue(value: T) {
     this._value = value;
     this.changeEmitter.fire(this._value);
   }
