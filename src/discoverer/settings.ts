@@ -8,33 +8,58 @@
  */
 
 import * as vscode from 'vscode';
+import { ConfigValue } from '../configValue';
 import { TsConfigStore } from '../tsconfig-store';
 import { EvaluationTestDiscoverer } from './evaluate';
+import { FullEvaluationTestDiscoverer } from './evaluate-full';
 import { SyntaxTestDiscoverer } from './syntax';
 import { IExtensionSettings, IParsedNode, ITestDiscoverer } from './types';
 
 export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
   private _syntax: SyntaxTestDiscoverer;
   private _evaluation: EvaluationTestDiscoverer;
+  private _fullEvaluation: FullEvaluationTestDiscoverer;
 
   constructor(
     private logChannel: vscode.LogOutputChannel,
-    private settings: IExtensionSettings,
+    private settings: ConfigValue<IExtensionSettings>,
     tsconfigStore: TsConfigStore,
   ) {
     this._syntax = new SyntaxTestDiscoverer(settings, tsconfigStore);
     this._evaluation = new EvaluationTestDiscoverer(logChannel, settings, tsconfigStore);
+    this._fullEvaluation = new FullEvaluationTestDiscoverer(logChannel, settings, tsconfigStore);
   }
 
   async discover(filePath: string, code: string): Promise<IParsedNode[]> {
-    if (this.settings.extractWith === 'evaluation') {
-      try {
-        return this._evaluation.discover(filePath, code);
-      } catch (e) {
-        this.logChannel.error('Error evaluating, will fallback to syntax', e);
-      }
+    let discoverer: ITestDiscoverer;
+    switch (this.settings.value.extractWith) {
+      case 'syntax':
+        discoverer = this._syntax;
+        break;
+      case 'evaluation-cjs':
+        discoverer = this._evaluation;
+        break;
+      case 'evaluation-cjs-full':
+        discoverer = this._fullEvaluation;
+        break;
+      default:
+        discoverer = this._evaluation;
+        break;
     }
 
-    return this._syntax.discover(filePath, code);
+    try {
+      return discoverer.discover(filePath, code);
+    } catch (e) {
+      if (discoverer !== this._syntax) {
+        this.logChannel.error(
+          `Error discovering tests with ${this.settings.value.extractWith}, will fallback to syntax`,
+          e,
+        );
+        return this._syntax.discover(filePath, code);
+      } else {
+        this.logChannel.error(`Error discovering tests with ${this.settings.value.extractWith}`, e);
+        throw e;
+      }
+    }
   }
 }

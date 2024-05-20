@@ -15,9 +15,12 @@ This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/
 
 ## Configuration
 
-- `mocha-vscode.extractSettings`: configures how tests get extracted. You can configure:
+- `mocha-vscode.extractSettings`: Configures how tests get extracted. You can configure:
 
-  - The `extractWith` mode, that specifies if tests are extracted via evaluation or syntax-tree parsing. Evaluation is likely to lead to better results, but may have side-effects. Defaults to `evaluation`.
+  - The `extractWith` mode, that specifies if tests are extracted.
+    - `evaluation-cjs` (default) Translate the test file to CommonJS and evaluate it with all dependencies mocked.
+    - `evaluation-cjs-full` Translate the test file to CommonJS and fully evaluate it with all dependencies.
+    - `syntax` Parse the file and try to extract the tests from the syntax tree.
   - The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.
   - The `test` and `suite` identifiers the process extracts. Defaults to `["it", "test"]` and `["describe", "suite"]` respectively, covering Mocha's common interfaces.
 
