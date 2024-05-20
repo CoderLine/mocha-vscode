@@ -13,6 +13,7 @@ import split2 from 'split2';
 import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
+import { ConsoleOuputChannel } from './consoleLogChannel';
 import { configFilePattern, getControllersForTestCommand } from './constants';
 import { Controller } from './controller';
 import { getPathToNode } from './node';
@@ -26,7 +27,11 @@ const enum FolderSyncState {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  const logChannel = vscode.window.createOutputChannel('Mocha Test Runner', { log: true });
+  let logChannel = vscode.window.createOutputChannel('Mocha Test Runner', { log: true });
+
+  if (process.env.MOCHA_VSCODE_TEST) {
+    logChannel = new ConsoleOuputChannel(logChannel);
+  }
 
   const packageJson = context.extension.packageJSON;
   const extensionInfo = context.extension.packageJSON['mocha-vscode'];
