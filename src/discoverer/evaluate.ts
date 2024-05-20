@@ -59,8 +59,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
 
     // A placeholder object that returns itself for all functions calls and method accesses.
-    const placeholder: () => unknown = () =>
-      new Proxy(placeholder, {
+    function placeholder(): unknown {
+      return new Proxy(placeholder, {
         get: (obj, target) => {
           const desc = Object.getOwnPropertyDescriptor(obj, target);
           if (desc && !desc.writable && !desc.configurable) {
@@ -70,6 +70,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         },
         set: () => true,
       });
+    }
 
     function makeTesterFunction(
       kind: NodeKind,
