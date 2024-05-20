@@ -166,7 +166,7 @@
     "error-stack-parser": "^2.1.4",
     "esbuild": "^0.21.3",
     "eslint-visitor-keys": "^4.0.0",
-    "glob": "^10.3.12",
+    "glob": "^10.3.15",
     "minimatch": "^9.0.4",
     "split2": "^4.2.0",
     "stacktrace-parser": "^0.1.10",
