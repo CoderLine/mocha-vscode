@@ -234,7 +234,7 @@ describe('simple', () => {
     while (!ok) {
       updated += '\n//';
       await fs.writeFile(configPath, updated);
-      ok = await Promise.race([onChange.then(() => true), setTimeout(500)]);
+      ok = await Promise.race([onChange.then(() => true), setTimeout(1000)]);
     }
 
     await expectTestTree(c, [

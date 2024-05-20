@@ -134,7 +134,7 @@ export class Controller {
 
     const rescan = async (reason: string) => {
       try {
-        logChannel.info(`Rescan of tests triggered (${reason})`);
+        logChannel.info(`Rescan of tests triggered (${reason}) - ${this.configFile.uri}}`);
         this.recreateDiscoverer();
         await this.scanFiles();
       } catch (e) {
