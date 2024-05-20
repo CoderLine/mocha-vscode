@@ -31,6 +31,13 @@ describe('simple', () => {
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      [
+        'skip.test.js',
+        [
+          ['skip-suite-1', [['addition'], ['subtraction']]],
+          ['skip-suite-2', [['addition'], ['subtraction']]],
+        ],
+      ],
     ]);
   });
 
@@ -44,6 +51,13 @@ describe('simple', () => {
     await expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
+      [
+        'skip.test.js',
+        [
+          ['skip-suite-1', [['addition'], ['subtraction']]],
+          ['skip-suite-2', [['addition'], ['subtraction']]],
+        ],
+      ],
     ]);
   });
 
@@ -57,6 +71,13 @@ describe('simple', () => {
     await expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      [
+        'skip.test.js',
+        [
+          ['skip-suite-1', [['addition'], ['subtraction']]],
+          ['skip-suite-2', [['addition'], ['subtraction']]],
+        ],
+      ],
     ]);
   });
 
@@ -78,6 +99,13 @@ describe('simple', () => {
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['subtraction']]],
+      [
+        'skip.test.js',
+        [
+          ['skip-suite-1', [['addition'], ['subtraction']]],
+          ['skip-suite-2', [['addition'], ['subtraction']]],
+        ],
+      ],
     ]);
   });
 
@@ -100,6 +128,10 @@ describe('simple', () => {
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
       'folder/nested.test.js/is nested': ['enqueued', 'started', 'passed'],
+      'skip.test.js/skip-suite-1/addition': ['enqueued', 'skipped'],
+      'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
+      'skip.test.js/skip-suite-2/addition': ['enqueued', 'skipped'],
+      'skip.test.js/skip-suite-2/subtraction': ['enqueued', 'started', 'passed'],
     });
   });
 
@@ -182,6 +214,10 @@ describe('simple', () => {
 
     run.expectStates({
       'goodbye.test.js/math/division': ['enqueued', 'started', 'passed'],
+      'skip.test.js/skip-suite-1/addition': ['enqueued', 'skipped'],
+      'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
+      'skip.test.js/skip-suite-2/addition': ['enqueued', 'skipped'],
+      'skip.test.js/skip-suite-2/subtraction': ['enqueued', 'started', 'passed'],
     });
   });
 
@@ -204,6 +240,13 @@ describe('simple', () => {
     await expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      [
+        'skip.test.js',
+        [
+          ['skip-suite-1', [['addition'], ['subtraction']]],
+          ['skip-suite-2', [['addition'], ['subtraction']]],
+        ],
+      ],
     ]);
   });
 });
