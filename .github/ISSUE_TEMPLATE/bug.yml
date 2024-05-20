@@ -62,7 +62,7 @@ body:
         Name: Mocha Test Runner
         Id: coderline.mocha-vscode
         Description: Run and debug Mocha tests right within VS Code.
-        Version: 1.0.0
+        Version: 1.1.0
         Publisher: CoderLine
         VS Marketplace Link: https://marketplace.visualstudio.com/items?itemName=coderline.mocha-vscode
     validations:
