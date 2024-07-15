@@ -139,7 +139,7 @@
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.0",
     "@vscode/vsce": "^2.27.0",
-    "acorn": "^8.11.3",
+    "acorn": "^8.12.1",
     "chai": "^4.4.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
