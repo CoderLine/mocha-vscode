@@ -27,10 +27,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build and Publish
-        run: npm run publish:prerelease
+      - name: Build and Package
+        run: npm run package:release
+
+      - name: Publish (Microsoft Extension Gallery)
+        run: npm run publish:vsce:prerelease
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Build and Publish (Open VSX Registry)
+        run: npm run publish:ovsx:prerelease
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
 
   release:
     name: Release (Full)
@@ -50,7 +59,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build and Publish
-        run: npm run publish:release
+      - name: Build and Package
+        run: npm run package:release
+
+      - name: Build and Publish (Microsoft Extension Gallery)
+        run: npm run publish:vsce:release
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Build and Publish (Open VSX Registry)
+        run: npm run publish:ovsx:release
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}

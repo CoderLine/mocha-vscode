@@ -107,8 +107,10 @@
   "homepage": "https://github.com/CoderLine/mocha-vscode#readme",
   "main": "./out/extension.js",
   "scripts": {
-    "publish:release": "npm run compile && tsx ./scripts/prerelease.mts && npx @vscode/vsce publish",
-    "publish:prerelease": "npm run compile && tsx ./scripts/prerelease.mts --pre-release && npx @vscode/vsce publish --pre-release",
+    "publish:vsce:release": "npx @vscode/vsce publish",
+    "publish:vsce:prerelease": "npx @vscode/vsce publish --pre-release",
+    "publish:ovsx:release": "npx ovsx publish",
+    "publish:ovsx:prerelease": "npx ovsx publish --pre-release",
     "package:release": "npm run compile && tsx ./scripts/prerelease.mts && npx @vscode/vsce package",
     "package:prerelease": "npm run compile && tsx ./scripts/prerelease.mts --pre-release && npx @vscode/vsce package --pre-release",
     "vscode:prepublish": "npm run compile",
