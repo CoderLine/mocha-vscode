@@ -165,7 +165,7 @@ export class TestRunner {
                   ),
                 );
 
-              const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase!, workingDir);
+              const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase, workingDir);
               outputQueue.enqueue(async () => {
                 const location = await locationProm;
                 let message: vscode.TestMessage;
@@ -183,7 +183,7 @@ export class TestRunner {
                 }
 
                 message.location = location ?? testFirstLine;
-                run.failed(tcase!, message, duration);
+                run.failed(tcase, message, duration);
               });
               break;
             }

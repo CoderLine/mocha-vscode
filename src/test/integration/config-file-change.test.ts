@@ -28,7 +28,7 @@ describe('config-file-change', () => {
 
     // initial state
     await c.scanFiles();
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
     ]);
@@ -62,7 +62,7 @@ describe('config-file-change', () => {
     // scan and test results
     expect(c).to.not.be.undefined;
     c!.scanFiles();
-    await expectTestTree(c!, [
+    expectTestTree(c!, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
     ]);
@@ -73,7 +73,7 @@ describe('config-file-change', () => {
 
     // initial state
     await c.scanFiles();
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
     ]);
@@ -101,6 +101,6 @@ describe('config-file-change', () => {
     // scan and test results
     expect(c).to.not.be.undefined;
     c!.scanFiles();
-    await expectTestTree(c!, [['hello.test.js', [['math', [['addition'], ['subtraction']]]]]]);
+    expectTestTree(c!, [['hello.test.js', [['math', [['addition'], ['subtraction']]]]]]);
   });
 });

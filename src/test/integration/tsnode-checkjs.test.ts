@@ -14,7 +14,7 @@ import { captureTestRun, expectTestTree, getController } from '../util';
 describe('tsnode-checkjs', () => {
   it('discovers tests', async () => {
     const c = await getController();
-    await expectTestTree(c, [['test', [['hello.spec.ts', [['math', [['addition']]]]]]]]);
+    expectTestTree(c, [['test', [['hello.spec.ts', [['math', [['addition']]]]]]]]);
   });
 
   it('runs tests', async () => {

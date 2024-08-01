@@ -15,7 +15,7 @@ describe('overlapping tests', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       [
         'folder',
         [

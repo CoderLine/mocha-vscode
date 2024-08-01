@@ -102,7 +102,7 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
     const stack: { node: Node; r: IParsedNode }[] = [];
     stack.push({ node: undefined, r: { children: [] } } as any);
 
-    traverse(ast as Node, {
+    traverse(ast, {
       enter(node) {
         if (node.type !== C.CallExpression || node.arguments.length < 2) {
           return;
