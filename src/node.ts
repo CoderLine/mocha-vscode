@@ -10,7 +10,7 @@
 import * as vscode from 'vscode';
 import which from 'which';
 
-let pathToNode: string | undefined = undefined;
+let pathToNode: string | null = null;
 
 export async function getPathToNode(logChannel: vscode.LogOutputChannel) {
   // We cannot use process.execPath as this points to code.exe which is an electron application
