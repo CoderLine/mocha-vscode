@@ -37,6 +37,6 @@ describe('no-config', () => {
     // scan and test results
     expect(c).to.not.be.undefined;
     c!.scanFiles();
-    await expectTestTree(c!, [['hello.test.js', [['math', [['addition'], ['subtraction']]]]]]);
+    expectTestTree(c!, [['hello.test.js', [['math', [['addition'], ['subtraction']]]]]]);
   });
 });

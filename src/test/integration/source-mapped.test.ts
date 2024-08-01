@@ -16,7 +16,7 @@ describe('source mapped', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    await expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
+    expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
   });
 
   it('has correct test locations', async () => {
@@ -64,7 +64,7 @@ describe('source mapped', () => {
       },
     ]);
 
-    await expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
+    expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
   });
 
   it('runs tests', async () => {

@@ -27,7 +27,7 @@ describe('simple', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
@@ -48,7 +48,7 @@ describe('simple', () => {
     await fs.rm(path.join(workspaceFolder, 'hello.test.js'));
     await onChange;
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
       [
@@ -68,7 +68,7 @@ describe('simple', () => {
     await fs.rm(path.join(workspaceFolder, 'folder/nested.test.js'));
     await onChange;
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
       [
@@ -95,7 +95,7 @@ describe('simple', () => {
     );
     await onChange;
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['subtraction']]],
@@ -265,7 +265,7 @@ describe('simple', () => {
       ok = await Promise.race([onChange.then(() => true), setTimeout(1000)]);
     }
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['goodbye.test.js', [['math', [['division']]]]],
       ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
       [

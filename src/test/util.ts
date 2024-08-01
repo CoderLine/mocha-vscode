@@ -203,7 +203,7 @@ export function buildTestTreeExpectation({ ctrl }: Controller) {
   return e[1];
 }
 
-export async function expectTestTree(c: Controller, tree: TestTreeExpectation[]) {
+export function expectTestTree(c: Controller, tree: TestTreeExpectation[]) {
   const e = buildTestTreeExpectation(c);
   assert.deepStrictEqual(e, tree, JSON.stringify(e));
 }

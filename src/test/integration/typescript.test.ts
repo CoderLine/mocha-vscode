@@ -16,7 +16,7 @@ describe('typescript', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['hello.test.ts', [['math', [['addition'], ['failing'], ['subtraction']]]]],
     ]);
   });

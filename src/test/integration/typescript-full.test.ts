@@ -30,7 +30,7 @@ describe('typescript-full', () => {
       extractWith: 'evaluation-cjs-full',
     });
 
-    await expectTestTree(c, [
+    expectTestTree(c, [
       ['hello.test.ts', [['math', [['addition'], ['dynamic1'], ['dynamic2'], ['subtraction']]]]],
     ]);
   });

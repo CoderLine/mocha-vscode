@@ -122,11 +122,13 @@
     "watch": "npm run clean && tsc --watch",
     "test": "tsc && vscode-test",
     "prettier": "prettier --write src",
-    "lint": "eslint . --ext .ts,.tsx,.js",
-    "fix": "eslint . --ext .ts,.tsx,.js --fix"
+    "lint": "eslint .",
+    "fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@eslint/js": "^9.8.0",
     "@types/chai": "^4.3.17",
+    "@types/eslint__js": "^8.42.3",
     "@types/estree": "^1.0.5",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.7",
@@ -155,7 +157,8 @@
     "sinon": "^18.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.16.5",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.0.0"
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.25",
