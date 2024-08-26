@@ -126,7 +126,7 @@
     "fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.0",
+    "@eslint/js": "^9.9.1",
     "@types/chai": "^4.3.17",
     "@types/eslint__js": "^8.42.3",
     "@types/estree": "^1.0.5",
