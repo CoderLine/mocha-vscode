@@ -138,7 +138,7 @@
     "@types/split2": "^4.2.3",
     "@types/yargs": "^17.0.33",
     "@typescript-eslint/eslint-plugin": "^8.2.0",
-    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/parser": "^8.2.0",
     "@vscode/dts": "^0.4.1",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
