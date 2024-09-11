@@ -26,6 +26,8 @@ This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/
 
 - `mocha-vscode.debugOptions`: options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options.
 
+- `mocha-vscode.testEnvVariables`: environment variables that are passed when running tests. This is useful for setting things like `NODE_ENV`.
+
 ## Features
 
 ### Show, Running and Debugging Tests
