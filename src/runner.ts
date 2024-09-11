@@ -40,7 +40,10 @@ export class TestRunner {
     private readonly logChannel: vscode.LogOutputChannel,
     private readonly smStore: SourceMapStore,
     private readonly launchConfig: ConfigValue<Record<string, any>>,
-  ) {}
+    private readonly envVars: ConfigValue<Record<string, string>>,
+  ) {
+    this.logChannel.debug(`Test runner created with config ${envVars.value}`);
+  }
 
   private performanceMap: Record<vscode.TestItem['id'], number> = {};
 
@@ -261,6 +264,8 @@ export class TestRunner {
       const includedSessions = new Set<vscode.DebugSession | undefined>();
       const launchConfig = this.launchConfig.value || {};
 
+      this.logChannel.info('Start test execution with env', this.envVars.value);
+
       Promise.resolve(
         vscode.debug.startDebugging(config.wf, {
           ...launchConfig,
@@ -269,7 +274,7 @@ export class TestRunner {
           name: `Mocha Test (${config.uri.fsPath})`,
           program: spawnArgs[1],
           args: [...spawnArgs.slice(2), ...(launchConfig.args || [])],
-          env: { ...launchConfig.env },
+          env: { ...launchConfig.env, ...this.envVars.value },
 
           __extensionSessionKey: sessionKey,
         }),
@@ -342,10 +347,12 @@ export class TestRunner {
     const spawnArgs = await config.getMochaSpawnArgs(args);
     this.logChannel.info('Start test execution with args', spawnArgs);
 
+    this.logChannel.info('Start test execution with env', this.envVars.value);
+
     const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
       const p = spawn(spawnArgs[0], spawnArgs.slice(1), {
         cwd: path.dirname(config.uri.fsPath),
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...this.envVars.value },
       });
       p.on('spawn', () => resolve(p));
       p.on('error', reject);

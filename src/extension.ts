@@ -41,7 +41,12 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   const smStore = new SourceMapStore();
-  const runner = new TestRunner(logChannel, smStore, new ConfigValue('debugOptions', {}));
+  const runner = new TestRunner(
+    logChannel,
+    smStore,
+    new ConfigValue('debugOptions', {}),
+    new ConfigValue('testEnvVariables', {}),
+  );
 
   const watchers: Map<string /* workspace folder */, WorkspaceFolderWatcher> = new Map<
     string,

@@ -88,6 +88,11 @@
             "type": "object",
             "additionalProperties": true,
             "markdownDescription": "Options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options."
+          },
+          "mocha-vscode.testEnvVariables": {
+            "type": "object",
+            "additionalProperties": true,
+            "markdownDescription": "Env vars to set when running tests."
           }
         }
       }
