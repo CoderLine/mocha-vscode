@@ -42,8 +42,6 @@ export class TestRunner {
     private readonly launchConfig: ConfigValue<Record<string, any>>,
   ) {}
 
-  private performanceMap: Record<vscode.TestItem['id'], number> = {};
-
   public makeHandler(
     ctrl: vscode.TestController,
     config: ConfigurationFile,
@@ -99,10 +97,7 @@ export class TestRunner {
             case MochaEvent.TestStart: {
               const { file, path } = parsed[1];
               const test = compiledFileTests.lookup(file, path);
-              if (test) {
-                this.performanceMap[test.id] = performance.now();
-                run.started(test);
-              }
+              if (test) run.started(test);
               break;
             }
             case MochaEvent.SuiteStart: {
@@ -118,7 +113,7 @@ export class TestRunner {
             }
             case MochaEvent.Pass: {
               ranAnyTest = true;
-              const { file, path } = parsed[1];
+              const { file, path, duration } = parsed[1];
               enqueueLine(
                 `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
                   path[path.length - 1]
@@ -126,8 +121,7 @@ export class TestRunner {
               );
               const test = compiledFileTests.lookup(file, path);
               if (test) {
-                run.passed(test, performance.now() - this.performanceMap[test.id]);
-                delete this.performanceMap[test.id];
+                run.passed(test, duration);
                 leafTests.delete(test);
               }
               break;
