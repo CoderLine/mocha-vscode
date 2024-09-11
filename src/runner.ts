@@ -41,9 +41,7 @@ export class TestRunner {
     private readonly smStore: SourceMapStore,
     private readonly launchConfig: ConfigValue<Record<string, any>>,
     private readonly envVars: ConfigValue<Record<string, string>>,
-  ) {
-    this.logChannel.debug(`Test runner created with config ${envVars.value}`);
-  }
+  ) {}
 
   private performanceMap: Record<vscode.TestItem['id'], number> = {};
 
