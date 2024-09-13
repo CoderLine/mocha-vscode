@@ -42,7 +42,7 @@ export class TestRunner {
     private readonly launchConfig: ConfigValue<Record<string, any>>,
   ) {}
 
-  private currentRunningTest: vscode.TestItem | null = null;
+  private currentRunningTest?: vscode.TestItem;
 
   public makeHandler(
     ctrl: vscode.TestController,
@@ -89,7 +89,7 @@ export class TestRunner {
             parsed = JSON.parse(line);
           } catch {
             // just normal output
-            enqueueLine(line, this.currentRunningTest ?? undefined);
+            enqueueLine(line, this.currentRunningTest);
             return;
           }
           switch (parsed[0]) {
@@ -127,7 +127,7 @@ export class TestRunner {
                 test,
               );
               if (test) {
-                this.currentRunningTest = null;
+                this.currentRunningTest = undefined;
                 run.passed(test);
                 leafTests.delete(test);
               }
@@ -191,7 +191,7 @@ export class TestRunner {
                 }
 
                 message.location = location ?? testFirstLine;
-                this.currentRunningTest = null;
+                this.currentRunningTest = undefined;
                 run.failed(tcase, message, duration);
               });
               break;
@@ -202,7 +202,7 @@ export class TestRunner {
             default:
               // just normal output
               outputQueue.enqueue(() =>
-                run.appendOutput(`${line}\r\n`, undefined, this.currentRunningTest ?? undefined),
+                run.appendOutput(`${line}\r\n`, undefined, this.currentRunningTest),
               );
           }
         },
