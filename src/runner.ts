@@ -118,7 +118,7 @@ export class TestRunner {
             }
             case MochaEvent.Pass: {
               ranAnyTest = true;
-              const { file, path } = parsed[1];
+              const { file, path, duration } = parsed[1];
               const test = compiledFileTests.lookup(file, path);
               enqueueLine(
                 `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
@@ -128,7 +128,7 @@ export class TestRunner {
               );
               if (test) {
                 this.currentRunningTest = undefined;
-                run.passed(test);
+                run.passed(test, duration);
                 leafTests.delete(test);
               }
               break;
