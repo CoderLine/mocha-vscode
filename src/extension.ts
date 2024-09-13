@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
     logChannel,
     smStore,
     new ConfigValue('debugOptions', {}),
-    new ConfigValue('testEnvVariables', {}),
+    new ConfigValue('env', {}),
   );
 
   const watchers: Map<string /* workspace folder */, WorkspaceFolderWatcher> = new Map<
