@@ -93,7 +93,7 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   async getMochaSpawnArgs(customArgs: readonly string[]): Promise<string[]> {
-    this._pathToMocha ??= await this._resolveLocalMochaPath('/bin/mocha.js');
+    this._pathToMocha ??= await this._resolveLocalMochaBinPath();
 
     return [
       await getPathToNode(this.logChannel),
@@ -133,11 +133,29 @@ export class ConfigurationFile implements vscode.Disposable {
     throw new HumanError(`Could not find node_modules above '${mocha}'`);
   }
 
-  private _resolveLocalMochaPath(suffix?: string): Promise<string> {
+  private async _resolveLocalMochaBinPath(): Promise<string> {
+    try {
+      const packageJsonPath = await this._resolveLocalMochaPath('/package.json');
+      const packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf-8'));
+      let binPath = packageJson?.bin?.mocha;
+      if (binPath) {
+        binPath = path.join(path.dirname(packageJsonPath), binPath);
+        await fs.promises.access(binPath);
+        return binPath;
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    this.logChannel.warn('Could not resolve mocha bin path from package.json, fallback to default');
+    return await this._resolveLocalMochaPath('/bin/mocha.js');
+  }
+
+  private _resolveLocalMochaPath(suffix: string = ''): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const dir = path.dirname(this.uri.fsPath);
       this.logChannel.debug(`resolving 'mocha${suffix}' via ${dir}`);
-      this.getResolver().resolve({}, dir, 'mocha' + (suffix ?? ''), {}, (err, res) => {
+      this.getResolver().resolve({}, dir, 'mocha' + suffix, {}, (err, res) => {
         if (err) {
           this.logChannel.error(`resolving 'mocha${suffix}' failed with error ${err}`);
           reject(
