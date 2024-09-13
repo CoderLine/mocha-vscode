@@ -43,6 +43,8 @@ export class TestRunner {
     private readonly env: ConfigValue<Record<string, string>>,
   ) {}
 
+  private currentRunningTest?: vscode.TestItem;
+
   public makeHandler(
     ctrl: vscode.TestController,
     config: ConfigurationFile,
@@ -68,12 +70,12 @@ export class TestRunner {
       let ranAnyTest = false;
       let isOutsideTestRun = true;
       const outputQueue = new OutputQueue();
-      const enqueueLine = (line: string) => {
+      const enqueueLine = (line: string, testItem?: vscode.TestItem) => {
         // vscode can log some preamble as it boots: grey those out
         if (isOutsideTestRun) {
           line = `${styles.dim.open}${line}${styles.dim.close}`;
         }
-        outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`));
+        outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`, undefined, testItem));
       };
 
       const spawnCts = new vscode.CancellationTokenSource();
@@ -88,7 +90,7 @@ export class TestRunner {
             parsed = JSON.parse(line);
           } catch {
             // just normal output
-            enqueueLine(line);
+            enqueueLine(line, this.currentRunningTest);
             return;
           }
           switch (parsed[0]) {
@@ -98,7 +100,10 @@ export class TestRunner {
             case MochaEvent.TestStart: {
               const { file, path } = parsed[1];
               const test = compiledFileTests.lookup(file, path);
-              if (test) run.started(test);
+              if (test) {
+                this.currentRunningTest = test;
+                run.started(test);
+              }
               break;
             }
             case MochaEvent.SuiteStart: {
@@ -115,13 +120,15 @@ export class TestRunner {
             case MochaEvent.Pass: {
               ranAnyTest = true;
               const { file, path, duration } = parsed[1];
+              const test = compiledFileTests.lookup(file, path);
               enqueueLine(
                 `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
                   path[path.length - 1]
                 }`,
+                test,
               );
-              const test = compiledFileTests.lookup(file, path);
               if (test) {
+                this.currentRunningTest = undefined;
                 run.passed(test, duration);
                 leafTests.delete(test);
               }
@@ -136,6 +143,7 @@ export class TestRunner {
                 `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${
                   styles.red.close
                 }`,
+                tcase,
               );
               const rawErr = stack || err;
 
@@ -184,6 +192,7 @@ export class TestRunner {
                 }
 
                 message.location = location ?? testFirstLine;
+                this.currentRunningTest = undefined;
                 run.failed(tcase, message, duration);
               });
               break;
@@ -193,7 +202,9 @@ export class TestRunner {
               break;
             default:
               // just normal output
-              outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`));
+              outputQueue.enqueue(() =>
+                run.appendOutput(`${line}\r\n`, undefined, this.currentRunningTest),
+              );
           }
         },
         token: spawnCts.token,
@@ -610,7 +621,7 @@ async function replaceAllLocations(store: SourceMapStore, str: string, workingDi
     output.push(
       locationPromise.then((location) =>
         location
-          ? `${location.uri}:${location.range.start.line + 1}:${location.range.start.character + 1}`
+          ? `${location.uri}:${location.range.start.line}:${location.range.start.character + 1}`
           : match[0],
       ),
     );
