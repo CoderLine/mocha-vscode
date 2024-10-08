@@ -104,7 +104,7 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
 
     traverse(ast, {
       enter(node) {
-        if (node.type !== C.CallExpression || node.arguments.length < 2) {
+        if (node.type !== C.CallExpression) {
           return;
         }
 
