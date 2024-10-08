@@ -78,7 +78,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
       directive?: string,
     ) {
       const fn = (name: string, callback: () => void) => {
-        if (typeof name !== 'string' || typeof callback !== 'function') {
+        if (typeof name !== 'string') {
           return placeholder();
         }
 
