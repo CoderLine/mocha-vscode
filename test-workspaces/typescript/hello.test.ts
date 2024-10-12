@@ -1,4 +1,8 @@
 import { strictEqual } from 'node:assert';
+import path, { join } from 'node:path';
+
+path.join('', '');
+join('', '');
 
 // just some typescript code which would be valid directly in Node
 

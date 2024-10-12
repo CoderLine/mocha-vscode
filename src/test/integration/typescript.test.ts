@@ -84,7 +84,7 @@ describe('typescript', () => {
     expect(failed.message?.location).to.not.be.undefined;
     expect(failed.message?.location?.uri.toString()).to.include('hello.test.ts');
     expect(path.isAbsolute(failed.message!.location!.uri.fsPath)).to.be.true;
-    expect(failed.message?.location?.range.start.line).to.equal(25);
+    expect(failed.message?.location?.range.start.line).to.equal(29);
     expect(failed.message?.location?.range.start.character).to.equal(5);
   });
 });
