@@ -10,6 +10,18 @@
 import * as vscode from 'vscode';
 import which from 'which';
 
+export async function getPathTo(logChannel: vscode.LogOutputChannel, bin: string, name: string) {
+  logChannel.debug(`Resolving ${name} executable`);
+  let pathToBin = await which(bin, { nothrow: true });
+  if (pathToBin) {
+    logChannel.debug(`Found ${name} in PATH at '${pathToBin}'`);
+  } else {
+    pathToBin = process.execPath;
+    logChannel.debug(`${name} not found in PATH using '${pathToBin}' as fallback`);
+  }
+  return pathToBin;
+}
+
 let pathToNode: string | null = null;
 
 export async function getPathToNode(logChannel: vscode.LogOutputChannel) {
@@ -17,14 +29,16 @@ export async function getPathToNode(logChannel: vscode.LogOutputChannel) {
   // also with ELECTRON_RUN_AS_NODE this can lead to errors (e.g. with the --import option)
   // we prefer to use the system level node
   if (!pathToNode) {
-    logChannel.debug('Resolving Node.js executable');
-    pathToNode = await which('node', { nothrow: true });
-    if (pathToNode) {
-      logChannel.debug(`Found Node.js in PATH at '${pathToNode}'`);
-    } else {
-      pathToNode = process.execPath;
-      logChannel.debug(`Node.js not found in PATH using '${pathToNode}' as fallback`);
-    }
+    pathToNode = await getPathTo(logChannel, 'node', 'Node.js');
   }
   return pathToNode;
+}
+
+let pathToNpm: string | null = null;
+
+export async function getPathToNpm(logChannel: vscode.LogOutputChannel) {
+  if (!pathToNpm) {
+    pathToNpm = await getPathTo(logChannel, 'npm', 'NPM');
+  }
+  return pathToNpm;
 }
