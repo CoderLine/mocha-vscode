@@ -62,11 +62,31 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     function placeholder(): unknown {
       return new Proxy(placeholder, {
         get: (obj, target) => {
-          const desc = Object.getOwnPropertyDescriptor(obj, target);
-          if (desc && !desc.writable && !desc.configurable) {
-            return desc.value; // avoid invariant volation https://stackoverflow.com/q/75148897
+          try {
+            const desc = Object.getOwnPropertyDescriptor(obj, target);
+            if (desc && !desc.writable && !desc.configurable) {
+              return desc.value; // avoid invariant volation https://stackoverflow.com/q/75148897
+            }
+            return placeholder();
+          } catch (e) {
+            return placeholder();
           }
+        },
+        set: () => true,
+        apply: () => {
           return placeholder();
+        },
+      });
+    }
+
+    function objectPlaceholder(originalObject: any): unknown {
+      return new Proxy(objectPlaceholder, {
+        get: (_, target) => {
+          if (target === 'create') {
+            return placeholder();
+          } else {
+            return originalObject[target];
+          }
         },
         set: () => true,
       });
@@ -186,6 +206,15 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
           } else if (prop in target) {
             return target[prop]; // top-level `var` defined get set on the contextObj
           } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
+            // Bug #153: ESBuild will wrap require() calls into __toESM which breaks quite some things
+            // we want to keep our Proxy placeholder object in all scenarios
+            // Due to that we provide a special proxy object which will create again placeholder proxies
+            // on Object.create
+            // https://github.com/evanw/esbuild/blob/d34e79e2a998c21bb71d57b92b0017ca11756912/internal/runtime/runtime.go#L231-L242
+            if (prop === 'Object') {
+              return objectPlaceholder((globalThis as any)[prop]);
+            }
+
             return (globalThis as any)[prop];
           } else {
             return placeholder();
