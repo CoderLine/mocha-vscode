@@ -211,7 +211,11 @@ export class Controller {
     try {
       tree = await this.discoverer.discover(uri.fsPath, contents);
     } catch (e) {
-      this.logChannel.error('Error while test extracting ', e);
+      this.logChannel.error(
+        'Error while test extracting ',
+        (e as Error).message,
+        (e as Error).stack,
+      );
       this.deleteFileTests(uri.toString());
 
       const errorFile = last(this.getContainingItemsForFile(uri, { compiledFile: uri }))!.item!;
