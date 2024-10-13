@@ -23,4 +23,6 @@ describe('math', () => {
   it('subtraction', async () => {
     strictEqual((1 - 1) as number, 0 as any as number);
   });
+
+  it('pending');
 });
