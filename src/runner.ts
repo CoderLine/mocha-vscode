@@ -511,7 +511,12 @@ class CompiledFileTests {
       let candidate: vscode.TestItem | undefined = item;
       for (let i = 0; i < path.length && candidate; i++) {
         const pathPart = path[i];
-        if (pathPart.startsWith('"before all" hook') || pathPart.startsWith('"before each" hook')) {
+        if (
+          pathPart.startsWith('"before all" hook') ||
+          pathPart.startsWith('"before each" hook') ||
+          pathPart.startsWith('"after all" hook') ||
+          pathPart.startsWith('"after each" hook')
+        ) {
           break;
         }
         candidate = candidate.children.get(pathPart);
