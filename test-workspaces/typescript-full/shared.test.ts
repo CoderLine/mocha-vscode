@@ -7,5 +7,7 @@ export function createTests(names: string[]) {
     it(name, ()=> {
       strictEqual((1 + 1) as number, 2 as any as number);
     })
+
+    it(`${name} pending`);
   }
 }
