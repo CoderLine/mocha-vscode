@@ -195,7 +195,7 @@ export async function initESBuild(
 
   logChannel.debug(`Moving files to ${targetPath}`);
   try {
-    //await fs.promises.mkdir(path.dirname(targetPath));
+    await fs.promises.mkdir(path.dirname(targetPath));
     await fs.promises.rename(path.join(temp, 'package'), targetPath);
   } catch (e) {
     logChannel.debug(`Error moving files to ${targetPath}`, e);
