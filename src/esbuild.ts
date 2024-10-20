@@ -184,7 +184,20 @@ export async function initESBuild(
   });
 
   const targetPath = path.join(context.extensionPath, 'node_modules', platformPackageName);
+  try {
+    if (fs.existsSync(targetPath)) {
+      logChannel.debug(`Deleting existing files at ${targetPath}`);
+      await fs.promises.rm(targetPath, { recursive: true, force: true });
+    }
+  } catch (e) {
+    logChannel.debug(`Error deleting files at ${targetPath}`, e);
+  }
+
   logChannel.debug(`Moving files to ${targetPath}`);
-  await fs.promises.rm(targetPath, { recursive: true, force: true });
-  await fs.promises.rename(path.join(temp, 'package'), targetPath);
+  try {
+    //await fs.promises.mkdir(path.dirname(targetPath));
+    await fs.promises.rename(path.join(temp, 'package'), targetPath);
+  } catch (e) {
+    logChannel.debug(`Error moving files to ${targetPath}`, e);
+  }
 }

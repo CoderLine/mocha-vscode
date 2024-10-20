@@ -50,6 +50,22 @@ jobs:
         run: npm test
         if: runner.os != 'Linux'
 
+      - name: Pack for VSIX Tests
+        run: npm run package:test
+        env:
+          TEST_TEMP: ${{ runner.temp }}        
+
+      - name: Run VSIX Tests (Linux)
+        run: xvfb-run -a npm run test:vsix
+        env:
+          TEST_TEMP: ${{ runner.temp }}
+        if: runner.os == 'Linux'
+      - name: Run VSIX Tests (Win/MacOS)
+        run: npm run test:vsix
+        env:
+          TEST_TEMP: ${{ runner.temp }}        
+        if: runner.os != 'Linux'
+
       - name: Run Linter
         if: always()
         run: npm run lint
