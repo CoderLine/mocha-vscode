@@ -22,6 +22,7 @@ export interface IParsedNode {
 export interface IExtensionSettings {
   suite: readonly string[];
   test: readonly string[];
+  hooks: readonly string[];
   extractWith: 'syntax' | 'evaluation-cjs' | 'evaluation-cjs-full';
   extractTimeout: number;
 }

@@ -203,6 +203,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
             return suiteFunction;
           } else if (symbols.value.test.includes(prop as string)) {
             return testFunction;
+          } else if (symbols.value.hooks.includes(prop as string)) {
+            return placeholder();
           } else if (prop in target) {
             return target[prop]; // top-level `var` defined get set on the contextObj
           } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
