@@ -16,6 +16,7 @@ export const configFilePattern = '**/.mocharc.{js,cjs,yaml,yml,json,jsonc}';
 export const defaultTestSymbols: IExtensionSettings = {
   suite: ['describe', 'suite'],
   test: ['it', 'test'],
+  hooks: ['before', 'after', 'beforeEach', 'afterEach'],
   extractWith: 'evaluation-cjs',
   extractTimeout: 10_000,
 };

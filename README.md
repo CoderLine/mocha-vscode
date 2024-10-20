@@ -23,6 +23,7 @@ This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/
     - `syntax` Parse the file and try to extract the tests from the syntax tree.
   - The `extractTimeout` limiting how long the extraction of tests for a single file is allowed to take.
   - The `test` and `suite` identifiers the process extracts. Defaults to `["it", "test"]` and `["describe", "suite"]` respectively, covering Mocha's common interfaces.
+  - The `hooks` identifiers to avoid Mocha executing stuff on test discovery. Defaults to `["before", "after", "beforeEach", "afterEach"]`.
 
 - `mocha-vscode.debugOptions`: options, normally found in the launch.json, to pass when debugging the extension. See [the docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes) for a complete list of options.
 
