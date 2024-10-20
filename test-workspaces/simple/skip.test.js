@@ -15,6 +15,8 @@ describe('skip-suite-2', () => {
     strictEqual(1 + 1, 2);
   });
 
+  it('pending test');
+
   it('subtraction', async () => {
     strictEqual(1 - 1, 0);
   });
