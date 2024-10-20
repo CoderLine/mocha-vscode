@@ -11,6 +11,7 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import * as tar from 'tar';
 import * as vscode from 'vscode';
 
 // this logic is aligned with the ESBuild install script, unfortunately we cannot use pkgAndSubpathForCurrentPlatform directly
@@ -90,6 +91,7 @@ export async function initESBuild(
   let platformPackageAndVersion: string;
   try {
     logChannel.debug('Determining ESBuild platform package and version');
+
     const packageJson = JSON.parse(
       await fs.promises.readFile(
         path.join(context.extensionPath, 'node_modules', 'esbuild', 'package.json'),
@@ -135,23 +137,17 @@ export async function initESBuild(
     return;
   }
 
-  const args = [
-    'install',
-    '--no-save',
-    '--omit=dev',
-    '--omit=optional',
-    '--omit=peer',
-    '--prefer-offline',
-    '--no-audit',
-    '--progress=false',
-    platformPackageAndVersion,
-  ];
-  logChannel.debug(`Running npm install ${args.join(' ')}`);
+  const temp = path.join(context.extensionPath, 'tmp');
+  await fs.promises.rm(temp, { recursive: true, force: true });
+  await fs.promises.mkdir(temp);
+
+  const cmd = ['npm', 'pack', platformPackageAndVersion];
+  logChannel.debug(`Downloading npm package via ${cmd.join(' ')}`);
   await new Promise<void>((resolve, reject) => {
     exec(
-      `npm ${args.join(' ')}`,
+      cmd.join(' '),
       {
-        cwd: context.extensionPath,
+        cwd: temp,
         env: {
           ...process.env,
           ELECTRON_RUN_AS_NODE: '1',
@@ -174,4 +170,34 @@ export async function initESBuild(
       },
     );
   });
+
+  const tgzPath = (
+    await fs.promises.readdir(temp, {
+      withFileTypes: true,
+      recursive: false,
+    })
+  )[0];
+  logChannel.debug(`Extracting ${tgzPath.name}`);
+  await tar.extract({
+    file: path.join(temp, tgzPath.name),
+    cwd: temp,
+  });
+
+  const targetPath = path.join(context.extensionPath, 'node_modules', platformPackageName);
+  try {
+    if (fs.existsSync(targetPath)) {
+      logChannel.debug(`Deleting existing files at ${targetPath}`);
+      await fs.promises.rm(targetPath, { recursive: true, force: true });
+    }
+  } catch (e) {
+    logChannel.debug(`Error deleting files at ${targetPath}`, e);
+  }
+
+  logChannel.debug(`Moving files to ${targetPath}`);
+  try {
+    await fs.promises.mkdir(path.dirname(targetPath));
+    await fs.promises.rename(path.join(temp, 'package'), targetPath);
+  } catch (e) {
+    logChannel.debug(`Error moving files to ${targetPath}`, e);
+  }
 }
