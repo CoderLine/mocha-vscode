@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
+
 const dirname = fileURLToPath(new URL('.', import.meta.url));
 const integrationTestDir = path.join(dirname, 'out/test/integration');
 const workspaceBaseDir = path.join(dirname, 'test-workspaces');
@@ -10,41 +11,46 @@ const workspaceBaseDir = path.join(dirname, 'test-workspaces');
 const vsCodeVersion = process.env.VSCODE_TEST_VERSION ?? 'stable';
 const vsCodePlatform = process.env.VSCODE_TEST_PLATFORM ?? 'desktop';
 
-let createCommonOptions = (label) => {
-  if (process.env.GITHUB_ACTIONS) {
-    return {
-      platform: vsCodePlatform,
-      version: vsCodeVersion,
-      env: {
-        MOCHA_COLORS: 'true',
-        MOCHA_VSCODE_TEST: 'true'
-      },
-      mocha: {
-        ui: 'bdd',
+let extensionDevelopmentPath = '';
 
-        reporter: path.join(dirname, '.vscode-ci-test-reporter.js'),
-        reporterOption: {
-          jsonReporterOption: {
-            output: path.join(dirname, 'test-results', `${label}.json`),
-          },
-        },
-        timeout: 60_000,
+const testMode = process.env.TEST_MODE ?? 'normal';
+
+if (testMode === 'vsix') {
+  const tempDir = process.env.TEST_TEMP ?? path.join(dirname, 'tmp')
+  extensionDevelopmentPath = path.resolve(path.join(tempDir, 'vsix', 'extension'));
+}
+
+function createCommonOptions(label) {
+  /**@type {import('@vscode/test-cli').TestConfiguration} */
+  const options = {
+    platform: vsCodePlatform,
+    version: vsCodeVersion,
+    env: {
+      MOCHA_VSCODE_TEST: 'true',
+    },
+    mocha: {
+      ui: 'bdd',
+      timeout: 60_000,
+    },
+  };
+
+  if (process.env.GITHUB_ACTIONS) {
+    options.mocha.reporter = path.join(dirname, '.vscode-ci-test-reporter.js');
+    options.mocha.reporterOption = {
+      jsonReporterOption: {
+        output: path.join(dirname, 'test-results', `${testMode}-${label}.json`),
       },
     };
-  } else {
-    return {
-      platform: vsCodePlatform,
-      version: vsCodeVersion,
-      env: {
-        MOCHA_VSCODE_TEST: 'true'
-      },
-      mocha: {
-        ui: 'bdd',
-        timeout: 60_000,
-      },
-    };
+    options.env.MOCHA_COLORS = 'true';
   }
-};
+
+  if (extensionDevelopmentPath) {
+    options.extensionDevelopmentPath = extensionDevelopmentPath;
+  }
+
+
+  return options;
+}
 
 const config = [
   {

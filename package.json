@@ -116,6 +116,7 @@
     "publish:vsce:prerelease": "npx @vscode/vsce publish --pre-release",
     "publish:ovsx:release": "npx ovsx publish",
     "publish:ovsx:prerelease": "npx ovsx publish --pre-release",
+    "package:test": "npm run compile && tsx ./scripts/prerelease.mts && npx @vscode/vsce package && tsx ./scripts/extractVsix.mts",
     "package:release": "npm run compile && tsx ./scripts/prerelease.mts && npx @vscode/vsce package",
     "package:prerelease": "npm run compile && tsx ./scripts/prerelease.mts --pre-release && npx @vscode/vsce package --pre-release",
     "vscode:prepublish": "npm run compile",
@@ -126,6 +127,7 @@
     "watch:esbuild": "npm run clean && node .esbuild.js --watch",
     "watch": "npm run clean && tsc --watch",
     "test": "tsc && vscode-test",
+    "test:vsix": "tsc && cross-env TEST_MODE=vsix vscode-test",
     "prettier": "prettier --write src",
     "lint": "eslint .",
     "fix": "eslint . --fix"
@@ -136,6 +138,7 @@
     "@types/chai": "^4.3.17",
     "@types/eslint__js": "^8.42.3",
     "@types/estree": "^1.0.5",
+    "@types/extract-zip": "^2.0.1",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.8",
     "@types/node": "22.x",
@@ -155,6 +158,7 @@
     "acorn-loose": "^8.4.0",
     "ansi-colors": "^4.1.3",
     "chai": "^4.4.1",
+    "cross-env": "^7.0.3",
     "data-uri-to-buffer": "^6.0.2",
     "enhanced-resolve": "^5.17.1",
     "error-stack-parser": "^2.1.4",
@@ -163,6 +167,7 @@
     "eslint-plugin-license-header": "^0.6.1",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-visitor-keys": "^4.1.0",
+    "extract-zip": "^2.0.1",
     "glob": "^11.0.0",
     "minimatch": "^10.0.1",
     "mocha": "^10.7.3",
@@ -185,7 +190,7 @@
     "esbuild": "^0.24.0"
   },
   "mocha-vscode": {
-    "version": "1.1.0-preview+FFFFFFF",
-    "date": "2024-04-02T14:30:00Z"
+    "version": "v1.2.3+d27e65f",
+    "date": "2024-10-20T15:38:24.261Z"
   }
 }
