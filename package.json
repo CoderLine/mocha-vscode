@@ -105,6 +105,16 @@
             "type": "object",
             "additionalProperties": true,
             "markdownDescription": "Additional environment variables set when executing tests. This is useful for setting things like `NODE_ENV`."
+          },
+          "mocha-vscode.nodePath": {
+            "type": "string",
+            "default": "",
+            "description": "Path to the Node.js executable."
+          },
+          "mocha-vscode.mochaPath": {
+            "type": "string",
+            "default": "",
+            "description": "Path to the Mocha executable."
           }
         }
       }
