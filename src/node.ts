@@ -25,6 +25,13 @@ export async function getPathTo(logChannel: vscode.LogOutputChannel, bin: string
 let pathToNode: string | null = null;
 
 export async function getPathToNode(logChannel: vscode.LogOutputChannel) {
+  // Check if the nodePath setting is defined
+  const nodePath = vscode.workspace.getConfiguration('mocha-vscode').get<string>('nodePath');
+  if (nodePath) {
+    logChannel.debug(`Using nodePath from settings: '${nodePath}'`);
+    return nodePath;
+  }
+
   // We cannot use process.execPath as this points to code.exe which is an electron application
   // also with ELECTRON_RUN_AS_NODE this can lead to errors (e.g. with the --import option)
   // we prefer to use the system level node
