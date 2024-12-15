@@ -8,5 +8,6 @@ describe('math', () => {
     it('subtraction', async () => {
         (0, node_assert_1.strictEqual)(1 - 1, 0);
     });
+    it('pending test');
 });
 //# sourceMappingURL=hello.test.js.map
