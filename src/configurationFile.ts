@@ -93,7 +93,8 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   async getMochaSpawnArgs(customArgs: readonly string[]): Promise<string[]> {
-    this._pathToMocha ??= await this._resolveLocalMochaBinPath();
+    const mochaPath = vscode.workspace.getConfiguration('mocha-vscode').get<string>('mochaPath');
+    this._pathToMocha = mochaPath || (await this._resolveLocalMochaBinPath());
 
     return [
       await getPathToNode(this.logChannel),

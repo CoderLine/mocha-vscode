@@ -29,6 +29,9 @@ This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/
 
 - `mocha-vscode.env`: Additional environment variables set when executing tests. This is useful for setting things like `NODE_ENV`.
 
+- `mocha-vscode.mochaPath`: Specifies the path to the Mocha executable. If not set, the extension will attempt to resolve the Mocha executable from the local `node_modules` directory.
+- `mocha-vscode.nodePath`: Specifies the path to the Node.js executable. If not set, the extension will use the default Node.js executable.
+
 ## Features
 
 ### Show, Running and Debugging Tests
