@@ -1,0 +1,7 @@
+{
+  "spec": ["**/test/**/*.spec.ts"],
+  "extensions": ["ts"],
+  "node-option": ["experimental-specifier-resolution=node", "import=tsx", "no-warnings"],
+  "ignore": ["**/node_modules/**", "**/dist/**"],
+  "timeout": "10000"
+}

@@ -194,16 +194,11 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
 
     const symbols = this.settings;
     const contextObj = new Proxy(
-      isEsm(filePath, code)
-        ? ({
-            import_meta: {
-              url: pathToFileURL(filePath).toString(),
-            },
-          } as any)
-        : ({
-            __dirname: path.dirname(filePath),
-            __filename: path.basename(filePath),
-          } as any),
+      {
+        __dirname: path.dirname(filePath),
+        __filename: path.basename(filePath),
+        __import_meta_url: pathToFileURL(filePath).href,
+      } as any,
       {
         get(target, prop) {
           if (symbols.value.suite.includes(prop as string)) {
@@ -322,6 +317,9 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         ...this.esbuildCommonOptions(filePath),
         sourcefile: filePath, // for auto-detection of the loader
         loader: 'default', // use the default loader
+        define: {
+          'import.meta.url': '__import_meta_url',
+        },
       });
 
       code = result.code;

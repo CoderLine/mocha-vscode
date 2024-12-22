@@ -15,7 +15,7 @@ describe('typescript-esm', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    expectTestTree(c, [['import-meta.test.ts', [['import-meta', [['dirname']]]]]]);
+    expectTestTree(c, [['test', [['hello.spec.ts', [['import-meta', [['dirname']]]]]]]]);
   });
 
   it('runs tests', async () => {
@@ -33,7 +33,7 @@ describe('typescript-esm', () => {
     );
 
     run.expectStates({
-      'import-meta.test.ts/import-meta/dirname': ['enqueued', 'started', 'passed'],
+      'test/hello.spec.ts/import-meta/dirname': ['enqueued', 'started', 'passed'],
     });
   });
 
@@ -52,7 +52,7 @@ describe('typescript-esm', () => {
     );
 
     run.expectStates({
-      'import-meta.test.ts/import-meta/dirname': ['enqueued', 'started', 'passed'],
+      'test/hello.spec.ts/import-meta/dirname': ['enqueued', 'started', 'passed'],
     });
   });
 });
