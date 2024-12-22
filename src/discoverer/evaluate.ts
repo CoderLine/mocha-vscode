@@ -14,6 +14,7 @@ import * as acornWalk from 'acorn-walk';
 import * as errorParser from 'error-stack-parser';
 import { CommonOptions, TsconfigRaw, transform as esbuildTransform } from 'esbuild';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import * as vm from 'vm';
 import * as vscode from 'vscode';
 import { ConfigValue } from '../configValue';
@@ -193,10 +194,16 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
 
     const symbols = this.settings;
     const contextObj = new Proxy(
-      {
-        __dirname: path.dirname(filePath),
-        __filename: path.basename(filePath),
-      } as any,
+      isEsm(filePath, code)
+        ? ({
+            import_meta: {
+              url: pathToFileURL(filePath).toString(),
+            },
+          } as any)
+        : ({
+            __dirname: path.dirname(filePath),
+            __filename: path.basename(filePath),
+          } as any),
       {
         get(target, prop) {
           if (symbols.value.suite.includes(prop as string)) {
