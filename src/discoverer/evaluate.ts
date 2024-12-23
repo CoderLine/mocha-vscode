@@ -14,6 +14,7 @@ import * as acornWalk from 'acorn-walk';
 import * as errorParser from 'error-stack-parser';
 import { CommonOptions, TsconfigRaw, transform as esbuildTransform } from 'esbuild';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import * as vm from 'vm';
 import * as vscode from 'vscode';
 import { ConfigValue } from '../configValue';
@@ -196,6 +197,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
       {
         __dirname: path.dirname(filePath),
         __filename: path.basename(filePath),
+        __import_meta_url: pathToFileURL(filePath).href,
       } as any,
       {
         get(target, prop) {
@@ -315,6 +317,9 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         ...this.esbuildCommonOptions(filePath),
         sourcefile: filePath, // for auto-detection of the loader
         loader: 'default', // use the default loader
+        define: {
+          'import.meta.url': '__import_meta_url',
+        },
       });
 
       code = result.code;
