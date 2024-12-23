@@ -199,7 +199,7 @@
     "which": "^5.0.0"
   },
   "dependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.24.2"
   },
   "mocha-vscode": {
     "version": "v1.2.3+d27e65f",
