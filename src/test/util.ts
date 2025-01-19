@@ -121,8 +121,19 @@ export async function tryGetController(scan: boolean = true) {
 
   for (const c of controllers) {
     if (await c.tryActivate()) {
-      controller = c;
-      break;
+      // wait for activation to complete, can be delayed through an event loop
+      for (let retry = 0; retry < 3; retry++) {
+        if (c.ctrl) {
+          controller = c;
+          break;
+        } else {
+          await setTimeout(1000);
+        }
+      }
+
+      if (controller) {
+        break;
+      }
     }
   }
 
