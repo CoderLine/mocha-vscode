@@ -61,7 +61,7 @@ describe('config-file-change', () => {
 
     // scan and test results
     expect(c).to.not.be.undefined;
-    c!.scanFiles();
+    await c!.scanFiles();
     expectTestTree(c!, [
       ['folder', [['nested.test.js', [['is nested']]]]],
       ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
@@ -100,7 +100,7 @@ describe('config-file-change', () => {
 
     // scan and test results
     expect(c).to.not.be.undefined;
-    c!.scanFiles();
+    await c!.scanFiles();
     expectTestTree(c!, [['hello.test.js', [['math', [['addition'], ['subtraction']]]]]]);
   });
 });
