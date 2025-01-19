@@ -23,50 +23,50 @@ import {
 describe('config-file-change', () => {
   const workspaceFolder = integrationTestPrepare('config-file-change');
 
-  // it('rename-flow', async () => {
-  //   let c: Controller | undefined = await getController();
+  it('rename-flow', async () => {
+    let c: Controller | undefined = await getController();
 
-  //   // initial state
-  //   await c.scanFiles();
-  //   expectTestTree(c, [
-  //     ['folder', [['nested.test.js', [['is nested']]]]],
-  //     ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
-  //   ]);
+    // initial state
+    await c.scanFiles();
+    expectTestTree(c, [
+      ['folder', [['nested.test.js', [['is nested']]]]],
+      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+    ]);
 
-  //   // rename mocha file
-  //   await fs.rename(
-  //     path.join(workspaceFolder, '.mocharc.js'),
-  //     path.join(workspaceFolder, '.__mocharc.js'),
-  //   );
-  //   await onceDisposed(c);
+    // rename mocha file
+    await fs.rename(
+      path.join(workspaceFolder, '.mocharc.js'),
+      path.join(workspaceFolder, '.__mocharc.js'),
+    );
+    await onceDisposed(c);
 
-  //   // controller should be gone
-  //   expect(await tryGetController(false)).to.be.undefined;
+    // controller should be gone
+    expect(await tryGetController(false)).to.be.undefined;
 
-  //   // rename back
-  //   await fs.rename(
-  //     path.join(workspaceFolder, '.__mocharc.js'),
-  //     path.join(workspaceFolder, '.mocharc.js'),
-  //   );
+    // rename back
+    await fs.rename(
+      path.join(workspaceFolder, '.__mocharc.js'),
+      path.join(workspaceFolder, '.mocharc.js'),
+    );
 
-  //   // wait for controller
-  //   for (let retry = 0; retry < 5; retry++) {
-  //     c = await tryGetController(false);
-  //     if (!c) {
-  //       await setTimeout(1000);
-  //     } else {
-  //       break;
-  //     }
-  //   }
+    // wait for controller
+    for (let retry = 0; retry < 5; retry++) {
+      c = await tryGetController(false);
+      if (!c) {
+        await setTimeout(1000);
+      } else {
+        break;
+      }
+    }
 
-  //   // scan and test results
-  //   expect(c).to.not.be.undefined;
-  //   await c!.scanFiles();
-  //   expectTestTree(c!, [
-  //     ['folder', [['nested.test.js', [['is nested']]]]],
-  //     ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
-  //   ]);
-  // });
+    // scan and test results
+    expect(c).to.not.be.undefined;
+    await c!.scanFiles();
+    expectTestTree(c!, [
+      ['folder', [['nested.test.js', [['is nested']]]]],
+      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+    ]);
+  });
 
   it('delete-create-flow', async () => {
     let c: Controller | undefined = await getController();

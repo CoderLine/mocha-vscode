@@ -65,8 +65,8 @@ export function integrationTestPrepare(name: string) {
   afterEach(async () => {
     await restoreWorkspace(workspaceFolder, workspaceBackup);
     try {
-      const c = getController(false);
-      (await c).scanFiles();
+      const c = await getController(false);
+      await c.scanFiles();
     } catch (e) {
       // ignore
     }
