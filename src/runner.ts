@@ -53,6 +53,7 @@ export class TestRunner {
     const workingDir = path.dirname(config.uri.fsPath);
 
     return async (request) => {
+      const runStart = performance.now();
       this.logChannel.debug('Creating new test run ', request);
 
       const run = ctrl.createTestRun(request);
@@ -79,7 +80,9 @@ export class TestRunner {
       };
 
       const spawnCts = new vscode.CancellationTokenSource();
-      run.token.onCancellationRequested(() => spawnCts.cancel());
+      run.token.onCancellationRequested(() => {
+        spawnCts.cancel();
+      });
 
       const spawnOpts: ISpawnOptions = {
         args,
@@ -217,11 +220,14 @@ export class TestRunner {
       );
 
       try {
+        const start = performance.now();
         if (debug) {
           await this.runDebug(spawnOpts);
         } else {
           await this.runWithoutDebug(spawnOpts);
         }
+        const end = performance.now();
+        this.logChannel.info(`Completed test execution after ${end - start}ms`);
       } catch (e) {
         const errorMessage = e instanceof Error ? e : `Error executing tests ${e}`;
         this.logChannel.error(errorMessage);
@@ -253,6 +259,9 @@ export class TestRunner {
 
       await outputQueue.drain();
       run.end();
+
+      const runEnd = performance.now();
+      this.logChannel.debug(`Whole testrun completed after ${runEnd - runStart}ms`);
     };
   }
 
@@ -365,12 +374,15 @@ export class TestRunner {
       return cli.kill();
     }
 
-    token.onCancellationRequested(() => cli.kill());
+    token.onCancellationRequested(() => {
+      cli.kill();
+    });
     cli.stderr.pipe(split2()).on('data', onLine);
     cli.stdout.pipe(split2()).on('data', onLine);
     return new Promise<void>((resolve, reject) => {
       cli.on('error', reject);
-      cli.on('exit', (code) => {
+      cli.on('close', (code) => {
+        this.logChannel.trace('Test Process closed');
         if (code === 0) {
           resolve();
         } else {
