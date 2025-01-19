@@ -15,7 +15,7 @@ import * as path from 'path';
 import * as sinon from 'sinon';
 import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
-import { getControllersForTestCommand } from '../constants';
+import { getControllersForTestCommand, recreateControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
 import { IParsedNode, NodeKind } from '../discoverer/types';
 
@@ -64,12 +64,7 @@ export function integrationTestPrepare(name: string) {
 
   afterEach(async () => {
     await restoreWorkspace(workspaceFolder, workspaceBackup);
-    try {
-      const c = await getController(false);
-      await c.scanFiles();
-    } catch (e) {
-      // ignore
-    }
+    await vscode.commands.executeCommand(recreateControllersForTestCommand);
   });
 
   return workspaceFolder;

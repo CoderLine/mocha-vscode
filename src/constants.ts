@@ -23,6 +23,7 @@ export const defaultTestSymbols: IExtensionSettings = {
 
 export const showConfigErrorCommand = 'mocha-vscode.showConfigError';
 export const getControllersForTestCommand = 'mocha-vscode.getControllersForTest';
+export const recreateControllersForTestCommand = 'mocha-vscode.recreateControllersForTestCommand';
 
 function equalsIgnoreCase(a: string, b: string) {
   return a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0;

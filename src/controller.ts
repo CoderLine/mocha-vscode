@@ -134,29 +134,33 @@ export class Controller {
 
     this.disposables.add(
       this.configFile.onActivate(() => {
-        const ctrl = (this.ctrl = vscode.tests.createTestController(
-          configFileUri.toString(),
-          configFileUri.fsPath,
-        ));
-        this.disposables.add(ctrl);
+        try {
+          const ctrl = (this.ctrl = vscode.tests.createTestController(
+            configFileUri.toString(),
+            configFileUri.fsPath,
+          ));
+          this.disposables.add(ctrl);
 
-        this.recreateDiscoverer();
-        const rescan = async (reason: string) => {
-          try {
-            logChannel.info(`Rescan of tests triggered (${reason}) - ${this.configFile.uri}}`);
-            this.recreateDiscoverer();
-            await this.scanFiles();
-          } catch (e) {
-            this.logChannel.error(e as Error, 'Failed to rescan tests');
-          }
-        };
-        this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
-        this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
-        ctrl.refreshHandler = () => {
-          this.configFile.forget();
-          rescan('user');
-        };
-        this.scanFiles();
+          this.recreateDiscoverer();
+          const rescan = async (reason: string) => {
+            try {
+              logChannel.info(`Rescan of tests triggered (${reason}) - ${this.configFile.uri}}`);
+              this.recreateDiscoverer();
+              await this.scanFiles();
+            } catch (e) {
+              this.logChannel.error(e as Error, 'Failed to rescan tests');
+            }
+          };
+          this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
+          this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
+          ctrl.refreshHandler = () => {
+            this.configFile.forget();
+            rescan('user');
+          };
+          this.scanFiles();
+        } catch (e) {
+          this.logChannel.error(e as Error);
+        }
       }),
     );
 
