@@ -34,7 +34,9 @@ export class ConfigurationFile implements vscode.Disposable {
   private readonly ds = new DisposableStore();
   private readonly didDeleteEmitter = this.ds.add(new vscode.EventEmitter<void>());
   private readonly didChangeEmitter = this.ds.add(new vscode.EventEmitter<void>());
+  private readonly activateEmitter = this.ds.add(new vscode.EventEmitter<void>());
 
+  private _activateFired: boolean = false;
   private _resolver?: resolveModule.Resolver;
   private _optionsModule?: OptionsModule;
   private _configModule?: ConfigModule;
@@ -48,6 +50,12 @@ export class ConfigurationFile implements vscode.Disposable {
 
   /** Fired when the file changes. */
   public readonly onDidChange = this.didChangeEmitter.event;
+
+  /**
+   * Fired the config file becomes active for actually handling tests
+   * (e.g. not fired on package.json without mocha section).
+   */
+  public readonly onActivate = this.activateEmitter.event;
 
   constructor(
     private readonly logChannel: vscode.LogOutputChannel,
@@ -65,6 +73,7 @@ export class ConfigurationFile implements vscode.Disposable {
           changeDebounce = undefined;
           this.readPromise = undefined;
           this.didChangeEmitter.fire();
+          this.tryActivate();
         }, 300);
       }),
     );
@@ -75,6 +84,43 @@ export class ConfigurationFile implements vscode.Disposable {
         this.didDeleteEmitter.fire();
       }),
     );
+  }
+
+  public get isActive() {
+    return this._activateFired;
+  }
+
+  public async tryActivate(): Promise<boolean> {
+    if (this._activateFired) {
+      return true;
+    }
+
+    const configFile = path.basename(this.uri.fsPath).toLowerCase();
+    if (configFile === 'package.json') {
+      try {
+        const packageJson = JSON.parse(await fs.promises.readFile(this.uri.fsPath, 'utf-8'));
+        if ('mocha' in packageJson && typeof packageJson.mocha !== 'undefined') {
+          this.logChannel.trace('Found mocha section in package.config, skipping activation');
+          this.activateEmitter.fire();
+          this._activateFired = true;
+          return true;
+        } else {
+          this.logChannel.trace('No mocha section in package.config, skipping activation');
+        }
+      } catch (e) {
+        this.logChannel.warn(
+          'Error while reading mocha options from package.config, skipping activation',
+          e,
+        );
+      }
+    } else {
+      // for normal mocharc files directly activate
+      this.activateEmitter.fire();
+      this._activateFired = true;
+      return true;
+    }
+
+    return false;
   }
 
   /**

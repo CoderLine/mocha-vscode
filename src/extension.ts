@@ -11,7 +11,7 @@ import * as timers from 'timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
 import { ConsoleOuputChannel } from './consoleLogChannel';
-import { getControllersForTestCommand } from './constants';
+import { getControllersForTestCommand, recreateControllersForTestCommand } from './constants';
 import { initESBuild } from './esbuild';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
@@ -103,9 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   };
 
-  const initialSync = (async () => {
-    await initESBuild(context, logChannel);
-
+  async function syncWorkspaceFoldersWithRetry() {
     // Workaround for vscode#179203 where findFiles doesn't work on startup.
     // This extension is only activated on workspaceContains, so we have pretty
     // high confidence that we should find something.
@@ -118,15 +116,31 @@ export function activate(context: vscode.ExtensionContext) {
 
       await timers.setTimeout(1000);
     }
+  }
+
+  const initialSync = (async () => {
+    await initESBuild(context, logChannel);
+    await syncWorkspaceFoldersWithRetry();
   })();
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders(syncWorkspaceFolders),
-    vscode.commands.registerCommand(getControllersForTestCommand, () =>
-      initialSync.then(() =>
-        Array.from(watchers.values()).flatMap((w) => Array.from(w.controllers.values())),
-      ),
-    ),
+    vscode.commands.registerCommand(getControllersForTestCommand, async () => {
+      await initialSync;
+      return Array.from(watchers.values()).flatMap((w) => Array.from(w.controllers.values()));
+    }),
+    vscode.commands.registerCommand(recreateControllersForTestCommand, async () => {
+      logChannel.debug('Destroying all watchers and test controllers');
+      for (const [, watcher] of watchers) {
+        watcher.dispose();
+      }
+      watchers.clear();
+      resyncState = FolderSyncState.Idle;
+
+      logChannel.debug('Destroyed controllers, recreating');
+      await syncWorkspaceFoldersWithRetry();
+      return Array.from(watchers.values()).flatMap((w) => Array.from(w.controllers.values()));
+    }),
     new vscode.Disposable(() => watchers.forEach((c) => c.dispose())),
     logChannel,
   );

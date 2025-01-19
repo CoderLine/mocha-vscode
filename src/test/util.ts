@@ -15,7 +15,7 @@ import * as path from 'path';
 import * as sinon from 'sinon';
 import { setTimeout } from 'timers/promises';
 import * as vscode from 'vscode';
-import { getControllersForTestCommand } from '../constants';
+import { getControllersForTestCommand, recreateControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
 import { IParsedNode, NodeKind } from '../discoverer/types';
 
@@ -64,12 +64,7 @@ export function integrationTestPrepare(name: string) {
 
   afterEach(async () => {
     await restoreWorkspace(workspaceFolder, workspaceBackup);
-    try {
-      const c = getController(false);
-      (await c).scanFiles();
-    } catch (e) {
-      // ignore
-    }
+    await vscode.commands.executeCommand(recreateControllersForTestCommand);
   });
 
   return workspaceFolder;
@@ -97,23 +92,50 @@ async function backupWorkspace(source: string) {
 }
 
 export async function getController(scan: boolean = true) {
-  const c = await tryGetController(scan);
-  if (!c) {
-    throw new Error('no controllers registered');
+  for (let retry = 0; retry < 3; retry++) {
+    const c = await tryGetController(scan);
+    if (c) {
+      return c;
+    }
+
+    await setTimeout(1000);
   }
-  return c;
+
+  throw new Error('no controllers registered');
 }
 export async function tryGetController(scan: boolean = true) {
-  const c = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
+  const controllers = await vscode.commands.executeCommand<Controller[]>(
+    getControllersForTestCommand,
+  );
 
-  if (!c || !c.length) {
+  if (!controllers || !controllers.length) {
     return undefined;
   }
 
-  const controller = c[0];
-  if (scan) {
+  let controller: Controller | undefined = undefined;
+
+  for (const c of controllers) {
+    if (await c.tryActivate()) {
+      // wait for activation to complete, can be delayed through an event loop
+      for (let retry = 0; retry < 3; retry++) {
+        if (c.ctrl) {
+          controller = c;
+          break;
+        } else {
+          await setTimeout(1000);
+        }
+      }
+
+      if (controller) {
+        break;
+      }
+    }
+  }
+
+  if (controller && scan) {
     await controller.scanFiles();
   }
+
   return controller;
 }
 
@@ -199,7 +221,7 @@ export function onceScanComplete(controller: Controller, timeout: number = 10000
 
 export function buildTestTreeExpectation({ ctrl }: Controller) {
   const e = ['root', []] satisfies TestTreeExpectation;
-  buildTreeExpectation(e, ctrl.items);
+  buildTreeExpectation(e, ctrl!.items);
   return e[1];
 }
 
@@ -309,7 +331,7 @@ export class FakeTestRun implements vscode.TestRun {
 
 export async function captureTestRun(ctrl: Controller, req: vscode.TestRunRequest) {
   const fake = new FakeTestRun();
-  const createTestRun = sinon.stub(ctrl.ctrl, 'createTestRun').returns(fake);
+  const createTestRun = sinon.stub(ctrl.ctrl!, 'createTestRun').returns(fake);
   try {
     await req.profile!.runHandler(req, new vscode.CancellationTokenSource().token);
     return fake;

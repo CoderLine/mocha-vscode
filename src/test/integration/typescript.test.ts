@@ -68,7 +68,7 @@ describe('typescript', () => {
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(
-        [c.ctrl.items.get('hello.test.ts')!.children.get('math')!.children.get('failing')!],
+        [c.ctrl!.items.get('hello.test.ts')!.children.get('math')!.children.get('failing')!],
         undefined,
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
       ),

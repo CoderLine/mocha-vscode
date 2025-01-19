@@ -112,6 +112,7 @@
   },
   "activationEvents": [
     "workspaceContains:**/.mocharc.{js,cjs,yaml,yml,json,jsonc}",
+    "workspaceContains:**/package.json",
     "onCommand:mocha-vscode.getControllersForTest"
   ],
   "repository": {

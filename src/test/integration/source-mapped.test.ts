@@ -22,7 +22,7 @@ describe('source mapped', () => {
   it('has correct test locations', async () => {
     const c = await getController();
 
-    const src = extractParsedNodes(c.ctrl.items);
+    const src = extractParsedNodes(c.ctrl!.items);
     expect(src).to.deep.equal([
       {
         name: 'hello.test.ts',

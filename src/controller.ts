@@ -77,7 +77,7 @@ export class Controller {
    */
   private currentConfig?: ConfigurationList;
 
-  private discoverer!: SettingsBasedFallbackTestDiscoverer;
+  private discoverer?: SettingsBasedFallbackTestDiscoverer;
 
   public readonly settings = this.disposables.add(
     new ConfigValue('extractSettings', defaultTestSymbols),
@@ -107,11 +107,15 @@ export class Controller {
   public readonly onDidDispose = this.disposeEmitter.event;
   private tsconfigStore?: TsConfigStore;
 
-  public ctrl: vscode.TestController;
+  public ctrl?: vscode.TestController;
 
   /** Gets run profiles the controller has registerd. */
   public get profiles() {
     return [...this.runProfiles.values()].flat();
+  }
+
+  public tryActivate() {
+    return this.configFile.tryActivate();
   }
 
   constructor(
@@ -126,34 +130,49 @@ export class Controller {
       wf.uri.fsPath,
       configFileUri.fsPath,
     );
-    const ctrl = (this.ctrl = vscode.tests.createTestController(
-      configFileUri.toString(),
-      configFileUri.fsPath,
-    ));
-    this.disposables.add(ctrl);
     this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf));
 
-    this.recreateDiscoverer();
+    this.disposables.add(
+      this.configFile.onActivate(() => {
+        try {
+          const ctrl = (this.ctrl = vscode.tests.createTestController(
+            configFileUri.toString(),
+            configFileUri.fsPath,
+          ));
+          this.disposables.add(ctrl);
 
-    const rescan = async (reason: string) => {
-      try {
-        logChannel.info(`Rescan of tests triggered (${reason}) - ${this.configFile.uri}}`);
-        this.recreateDiscoverer();
-        await this.scanFiles();
-      } catch (e) {
-        this.logChannel.error(e as Error, 'Failed to rescan tests');
-      }
-    };
-    this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
-    this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
-    ctrl.refreshHandler = () => {
-      this.configFile.forget();
-      rescan('user');
-    };
-    this.scanFiles();
+          this.recreateDiscoverer();
+          const rescan = async (reason: string) => {
+            try {
+              logChannel.info(`Rescan of tests triggered (${reason}) - ${this.configFile.uri}}`);
+              this.recreateDiscoverer();
+              await this.scanFiles();
+            } catch (e) {
+              this.logChannel.error(e as Error, 'Failed to rescan tests');
+            }
+          };
+          this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
+          this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
+          ctrl.refreshHandler = () => {
+            this.configFile.forget();
+            rescan('user');
+          };
+          this.scanFiles();
+        } catch (e) {
+          this.logChannel.error(e as Error);
+        }
+      }),
+    );
+
+    this.configFile.tryActivate();
   }
 
   recreateDiscoverer(newTsConfig: boolean = true) {
+    if (!this.ctrl) {
+      this.logChannel.trace('Skipping discoverer recreation, mocha is not active in this project.');
+      return;
+    }
+
     if (!this.tsconfigStore) {
       newTsConfig = true;
     }
@@ -209,7 +228,7 @@ export class Controller {
 
     let tree: IParsedNode[];
     try {
-      tree = await this.discoverer.discover(uri.fsPath, contents);
+      tree = await this.discoverer!.discover(uri.fsPath, contents);
     } catch (e) {
       this.logChannel.error(
         'Error while test extracting ',
@@ -242,7 +261,7 @@ export class Controller {
     ): vscode.TestItem => {
       let item = parent.children.get(node.name);
       if (!item) {
-        item = this.ctrl.createTestItem(node.name, node.name, start.uri);
+        item = this.ctrl!.createTestItem(node.name, node.name, start.uri);
         counter.add(node.kind);
         testMetadata.set(item, {
           type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test,
@@ -305,7 +324,7 @@ export class Controller {
       for (const [id, test] of previous.items) {
         if (!newTestsInFile.has(id)) {
           const meta = testMetadata.get(test);
-          (test.parent?.children ?? this.ctrl.items).delete(id);
+          (test.parent?.children ?? this.ctrl!.items).delete(id);
           if (meta?.type === ItemType.Test) {
             counter.remove(NodeKind.Test);
           } else if (meta?.type === ItemType.Suite) {
@@ -337,7 +356,7 @@ export class Controller {
       let last: vscode.TestItemCollection | undefined;
       for (const { children, item } of itemsIt) {
         if (item && children.size === 1) {
-          deleteFrom ??= { items: last || this.ctrl.items, id: item.id };
+          deleteFrom ??= { items: last || this.ctrl!.items, id: item.id };
         } else {
           deleteFrom = undefined;
         }
@@ -352,7 +371,7 @@ export class Controller {
       if (deleteFrom) {
         deleteFrom.items.delete(deleteFrom.id);
       } else {
-        last!.delete(id);
+        last?.delete(id);
       }
     }
 
@@ -384,18 +403,22 @@ export class Controller {
     for (const key of this.testsInFiles.keys()) {
       this.deleteFileTests(key);
     }
-    const item = (this.errorItem = this.ctrl.createTestItem('error', 'Extension Test Error'));
+    const item = (this.errorItem = this.ctrl!.createTestItem('error', 'Extension Test Error'));
     item.error = new vscode.MarkdownString(
       `[View details](command:${showConfigErrorCommand}?${encodeURIComponent(
         JSON.stringify([this.configFile.uri.toString()]),
       )})`,
     );
     item.error.isTrusted = true;
-    this.ctrl.items.add(item);
+    this.ctrl!.items.add(item);
   }
 
   /** Creates run profiles for each configuration in the extension tests */
   private applyRunHandlers() {
+    if (!this.ctrl) {
+      return;
+    }
+
     const oldRunHandlers = this.runProfiles;
     this.runProfiles = new Map();
     const originalName = 'Mocha Config';
@@ -446,6 +469,11 @@ export class Controller {
   }
 
   public async scanFiles() {
+    if (!this.ctrl) {
+      this.logChannel.trace('Skipping file scan, mocha is not active in this project.');
+      return;
+    }
+
     if (this.errorItem) {
       this.ctrl.items.delete(this.errorItem.id);
       this.errorItem = undefined;
@@ -502,6 +530,9 @@ export class Controller {
 
   /** Gets the test collection for a file of the given URI, descending from the root. */
   private getContainingItemsForFile(uri: vscode.Uri, createOpts?: ICreateOpts) {
+    if (!this.ctrl) {
+      return [];
+    }
     return getContainingItemsForFile(this.configFile.uri, this.ctrl, uri, createOpts);
   }
 }
