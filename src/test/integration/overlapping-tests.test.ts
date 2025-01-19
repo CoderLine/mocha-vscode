@@ -147,7 +147,7 @@ describe('overlapping tests', () => {
       const profiles = c.profiles;
       expect(profiles).to.have.lengthOf(2);
 
-      const testItems = include.map((i) => findTestItem(c.ctrl.items, i)!);
+      const testItems = include.map((i) => findTestItem(c.ctrl!.items, i)!);
 
       const run = await captureTestRun(
         c,

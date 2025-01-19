@@ -151,7 +151,7 @@ describe('simple', () => {
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(
-        [c.ctrl.items.get('folder')!],
+        [c.ctrl!.items.get('folder')!],
         undefined,
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
       ),
@@ -167,7 +167,7 @@ describe('simple', () => {
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(
-        [c.ctrl.items.get('hello.test.js')!],
+        [c.ctrl!.items.get('hello.test.js')!],
         undefined,
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
       ),
@@ -185,7 +185,7 @@ describe('simple', () => {
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(
-        [c.ctrl.items.get('hello.test.js')!],
+        [c.ctrl!.items.get('hello.test.js')!],
         undefined,
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
       ),
@@ -203,7 +203,7 @@ describe('simple', () => {
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(
-        [c.ctrl.items.get('hello.test.js')!.children.get('math')!.children.get('addition')!],
+        [c.ctrl!.items.get('hello.test.js')!.children.get('math')!.children.get('addition')!],
         undefined,
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
       ),
@@ -219,7 +219,7 @@ describe('simple', () => {
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(
-        [c.ctrl.items.get('hello.test.js')!.children.get('math')!.children.get('failing')!],
+        [c.ctrl!.items.get('hello.test.js')!.children.get('math')!.children.get('failing')!],
         undefined,
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
       ),
@@ -245,7 +245,7 @@ describe('simple', () => {
       c,
       new vscode.TestRunRequest(
         undefined,
-        [c.ctrl.items.get('hello.test.js')!, c.ctrl.items.get('folder')!],
+        [c.ctrl!.items.get('hello.test.js')!, c.ctrl!.items.get('folder')!],
         c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
       ),
     );
@@ -299,7 +299,7 @@ describe('simple', () => {
     const profiles = c.profiles;
     expect(profiles).to.have.lengthOf(2);
 
-    const item = c.ctrl.items.get('stacktrace.test.js')!;
+    const item = c.ctrl!.items.get('stacktrace.test.js')!;
     const run = await captureTestRun(
       c,
       new vscode.TestRunRequest(

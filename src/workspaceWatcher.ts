@@ -9,7 +9,7 @@
 
 import { minimatch } from 'minimatch';
 import * as vscode from 'vscode';
-import { configFilePattern } from './constants';
+import { configFilePatterns } from './constants';
 import { Controller } from './controller';
 import { DisposableStore } from './disposable';
 import { TestRunner } from './runner';
@@ -37,23 +37,27 @@ export class WorkspaceFolderWatcher {
     this.disposables.add(watcher);
 
     watcher.onDidCreate((uri) => {
-      if (minimatch(uri.fsPath.replace(/\\/g, '/'), configFilePattern)) {
-        this.addConfigFile(uri);
+      for (const pattern of configFilePatterns) {
+        if (minimatch(uri.fsPath.replace(/\\/g, '/'), pattern)) {
+          this.addConfigFile(uri);
+          return;
+        }
       }
     });
     watcher.onDidDelete((uri) => {
       this.removeConfigFile(uri);
     });
 
-    const files = await vscode.workspace.findFiles(
-      new vscode.RelativePattern(this.folder, configFilePattern),
-      '**/node_modules/**',
-    );
-
     this.logChannel.debug('Checking workspace folder for config files', this.folder);
+    for (const configFilePattern of configFilePatterns) {
+      const files = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(this.folder, configFilePattern),
+        '**/node_modules/**',
+      );
 
-    for (const file of files) {
-      this.addConfigFile(file);
+      for (const file of files) {
+        this.addConfigFile(file);
+      }
     }
   }
 

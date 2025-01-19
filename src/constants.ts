@@ -11,7 +11,7 @@ import path from 'path';
 import type { IExtensionSettings } from './discoverer/types';
 
 /** Pattern of files the CLI looks for */
-export const configFilePattern = '**/.mocharc.{js,cjs,yaml,yml,json,jsonc}';
+export const configFilePatterns = ['**/.mocharc.{js,cjs,yaml,yml,json,jsonc}', '**/package.json'];
 
 export const defaultTestSymbols: IExtensionSettings = {
   suite: ['describe', 'suite'],
