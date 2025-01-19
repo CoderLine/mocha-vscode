@@ -73,10 +73,15 @@ export class WorkspaceFolderWatcher {
 
   addConfigFile(file: vscode.Uri) {
     this.logChannel.debug(`Added new controller via config file ${file}`);
-    this.controllers.set(
-      file.toString(),
-      new Controller(this.logChannel, this.folder, this.smStore, file, this.runner),
+    const controller = new Controller(
+      this.logChannel,
+      this.folder,
+      this.smStore,
+      file,
+      this.runner,
     );
+    this.controllers.set(file.toString(), controller);
+    this.disposables.add(controller);
   }
 
   dispose() {
