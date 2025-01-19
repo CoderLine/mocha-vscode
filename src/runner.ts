@@ -707,9 +707,12 @@ async function deriveSourceLocation(
 
   const maintainer = store.maintain(fileUri);
   const mapping = await (maintainer.value || maintainer.refresh());
+  // in parsed stack traces line and column numbers are 1-based, in the VS Code APIs lines are 0-based
+  const zeroBasedLine = Number(line) - 1;
+  const zeroBasedCol = Number(col) - 1;
   const value =
-    mapping?.originalPositionFor(Number(line), Number(col)) ||
-    new vscode.Location(fileUri, new vscode.Position(Number(line), Number(col)));
+    mapping?.originalPositionFor(zeroBasedLine, zeroBasedCol) ||
+    new vscode.Location(fileUri, new vscode.Position(zeroBasedLine, zeroBasedCol));
 
   // timeout the maintainer async so that it stays alive for any other immediate teset usage in the file:
   setTimeout(() => maintainer.dispose(), 5000);
