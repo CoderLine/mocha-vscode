@@ -162,6 +162,50 @@ describe('evaluate', () => {
     ]);
   });
 
+  it('works with pending test', async () => {
+    const src = await extractWithEvaluation(
+      "suite('hello', () => {", //
+      "  it('works');",
+      '})',
+    );
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        startLine: 0,
+        kind: NodeKind.Suite,
+        startColumn: 0,
+        endColumn: 1,
+        endLine: 2,
+        children: [
+          {
+            name: 'works',
+            kind: NodeKind.Test,
+            startLine: 1,
+            startColumn: 2,
+            endColumn: Number.MAX_SAFE_INTEGER,
+            endLine: 1,
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('works with pending suite', async () => {
+    const src = await extractWithEvaluation("suite('hello')");
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        startLine: 0,
+        kind: NodeKind.Suite,
+        startColumn: 0,
+        endColumn: Number.MAX_SAFE_INTEGER,
+        endLine: 0,
+        children: [],
+      },
+    ]);
+  });
+
   it('stubs out requires and placeholds correctly', async () => {
     const src = await extractWithEvaluation(
       'require("some invalid module").doing().other.things()',

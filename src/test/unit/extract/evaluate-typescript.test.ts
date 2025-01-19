@@ -197,4 +197,37 @@ describe('evaluate typescript', () => {
       },
     ]);
   });
+
+  it('works with pending test', async () => {
+    const src = await extractWithEvaluation(
+      'function topLevel(a: number): string {', //
+      '  return a.toString() as string;',
+      '}',
+      '',
+      "suite('hello', () => {", //
+      "  it('works');",
+      '})',
+    );
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        kind: NodeKind.Suite,
+        startLine: 4,
+        startColumn: 0,
+        endColumn: 1,
+        endLine: 6,
+        children: [
+          {
+            name: 'works',
+            kind: NodeKind.Test,
+            startLine: 5,
+            startColumn: 2,
+            endColumn: Number.MAX_SAFE_INTEGER,
+            endLine: 5,
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
 });
