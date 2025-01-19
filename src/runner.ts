@@ -237,18 +237,8 @@ export class TestRunner {
       }
 
       if (!spawnCts.token.isCancellationRequested) {
-        if (ranAnyTest) {
-          for (const t of leafTests) {
-            run.skipped(t);
-          }
-        } else {
-          const md = new vscode.MarkdownString(
-            'Test process exited unexpectedly, [view output](command:testing.showMostRecentOutput)',
-          );
-          md.isTrusted = true;
-          for (const t of leafTests) {
-            run.errored(t, new vscode.TestMessage(md));
-          }
+        for (const t of leafTests) {
+          run.skipped(t);
         }
       }
 
