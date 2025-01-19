@@ -38,6 +38,7 @@ describe('simple', () => {
           ['skip-suite-2', [['addition'], ['subtraction']]],
         ],
       ],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
     ]);
   });
 
@@ -58,6 +59,7 @@ describe('simple', () => {
           ['skip-suite-2', [['addition'], ['subtraction']]],
         ],
       ],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
     ]);
   });
 
@@ -78,6 +80,7 @@ describe('simple', () => {
           ['skip-suite-2', [['addition'], ['subtraction']]],
         ],
       ],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
     ]);
   });
 
@@ -106,6 +109,8 @@ describe('simple', () => {
           ['skip-suite-2', [['addition'], ['subtraction']]],
         ],
       ],
+
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
     ]);
   });
 
@@ -133,6 +138,11 @@ describe('simple', () => {
       'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/addition': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/subtraction': ['enqueued', 'started', 'passed'],
+      'stacktrace.test.js/stacktrace/should parse error location correctly': [
+        'enqueued',
+        'started',
+        'failed',
+      ],
     });
   });
 
@@ -246,6 +256,11 @@ describe('simple', () => {
       'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/addition': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/subtraction': ['enqueued', 'started', 'passed'],
+      'stacktrace.test.js/stacktrace/should parse error location correctly': [
+        'enqueued',
+        'started',
+        'failed',
+      ],
     });
   });
 
@@ -275,6 +290,38 @@ describe('simple', () => {
           ['skip-suite-2', [['addition'], ['subtraction']]],
         ],
       ],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
     ]);
+  });
+
+  it('parses error stacktrace correctly', async () => {
+    const c = await getController();
+    const profiles = c.profiles;
+    expect(profiles).to.have.lengthOf(2);
+
+    const item = c.ctrl.items.get('stacktrace.test.js')!;
+    const run = await captureTestRun(
+      c,
+      new vscode.TestRunRequest(
+        [item],
+        undefined,
+        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
+      ),
+    );
+
+    run.expectStates({
+      'stacktrace.test.js/stacktrace/should parse error location correctly': [
+        'enqueued',
+        'started',
+        'failed',
+      ],
+    });
+
+    const failed = run.states.find((s) => s.state === 'failed');
+    expect(failed!.message!.location!.range.start.line).to.equal(4);
+    expect(failed!.message!.location!.range.start.character).to.equal(11);
+    expect(failed!.message!.location!.range.end.line).to.equal(4);
+    expect(failed!.message!.location!.range.end.character).to.equal(11);
+    expect(failed!.message!.location!.uri.fsPath).to.equal(item.uri!.fsPath);
   });
 });
