@@ -98,8 +98,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
       sourceMap?: TraceMap | undefined,
       directive?: string,
     ) {
-      const fn = (name: string, callback: () => void) => {
-        if (typeof name !== 'string' || typeof callback !== 'function') {
+      const fn = (name: string, callback: (() => void) | undefined) => {
+        if (typeof name !== 'string') {
           return placeholder();
         }
 
@@ -114,7 +114,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         let startColumn = frame.columnNumber || 1;
 
         // approximate the length of the test case:
-        const functionLines = String(callback).split('\n');
+        const functionLines = String(callback ?? '').split('\n');
         let endLine = startLine + functionLines.length - 1;
         let endColumn = functionLines[functionLines.length - 1].length + 1;
 
@@ -167,7 +167,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         if (kind === NodeKind.Suite) {
           stack.push(node);
           try {
-            return callback.call(placeholder());
+            return typeof callback === 'function' ? callback.call(placeholder()) : placeholder();
           } catch (e) {
             node.error = e instanceof Error ? e.message : String(e);
           } finally {

@@ -94,6 +94,50 @@ describe('syntax', () => {
     ]);
   });
 
+  it('works with pending test', async () => {
+    const src = await extractWithAst(
+      "suite('hello', () => {", //
+      "  it('works');",
+      '})',
+    );
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        startLine: 0,
+        kind: NodeKind.Suite,
+        startColumn: 0,
+        endColumn: 2,
+        endLine: 2,
+        children: [
+          {
+            name: 'works',
+            kind: NodeKind.Test,
+            startLine: 1,
+            startColumn: 2,
+            endColumn: 13,
+            endLine: 1,
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('works with pending suite', async () => {
+    const src = await extractWithAst("suite('hello')");
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        startLine: 0,
+        kind: NodeKind.Suite,
+        startColumn: 0,
+        endColumn: 14,
+        endLine: 0,
+        children: [],
+      },
+    ]);
+  });
+
   it('can detect suite but not dynamic tests', async () => {
     const src = await extractWithAst(
       "suite('hello', () => {", //
