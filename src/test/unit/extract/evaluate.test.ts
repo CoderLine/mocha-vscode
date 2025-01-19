@@ -206,7 +206,6 @@ describe('evaluate', () => {
     ]);
   });
 
-
   it('stubs out requires and placeholds correctly', async () => {
     const src = await extractWithEvaluation(
       'require("some invalid module").doing().other.things()',
