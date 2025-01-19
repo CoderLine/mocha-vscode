@@ -30,6 +30,7 @@ export const identityMapping = (file: vscode.Uri): IMappingAccessor => ({
 });
 
 const smMappingAccessor = (file: vscode.Uri, sm: TraceMap): IMappingAccessor => ({
+  // @jridgewell/trace-mapping: Lines start at line 1, columns at column 0.
   originalPositionFor(line, column) {
     const {
       source,

@@ -235,8 +235,8 @@ describe('simple', () => {
     expect(failed.message?.location).to.not.be.undefined;
     expect(failed.message?.location?.uri.toString()).to.include('hello.test.js');
     expect(path.isAbsolute(failed.message!.location!.uri.fsPath)).to.be.true;
-    expect(failed.message?.location?.range.start.line).to.equal(12);
-    expect(failed.message?.location?.range.start.character).to.equal(5);
+    expect(failed.message?.location?.range.start.line).to.equal(11);
+    expect(failed.message?.location?.range.start.character).to.equal(4);
   });
 
   it('handles file and directory excludes', async () => {
@@ -318,10 +318,10 @@ describe('simple', () => {
     });
 
     const failed = run.states.find((s) => s.state === 'failed');
-    expect(failed!.message!.location!.range.start.line).to.equal(4);
-    expect(failed!.message!.location!.range.start.character).to.equal(11);
-    expect(failed!.message!.location!.range.end.line).to.equal(4);
-    expect(failed!.message!.location!.range.end.character).to.equal(11);
+    expect(failed!.message!.location!.range.start.line).to.equal(3);
+    expect(failed!.message!.location!.range.start.character).to.equal(10);
+    expect(failed!.message!.location!.range.end.line).to.equal(3);
+    expect(failed!.message!.location!.range.end.character).to.equal(10);
     expect(failed!.message!.location!.uri.fsPath).to.equal(item.uri!.fsPath);
   });
 });
