@@ -579,7 +579,7 @@ const forEachLeaf = (test: vscode.TestItem, fn: (test: vscode.TestItem) => void)
 
 const escapeRe = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const forceCRLF = (str: string) => str.replace(/(?<!\r)\n/gm, '\r\n');
-const locationRe = /\(([^):]+?):([0-9]+):([0-9]+)\)[ \t]*\r?\n?/g;
+const locationRe = /\(([^\r\n):]+?):([0-9]+):([0-9]+)\)[ \t]*\r?\n?/g;
 
 /**
  * Replaces all stack frames in the stack with source-mapped equivalents.
