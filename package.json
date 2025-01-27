@@ -173,7 +173,7 @@
     "chai": "^4.4.1",
     "cross-env": "^7.0.3",
     "data-uri-to-buffer": "^6.0.2",
-    "enhanced-resolve": "^5.17.1",
+    "enhanced-resolve": "^5.18.0",
     "error-stack-parser": "^2.1.4",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
