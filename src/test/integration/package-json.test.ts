@@ -75,18 +75,30 @@ describe('package-json', () => {
       ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
     ]);
 
-    const onChange = onceScanComplete(c);
+    // especially on MacOS we often get a wrong / early file change detected causing a scan
+    // that's why we retry multiple times here.
+    for (let retry = 0; retry < 3; retry++) {
+      const configPath = path.join(workspaceFolder, 'package.json');
+      const original = await fs.readFile(configPath, 'utf-8');
+      let updated = original.replace('**/*.test.js', '*.test.js');
 
-    const configPath = path.join(workspaceFolder, 'package.json');
-    const original = await fs.readFile(configPath, 'utf-8');
-    let updated = original.replace('**/*.test.js', '*.test.js');
+      // the vscode file watcher is set up async and does not always catch the change, keep changing the file
+      let ok: boolean | void = false;
+      while (!ok) {
+        updated += '\n';
+        const onChange = onceScanComplete(c);
+        await fs.writeFile(configPath, updated);
+        ok = await Promise.race([onChange.then(() => true), setTimeout(1000)]);
+      }
 
-    // the vscode file watcher is set up async and does not always catch the change, keep changing the file
-    let ok: boolean | void = false;
-    while (!ok) {
-      updated += '\n';
-      await fs.writeFile(configPath, updated);
-      ok = await Promise.race([onChange.then(() => true), setTimeout(1000)]);
+      try {
+        expectTestTree(c, [
+          ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
+        ]);
+        return;
+      } catch (e) {
+        // ignore
+      }
     }
 
     expectTestTree(c, [
