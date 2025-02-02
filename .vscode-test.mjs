@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-
 const dirname = fileURLToPath(new URL('.', import.meta.url));
 const integrationTestDir = path.join(dirname, 'out/test/integration');
 const workspaceBaseDir = path.join(dirname, 'test-workspaces');
@@ -15,8 +14,8 @@ let extensionDevelopmentPath = '';
 
 const testMode = process.env.TEST_MODE ?? 'normal';
 
+const tempDir = process.env.TEST_TEMP ?? path.join(dirname, 'tmp');
 if (testMode === 'vsix') {
-  const tempDir = process.env.TEST_TEMP ?? path.join(dirname, 'tmp')
   extensionDevelopmentPath = path.resolve(path.join(tempDir, 'vsix', 'extension'));
 }
 
@@ -27,6 +26,7 @@ function createCommonOptions(label) {
     version: vsCodeVersion,
     env: {
       MOCHA_VSCODE_TEST: 'true',
+      TEST_TEMP: tempDir,
     },
     mocha: {
       ui: 'bdd',
@@ -47,7 +47,6 @@ function createCommonOptions(label) {
   if (extensionDevelopmentPath) {
     options.extensionDevelopmentPath = extensionDevelopmentPath;
   }
-
 
   return options;
 }

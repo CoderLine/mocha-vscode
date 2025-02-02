@@ -14,7 +14,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { DisposableStore } from './disposable';
 import { HumanError } from './errors';
-import { getPathToNode } from './node';
+import { getPathToNode, isNvmInstalled } from './node';
 
 type OptionsModule = {
   loadOptions(): IResolvedConfiguration;
@@ -41,6 +41,7 @@ export class ConfigurationFile implements vscode.Disposable {
   private _optionsModule?: OptionsModule;
   private _configModule?: ConfigModule;
   private _pathToMocha?: string;
+  private _pathToNvmRc?: string;
 
   /** Cached read promise, invalided on file change. */
   private readPromise?: Promise<ConfigurationList>;
@@ -140,14 +141,23 @@ export class ConfigurationFile implements vscode.Disposable {
 
   async getMochaSpawnArgs(customArgs: readonly string[]): Promise<string[]> {
     this._pathToMocha ??= await this._resolveLocalMochaBinPath();
+    this._pathToNvmRc ??= await this._resolveNvmRc();
 
-    return [
-      await getPathToNode(this.logChannel),
-      this._pathToMocha,
-      '--config',
-      this.uri.fsPath,
-      ...customArgs,
-    ];
+    let nodeSpawnArgs: string[];
+    if (
+      this._pathToNvmRc &&
+      (await fs.promises
+        .access(this._pathToNvmRc)
+        .then(() => true)
+        .catch(() => false))
+    ) {
+      nodeSpawnArgs = ['nvm', 'run'];
+    } else {
+      this._pathToNvmRc = undefined;
+      nodeSpawnArgs = [await getPathToNode(this.logChannel)];
+    }
+
+    return [...nodeSpawnArgs, this._pathToMocha, '--config', this.uri.fsPath, ...customArgs];
   }
 
   private getResolver() {
@@ -179,6 +189,42 @@ export class ConfigurationFile implements vscode.Disposable {
     throw new HumanError(`Could not find node_modules above '${mocha}'`);
   }
 
+  private async _resolveNvmRc(): Promise<string | undefined> {
+    // the .nvmrc file can be placed in any location up the directory tree, so we do the same
+    // starting from the mocha config file
+    // https://github.com/nvm-sh/nvm/blob/06413631029de32cd9af15b6b7f6ed77743cbd79/nvm.sh#L475-L491
+    try {
+      if (!(await isNvmInstalled())) {
+        return undefined;
+      }
+
+      let dir: string | undefined = path.dirname(this.uri.fsPath);
+
+      while (dir) {
+        const nvmrc = path.join(dir, '.nvmrc');
+        if (
+          await fs.promises
+            .access(nvmrc)
+            .then(() => true)
+            .catch(() => false)
+        ) {
+          this.logChannel.debug(`Found .nvmrc at ${nvmrc}`);
+          return nvmrc;
+        }
+
+        const parent = path.dirname(dir);
+        if (parent === dir) {
+          break;
+        }
+        dir = parent;
+      }
+    } catch (e) {
+      this.logChannel.error(e as Error, 'Error while searching for nvmrc');
+    }
+
+    return undefined;
+  }
+
   private async _resolveLocalMochaBinPath(): Promise<string> {
     try {
       const packageJsonPath = await this._resolveLocalMochaPath('/package.json');
@@ -193,17 +239,21 @@ export class ConfigurationFile implements vscode.Disposable {
       // ignore
     }
 
-    this.logChannel.warn('Could not resolve mocha bin path from package.json, fallback to default');
+    this.logChannel.info('Could not resolve mocha bin path from package.json, fallback to default');
     return await this._resolveLocalMochaPath('/bin/mocha.js');
   }
 
   private _resolveLocalMochaPath(suffix: string = ''): Promise<string> {
+    return this._resolve(`mocha${suffix}`);
+  }
+
+  private _resolve(request: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const dir = path.dirname(this.uri.fsPath);
-      this.logChannel.debug(`resolving 'mocha${suffix}' via ${dir}`);
-      this.getResolver().resolve({}, dir, 'mocha' + suffix, {}, (err, res) => {
+      this.logChannel.debug(`resolving '${request}' via ${dir}`);
+      this.getResolver().resolve({}, dir, request, {}, (err, res) => {
         if (err) {
-          this.logChannel.error(`resolving 'mocha${suffix}' failed with error ${err}`);
+          this.logChannel.error(`resolving '${request}' failed with error ${err}`);
           reject(
             new HumanError(
               `Could not find mocha in working directory '${path.dirname(
@@ -212,7 +262,7 @@ export class ConfigurationFile implements vscode.Disposable {
             ),
           );
         } else {
-          this.logChannel.debug(`'mocha${suffix}' resolved to '${res}'`);
+          this.logChannel.debug(`'${request}' resolved to '${res}'`);
           resolve(res as string);
         }
       });

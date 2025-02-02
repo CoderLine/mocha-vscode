@@ -27,13 +27,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: Install Node.js 
+        if: runner.os != 'Linux'
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
+      - name: Install Node.js via NVM (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+          echo $NVM_DIR >> $GITHUB_PATH
+          echo "NVM_DIR=$NVM_DIR" >> $GITHUB_ENV
+          nvm install $(cat test-workspaces/nvm/.nvmrc)
+          nvm install lts/*
+
       - name: Install dependencies
-        run: npm install
+        run: |
+          node --version
+          npm --version
+          npm install
 
       - name: Compile
         run: npm run compile:test
@@ -70,11 +85,12 @@ jobs:
         if: always()
         run: npm run lint
 
-      - uses: dorny/test-reporter@v1
+      - uses: dorny/test-reporter@1a288b62f8b75c0f433cbfdbc2e4800fbae50bd7
         if: ${{ (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository }}
         with:
           name: VS Code Test Results (${{matrix.os}}, ${{matrix.vscode-version}}, ${{matrix.vscode-platform}})
           path: 'test-results/*.json'
+          use-actions-summary: 'true'
           reporter: mocha-json
         
       - uses: actions/upload-artifact@v4
