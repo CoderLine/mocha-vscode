@@ -7,10 +7,13 @@
  * https://opensource.org/licenses/MIT.
  */
 
+import fs from 'fs';
+import { homedir } from 'os';
+import path from 'path';
 import * as vscode from 'vscode';
 import which from 'which';
 
-export async function getPathTo(logChannel: vscode.LogOutputChannel, bin: string, name: string) {
+async function getPathTo(logChannel: vscode.LogOutputChannel, bin: string, name: string) {
   logChannel.debug(`Resolving ${name} executable`);
   let pathToBin = await which(bin, { nothrow: true });
   if (pathToBin) {
@@ -34,11 +37,14 @@ export async function getPathToNode(logChannel: vscode.LogOutputChannel) {
   return pathToNode;
 }
 
-let pathToNpm: string | null = null;
-
-export async function getPathToNpm(logChannel: vscode.LogOutputChannel) {
-  if (!pathToNpm) {
-    pathToNpm = await getPathTo(logChannel, 'npm', 'NPM');
+export async function isNvmInstalled() {
+  // https://github.com/nvm-sh/nvm/blob/179d45050be0a71fd57591b0ed8aedf9b177ba10/install.sh#L27
+  const nvmDir = process.env.NVM_DIR || homedir();
+  // https://github.com/nvm-sh/nvm/blob/179d45050be0a71fd57591b0ed8aedf9b177ba10/install.sh#L143
+  try {
+    await fs.promises.access(path.join(nvmDir, '.nvm', '.git'));
+    return true;
+  } catch (e) {
+    return false;
   }
-  return pathToNpm;
 }
