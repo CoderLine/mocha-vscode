@@ -166,7 +166,7 @@
     "@vscode/dts": "^0.4.1",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
-    "@vscode/vsce": "^3.3.0",
+    "@vscode/vsce": "^3.3.2",
     "acorn": "^8.14.1",
     "acorn-loose": "^8.4.0",
     "ansi-colors": "^4.1.3",
