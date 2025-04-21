@@ -146,7 +146,7 @@
     "fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
+    "@eslint/js": "^9.25.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@types/chai": "^4.3.20",
     "@types/eslint__js": "^8.42.3",
