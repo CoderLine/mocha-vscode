@@ -188,7 +188,7 @@
     "prettier-eslint": "^16.3.0",
     "prettier-eslint-cli": "^8.0.1",
     "prettier-plugin-organize-imports": "^4.1.0",
-    "sinon": "^19.0.2",
+    "sinon": "^20.0.0",
     "split2": "^4.2.0",
     "stacktrace-parser": "^0.1.11",
     "supports-color": "^10.0.0",
