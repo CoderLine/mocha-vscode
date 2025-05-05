@@ -178,7 +178,7 @@
     "eslint": "^9.25.0",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-license-header": "^0.8.0",
-    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-prettier": "^5.3.1",
     "eslint-visitor-keys": "^4.2.0",
     "extract-zip": "^2.0.1",
     "glob": "^11.0.1",
