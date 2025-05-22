@@ -8,8 +8,8 @@
  */
 
 import * as Mocha from 'mocha';
-import { inspect } from 'util';
-import { MochaEvent, MochaEventTuple } from './fullJsonStreamReporterTypes';
+import { inspect } from 'node:util';
+import { MochaEvent, type MochaEventTuple } from './fullJsonStreamReporterTypes';
 
 /**
  * Similar to the mocha JSON stream, but includes additional information

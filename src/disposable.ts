@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 export class DisposableStore {
   private disposables: vscode.Disposable[] | undefined = [];
@@ -23,7 +23,7 @@ export class DisposableStore {
 
   public remove(disposable: vscode.Disposable) {
     if (this.disposables) {
-      this.disposables = this.disposables.filter((d) => d != disposable);
+      this.disposables = this.disposables.filter((d) => d !== disposable);
     }
   }
 

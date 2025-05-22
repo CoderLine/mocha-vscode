@@ -9,7 +9,7 @@
 
 import { expect } from 'chai';
 import * as vscode from 'vscode';
-import { TestState, captureTestRun, expectTestTree, findTestItem, getController } from '../util';
+import { type TestState, captureTestRun, expectTestTree, findTestItem, getController } from '../util';
 
 describe('overlapping tests', () => {
   it('discovers tests', async () => {

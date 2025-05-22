@@ -8,7 +8,7 @@
  */
 
 import { expect } from 'chai';
-import * as path from 'path';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { captureTestRun, expectTestTree, getController } from '../util';
 

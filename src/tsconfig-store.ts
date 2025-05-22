@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import { TsConfigResult, getTsconfig, parseTsconfig } from 'get-tsconfig';
+import { type TsConfigResult, getTsconfig, parseTsconfig } from 'get-tsconfig';
 import * as vscode from 'vscode';
 import { DisposableStore } from './disposable';
 

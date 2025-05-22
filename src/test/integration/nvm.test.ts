@@ -8,9 +8,9 @@
  */
 
 import { expect } from 'chai';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import * as vscode from 'vscode';
 import { isNvmInstalled } from '../../node';
 import { captureTestRun, expectTestTree, getController, integrationTestPrepare } from '../util';
@@ -55,7 +55,7 @@ describe('nvm', () => {
       os.platform() === 'linux' && ((await isNvmInstalled()) || process.env.GITHUB_ACTIONS);
     console.log(`Expecting node ${expectedVersion}, ran in ${actualVersion}`);
     if (shouldRun) {
-      expect(process.version).to.match(new RegExp(expectedVersion + '.*'));
+      expect(process.version).to.match(new RegExp(`${expectedVersion}.*`));
     }
   });
 });

@@ -7,13 +7,13 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as vscode from 'vscode';
-import { ConfigValue } from '../configValue';
-import { TsConfigStore } from '../tsconfig-store';
+import type * as vscode from 'vscode';
+import type { ConfigValue } from '../configValue';
+import type { TsConfigStore } from '../tsconfig-store';
 import { EvaluationTestDiscoverer } from './evaluate';
 import { FullEvaluationTestDiscoverer } from './evaluate-full';
 import { SyntaxTestDiscoverer } from './syntax';
-import { IExtensionSettings, IParsedNode, ITestDiscoverer } from './types';
+import type { IExtensionSettings, IParsedNode, ITestDiscoverer } from './types';
 
 export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
   private _syntax: SyntaxTestDiscoverer;
@@ -56,10 +56,9 @@ export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
           e,
         );
         return this._syntax.discover(filePath, code);
-      } else {
-        this.logChannel.error(`Error discovering tests with ${this.settings.value.extractWith}`, e);
-        throw e;
       }
+      this.logChannel.error(`Error discovering tests with ${this.settings.value.extractWith}`, e);
+      throw e;
     }
   }
 }

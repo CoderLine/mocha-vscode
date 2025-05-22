@@ -8,20 +8,20 @@
  */
 
 import styles from 'ansi-styles';
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { randomUUID } from 'crypto';
-import { promises as fs } from 'fs';
-import * as path from 'path';
+import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
 import split2 from 'split2';
 import * as vscode from 'vscode';
-import { ConfigValue } from './configValue';
-import { ConfigurationFile } from './configurationFile';
+import type { ConfigValue } from './configValue';
+import type { ConfigurationFile } from './configurationFile';
 import { DisposableStore } from './disposable';
 import { TestProcessExitedError } from './errors';
 import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
-import { MochaEvent, MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
-import { SourceMapStore } from './source-map-store';
+import { MochaEvent, type MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
+import type { SourceMapStore } from './source-map-store';
 
 interface ISpawnOptions {
   config: ConfigurationFile;
@@ -495,14 +495,13 @@ class CompiledFileTests {
     if (file) {
       const items = this.value.get(file);
       return items && this.getPathInTestItems(items, path);
-    } else {
+    }
       for (const items of this.value.values()) {
         const found = this.getPathInTestItems(items, path);
         if (found) {
           return found;
         }
       }
-    }
   }
 
   /**
@@ -535,7 +534,8 @@ class CompiledFileTests {
 
     let set = this.value.get(file);
     if (!set) {
-      this.value.set(file, (set = new Set()));
+      set = new Set();
+      this.value.set(file, set);
     }
 
     set.add(test);
@@ -678,7 +678,7 @@ async function tryDeriveStackLocation(
             let score = 0;
             if (tcase.uri && tcase.uri.toString() === location.uri.toString()) {
               score = 1;
-              if (tcase.range && tcase.range.contains(location?.range)) {
+              if (tcase.range?.contains(location?.range)) {
                 score = 2;
               }
             }

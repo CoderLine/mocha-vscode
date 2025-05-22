@@ -7,24 +7,24 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as assert from 'assert';
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import { tmpdir } from 'os';
-import * as path from 'path';
+import * as assert from 'node:assert';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import * as path from 'node:path';
 import * as sinon from 'sinon';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 import * as vscode from 'vscode';
 import { getControllersForTestCommand, recreateControllersForTestCommand } from '../constants';
 import type { Controller } from '../controller';
-import { IParsedNode, NodeKind } from '../discoverer/types';
+import { type IParsedNode, NodeKind } from '../discoverer/types';
 
 export function findTestItem(items: vscode.TestItemCollection, parts: string | string[]) {
   if (!Array.isArray(parts)) {
     parts = parts.split('/');
   }
 
-  if (parts.length == 0) {
+  if (parts.length === 0) {
     return undefined;
   }
 
@@ -91,7 +91,7 @@ async function backupWorkspace(source: string) {
   return backupFolder;
 }
 
-export async function getController(scan: boolean = true) {
+export async function getController(scan = true) {
   for (let retry = 0; retry < 3; retry++) {
     const c = await tryGetController(scan);
     if (c) {
@@ -103,7 +103,7 @@ export async function getController(scan: boolean = true) {
 
   throw new Error('no controllers registered');
 }
-export async function tryGetController(scan: boolean = true) {
+export async function tryGetController(scan = true) {
   const controllers = await vscode.commands.executeCommand<Controller[]>(
     getControllersForTestCommand,
   );
@@ -121,9 +121,8 @@ export async function tryGetController(scan: boolean = true) {
         if (c.ctrl) {
           controller = c;
           break;
-        } else {
-          await setTimeout(1000);
         }
+          await setTimeout(1000);
       }
 
       if (controller) {
@@ -189,7 +188,7 @@ function buildTreeExpectation(entry: TestTreeExpectation, c: vscode.TestItemColl
   }
 }
 
-export function onceChanged(controller: Controller, timeout: number = 10000) {
+export function onceChanged(controller: Controller, timeout = 10000) {
   return new Promise<void>((resolve, reject) => {
     setTimeout(timeout).then(reject);
     const l = controller.onDidChange(() => {
@@ -199,7 +198,7 @@ export function onceChanged(controller: Controller, timeout: number = 10000) {
   });
 }
 
-export function onceDisposed(controller: Controller, timeout: number = 10000) {
+export function onceDisposed(controller: Controller, timeout = 10000) {
   return new Promise<void>((resolve, reject) => {
     setTimeout(timeout).then(reject);
     const l = controller.onDidDispose(() => {
@@ -209,7 +208,7 @@ export function onceDisposed(controller: Controller, timeout: number = 10000) {
   });
 }
 
-export function onceScanComplete(controller: Controller, timeout: number = 10000) {
+export function onceScanComplete(controller: Controller, timeout = 10000) {
   return new Promise<void>((resolve, reject) => {
     setTimeout(timeout).then(reject);
     const l = controller.onScanComplete(() => {
@@ -271,7 +270,8 @@ export class FakeTestRun implements vscode.TestRun {
       for (let p = test.parent; p; p = p.parent) {
         key = `${p.id}/${key}`;
       }
-      (actual[key] ??= []).push(state);
+      actual[key] ??= [];
+      actual[key].push(state);
     }
 
     assert.deepStrictEqual(actual, expected, JSON.stringify(actual));
@@ -295,7 +295,7 @@ export class FakeTestRun implements vscode.TestRun {
     this.states.push({
       test,
       state: 'failed',
-      message: message instanceof Array ? message[0] : message,
+      message: Array.isArray(message) ? message[0] : message,
     });
   }
   errored(
@@ -305,7 +305,7 @@ export class FakeTestRun implements vscode.TestRun {
     this.states.push({
       test,
       state: 'errored',
-      message: message instanceof Array ? message[0] : message,
+      message: Array.isArray(message) ? message[0] : message,
     });
   }
   passed(test: vscode.TestItem): void {

@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import path from 'path';
+import path from 'node:path';
 import type { IExtensionSettings } from './discoverer/types';
 
 /** Pattern of files the CLI looks for */

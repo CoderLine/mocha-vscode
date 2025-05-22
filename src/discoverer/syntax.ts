@@ -11,13 +11,13 @@ import { parse as esTreeParse, type TSESTreeOptions } from '@typescript-eslint/t
 import type { Options as AcornOptions } from 'acorn';
 import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
-import { Node } from 'estree';
+import type { Node } from 'estree';
 import type { ConfigValue } from '../configValue';
 import { isTypeScript } from '../constants';
-import { TsConfigStore } from '../tsconfig-store';
-import { IExtensionSettings, IParsedNode, ITestDiscoverer, NodeKind } from './types';
+import type { TsConfigStore } from '../tsconfig-store';
+import { type IExtensionSettings, type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
 
-const enum C {
+enum C {
   MemberExpression = 'MemberExpression',
   CallExpression = 'CallExpression',
   TemplateLiteral = 'TemplateLiteral',
@@ -58,8 +58,10 @@ const traverse = (
   if (keys) {
     for (const key of keys) {
       const child = (node as unknown as Record<string, Node | Node[]>)[key];
-      if (child instanceof Array) {
-        child.forEach((c) => traverse(c, visitor));
+      if (Array.isArray(child)) {
+        for (const c of child) {
+          traverse(c, visitor);
+        }
       } else if (child) {
         traverse(child, visitor);
       }
@@ -73,7 +75,7 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
   constructor(
     private settings: ConfigValue<IExtensionSettings>,
     private tsconfigStore: TsConfigStore,
-  ) {}
+  ) { }
 
   async discover(filePath: string, text: string) {
     const settings = this.settings;

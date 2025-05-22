@@ -9,26 +9,15 @@
 
 import { TraceMap } from '@jridgewell/trace-mapping';
 import { build as esbuildBuild } from 'esbuild';
-import { createRequire } from 'module';
-import * as vm from 'vm';
-import * as vscode from 'vscode';
-import { ConfigValue } from '../configValue';
+import { createRequire } from 'node:module';
+import type * as vm from 'node:vm';
 import { isEsm, isTypeScript } from '../constants';
-import { TsConfigStore } from '../tsconfig-store';
 import { EvaluationTestDiscoverer } from './evaluate';
-import { IExtensionSettings } from './types';
 
 export class FullEvaluationTestDiscoverer extends EvaluationTestDiscoverer {
-  constructor(
-    logChannel: vscode.LogOutputChannel | undefined,
-    settings: ConfigValue<IExtensionSettings>,
-    tsconfigStore: TsConfigStore,
-  ) {
-    super(logChannel, settings, tsconfigStore);
-  }
 
   protected evaluate(contextObj: vm.Context, filePath: string, code: string) {
-    contextObj['require'] = createRequire(filePath);
+    contextObj.require = createRequire(filePath);
     return super.evaluate(contextObj, filePath, code);
   }
 

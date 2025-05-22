@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as timers from 'timers/promises';
+import * as timers from 'node:timers/promises';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
 import { ConsoleOuputChannel } from './consoleLogChannel';
@@ -17,7 +17,7 @@ import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
 import { WorkspaceFolderWatcher } from './workspaceWatcher';
 
-const enum FolderSyncState {
+enum FolderSyncState {
   Idle,
   Syncing,
   ReSyncNeeded,
@@ -141,9 +141,13 @@ export function activate(context: vscode.ExtensionContext) {
       await syncWorkspaceFoldersWithRetry();
       return Array.from(watchers.values()).flatMap((w) => Array.from(w.controllers.values()));
     }),
-    new vscode.Disposable(() => watchers.forEach((c) => c.dispose())),
+    new vscode.Disposable(() => {
+      for (const c of watchers.values()) {
+        c.dispose();
+      }
+    }),
     logChannel,
   );
 }
 
-export function deactivate() {}
+export function deactivate() { }

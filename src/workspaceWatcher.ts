@@ -12,8 +12,8 @@ import * as vscode from 'vscode';
 import { configFilePatterns } from './constants';
 import { Controller } from './controller';
 import { DisposableStore } from './disposable';
-import { TestRunner } from './runner';
-import { SourceMapStore } from './source-map-store';
+import type { TestRunner } from './runner';
+import type { SourceMapStore } from './source-map-store';
 
 export class WorkspaceFolderWatcher {
   private readonly disposables = new DisposableStore();

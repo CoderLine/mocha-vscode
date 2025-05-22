@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 // this logic is aligned with the ESBuild install script, unfortunately we cannot use pkgAndSubpathForCurrentPlatform directly
 // so we have a copy of the logic, we should reach out to ESBUild to export the API from install.js
@@ -130,7 +130,7 @@ export async function initESBuild(
     }
   } catch (e) {
     logChannel.error(
-      `Failed to determine ESBuild platform package`,
+      'Failed to determine ESBuild platform package',
       (e as Error).message,
       (e as Error).stack,
     );

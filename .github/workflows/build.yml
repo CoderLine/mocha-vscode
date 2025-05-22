@@ -83,7 +83,7 @@ jobs:
 
       - name: Run Linter
         if: always()
-        run: npm run lint
+        run: npm run lint:ci
 
       - uses: dorny/test-reporter@1a288b62f8b75c0f433cbfdbc2e4800fbae50bd7
         if: ${{ (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository }}
