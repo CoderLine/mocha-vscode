@@ -7,19 +7,19 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import { createHash } from 'crypto';
-import { promises as fs } from 'fs';
+import { createHash } from 'node:crypto';
+import { promises as fs } from 'node:fs';
 import * as vscode from 'vscode';
 import { ConfigValue } from './configValue';
-import { ConfigurationFile, ConfigurationList } from './configurationFile';
+import { ConfigurationFile, type ConfigurationList } from './configurationFile';
 import { defaultTestSymbols, showConfigErrorCommand } from './constants';
 import { SettingsBasedFallbackTestDiscoverer } from './discoverer/settings';
-import { IParsedNode, NodeKind } from './discoverer/types';
+import { type IParsedNode, NodeKind } from './discoverer/types';
 import { DisposableStore, MutableDisposable } from './disposable';
 import { last } from './iterable';
-import { ICreateOpts, ItemType, getContainingItemsForFile, testMetadata } from './metadata';
-import { TestRunner } from './runner';
-import { ISourceMapMaintainer, SourceMapStore } from './source-map-store';
+import { type ICreateOpts, ItemType, getContainingItemsForFile, testMetadata } from './metadata';
+import type { TestRunner } from './runner';
+import type { ISourceMapMaintainer, SourceMapStore } from './source-map-store';
 import { TsConfigStore } from './tsconfig-store';
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('ext-test-duplicates');
@@ -135,10 +135,11 @@ export class Controller {
     this.disposables.add(
       this.configFile.onActivate(() => {
         try {
-          const ctrl = (this.ctrl = vscode.tests.createTestController(
+          const ctrl = vscode.tests.createTestController(
             configFileUri.toString(),
             configFileUri.fsPath,
-          ));
+          );
+          this.ctrl = ctrl;
           this.disposables.add(ctrl);
 
           this.recreateDiscoverer();
@@ -167,7 +168,7 @@ export class Controller {
     this.configFile.tryActivate();
   }
 
-  recreateDiscoverer(newTsConfig: boolean = true) {
+  recreateDiscoverer(newTsConfig = true) {
     if (!this.ctrl) {
       this.logChannel.trace('Skipping discoverer recreation, mocha is not active in this project.');
       return;
@@ -380,9 +381,10 @@ export class Controller {
 
   private async startWatchingWorkspace() {
     // we need to watch for *every* change due to https://github.com/microsoft/vscode/issues/60813
-    const watcher = (this.watcher.value = vscode.workspace.createFileSystemWatcher(
+    const watcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(this.wf, '**/*'),
-    ));
+    );
+    this.watcher.value = watcher;
 
     watcher.onDidCreate((uri) => this._syncFile(uri));
     watcher.onDidChange((uri) => this._syncFile(uri));
@@ -403,7 +405,8 @@ export class Controller {
     for (const key of this.testsInFiles.keys()) {
       this.deleteFileTests(key);
     }
-    const item = (this.errorItem = this.ctrl!.createTestItem('error', 'Extension Test Error'));
+    const item = this.ctrl!.createTestItem('error', 'Extension Test Error');
+    this.errorItem = item;
     item.error = new vscode.MarkdownString(
       `[View details](command:${showConfigErrorCommand}?${encodeURIComponent(
         JSON.stringify([this.configFile.uri.toString()]),
@@ -504,7 +507,9 @@ export class Controller {
       }
     };
 
-    rough.files.forEach((f) => processFile(vscode.Uri.file(f)));
+    for (const f of rough.files) {
+      processFile(vscode.Uri.file(f));
+    }
     const todo = rough.patterns.map(async (pattern) => {
       const relativePattern = new vscode.RelativePattern(this.wf, pattern);
       for (const file of await vscode.workspace.findFiles(relativePattern)) {

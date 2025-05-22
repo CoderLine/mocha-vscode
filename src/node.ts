@@ -7,10 +7,10 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import fs from 'fs';
-import { homedir } from 'os';
-import path from 'path';
-import * as vscode from 'vscode';
+import fs from 'node:fs';
+import { homedir } from 'node:os';
+import path from 'node:path';
+import type * as vscode from 'vscode';
 import which from 'which';
 
 async function getPathTo(logChannel: vscode.LogOutputChannel, bin: string, name: string) {

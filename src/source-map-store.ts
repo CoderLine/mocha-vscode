@@ -7,9 +7,9 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import { promises as fs } from 'fs';
-import * as vscode from 'vscode';
-import { identityMapping, IMappingAccessor, parseSourceMap } from './source-map';
+import { promises as fs } from 'node:fs';
+import type * as vscode from 'vscode';
+import { identityMapping, type IMappingAccessor, parseSourceMap } from './source-map';
 
 export interface ISourceMapMaintainer {
   compiledUri: vscode.Uri;
@@ -50,10 +50,11 @@ export class SourceMapStore {
       },
       async refresh(contents) {
         const contentsProm = fs.readFile(uri.fsPath, 'utf8') || Promise.resolve(contents);
-        return (rec.accessor = contentsProm.then(
+        rec.accessor = contentsProm.then(
           (c) => parseSourceMap(uri, c),
           () => identityMapping(uri),
-        ));
+        );
+        return rec.accessor;
       },
       dispose() {
         if (--rec.rc === 0) {

@@ -8,10 +8,10 @@
  */
 
 import { expect } from 'chai';
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { setTimeout } from 'timers/promises';
-import { Controller } from '../../controller';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+import type { Controller } from '../../controller';
 import {
   expectTestTree,
   getController,

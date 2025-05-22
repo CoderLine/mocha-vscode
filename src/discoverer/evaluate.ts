@@ -12,16 +12,16 @@ import type { Node } from 'acorn';
 import { parse as acornParse } from 'acorn-loose';
 import * as acornWalk from 'acorn-walk';
 import * as errorParser from 'error-stack-parser';
-import { CommonOptions, TsconfigRaw, transform as esbuildTransform } from 'esbuild';
-import * as path from 'path';
-import { pathToFileURL } from 'url';
-import * as vm from 'vm';
-import * as vscode from 'vscode';
-import { ConfigValue } from '../configValue';
+import { type CommonOptions, type TsconfigRaw, transform as esbuildTransform } from 'esbuild';
+import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import * as vm from 'node:vm';
+import type * as vscode from 'vscode';
+import type { ConfigValue } from '../configValue';
 import { isEsm, isTypeScript } from '../constants';
-import { TsConfigStore } from '../tsconfig-store';
+import type { TsConfigStore } from '../tsconfig-store';
 import { acornOptions } from './syntax';
-import { IExtensionSettings, IParsedNode, ITestDiscoverer, NodeKind } from './types';
+import { type IExtensionSettings, type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
 
 /**
  * Note: the goal is not to sandbox test code (workspace trust is required
@@ -54,7 +54,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     protected logChannel: vscode.LogOutputChannel | undefined,
     protected settings: ConfigValue<IExtensionSettings>,
     protected tsconfigStore: TsConfigStore,
-  ) {}
+  ) { }
 
   async discover(filePath: string, code: string) {
     const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
@@ -85,9 +85,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         get: (_, target) => {
           if (target === 'create') {
             return placeholder();
-          } else {
-            return originalObject[target];
           }
+          return originalObject[target];
         },
         set: () => true,
       });
@@ -203,13 +202,21 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         get(target, prop) {
           if (symbols.value.suite.includes(prop as string)) {
             return suiteFunction;
-          } else if (symbols.value.test.includes(prop as string)) {
+          }
+
+          if (symbols.value.test.includes(prop as string)) {
             return testFunction;
-          } else if (symbols.value.hooks.includes(prop as string)) {
+          }
+
+          if (symbols.value.hooks.includes(prop as string)) {
             return placeholder();
-          } else if (prop in target) {
+          }
+
+          if (prop in target) {
             return target[prop]; // top-level `var` defined get set on the contextObj
-          } else if (prop in globalThis && !replacedGlobals.has(prop as string)) {
+          }
+
+          if (prop in globalThis && !replacedGlobals.has(prop as string)) {
             // Bug #153: ESBuild will wrap require() calls into __toESM which breaks quite some things
             // we want to keep our Proxy placeholder object in all scenarios
             // Due to that we provide a special proxy object which will create again placeholder proxies
@@ -220,9 +227,9 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
             }
 
             return (globalThis as any)[prop];
-          } else {
-            return placeholder();
           }
+
+          return placeholder();
         },
       },
     );

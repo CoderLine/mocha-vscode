@@ -8,9 +8,9 @@
  */
 
 import resolveModule from 'enhanced-resolve';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { minimatch } from 'minimatch';
-import * as path from 'path';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { DisposableStore } from './disposable';
 import { HumanError } from './errors';
@@ -36,7 +36,7 @@ export class ConfigurationFile implements vscode.Disposable {
   private readonly didChangeEmitter = this.ds.add(new vscode.EventEmitter<void>());
   private readonly activateEmitter = this.ds.add(new vscode.EventEmitter<void>());
 
-  private _activateFired: boolean = false;
+  private _activateFired = false;
   private _resolver?: resolveModule.Resolver;
   private _optionsModule?: OptionsModule;
   private _configModule?: ConfigModule;
@@ -105,9 +105,8 @@ export class ConfigurationFile implements vscode.Disposable {
           this.activateEmitter.fire();
           this._activateFired = true;
           return true;
-        } else {
-          this.logChannel.trace('No mocha section in package.config, skipping activation');
         }
+          this.logChannel.trace('No mocha section in package.config, skipping activation');
       } catch (e) {
         this.logChannel.warn(
           'Error while reading mocha options from package.config, skipping activation',
@@ -129,7 +128,8 @@ export class ConfigurationFile implements vscode.Disposable {
    * @throws {HumanError} if anything goes wrong
    */
   public read() {
-    return (this.readPromise ??= this._read());
+    this.readPromise ??= this._read();
+    return this.readPromise;
   }
 
   /**
@@ -243,7 +243,7 @@ export class ConfigurationFile implements vscode.Disposable {
     return await this._resolveLocalMochaPath('/bin/mocha.js');
   }
 
-  private _resolveLocalMochaPath(suffix: string = ''): Promise<string> {
+  private _resolveLocalMochaPath(suffix = ''): Promise<string> {
     return this._resolve(`mocha${suffix}`);
   }
 
@@ -297,7 +297,7 @@ export class ConfigurationFile implements vscode.Disposable {
       }
 
       config = this._optionsModule.loadOptions();
-      this.logChannel.debug(`Loaded mocharc via Mocha`);
+      this.logChannel.debug('Loaded mocharc via Mocha');
     } finally {
       this.logChannel.debug(`Reading mocharc, changing working directory back to ${currentCwd}`);
       process.chdir(currentCwd);
@@ -341,33 +341,31 @@ export class ConfigurationList {
     this.patterns = positional.map((f) => {
       if (path.isAbsolute(f)) {
         return { glob: false, value: path.normalize(f) };
-      } else {
-        const cfgDir = path.dirname(this.uri.fsPath);
-        return {
-          glob: true,
-          value: toForwardSlashes(path.join(cfgDir, f)),
-          workspaceFolderRelativeGlob: toForwardSlashes(
-            path.join(path.relative(wf.uri.fsPath, cfgDir), f),
-          ),
-        };
       }
+      const cfgDir = path.dirname(this.uri.fsPath);
+      return {
+        glob: true,
+        value: toForwardSlashes(path.join(cfgDir, f)),
+        workspaceFolderRelativeGlob: toForwardSlashes(
+          path.join(path.relative(wf.uri.fsPath, cfgDir), f),
+        ),
+      };
     });
 
     if (value.ignore) {
       this.patterns.push(
         ...value.ignore.map((f) => {
           if (path.isAbsolute(f)) {
-            return { glob: false as const, value: '!' + path.normalize(f) };
-          } else {
-            const cfgDir = path.dirname(this.uri.fsPath);
-            return {
-              glob: true as const,
-              value: '!' + toForwardSlashes(path.join(cfgDir, f)),
-              workspaceFolderRelativeGlob: toForwardSlashes(
-                path.join(path.relative(wf.uri.fsPath, cfgDir), f),
-              ),
-            };
+            return { glob: false as const, value: `!${path.normalize(f)}` };
           }
+          const cfgDir = path.dirname(this.uri.fsPath);
+          return {
+            glob: true as const,
+            value: `!${toForwardSlashes(path.join(cfgDir, f))}`,
+            workspaceFolderRelativeGlob: toForwardSlashes(
+              path.join(path.relative(wf.uri.fsPath, cfgDir), f),
+            ),
+          };
         }),
       );
     }

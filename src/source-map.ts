@@ -9,8 +9,8 @@
 
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping';
 import { dataUriToBuffer } from 'data-uri-to-buffer';
-import * as fs from 'fs/promises';
-import { fileURLToPath } from 'url';
+import * as fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
 
 const smUrlComment = '//# sourceMappingURL=';

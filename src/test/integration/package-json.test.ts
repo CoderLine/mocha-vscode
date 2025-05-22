@@ -7,9 +7,9 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { setTimeout } from 'timers/promises';
+import { promises as fs } from 'node:fs';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import * as vscode from 'vscode';
 import {
   captureTestRun,
@@ -83,6 +83,7 @@ describe('package-json', () => {
       let updated = original.replace('**/*.test.js', '*.test.js');
 
       // the vscode file watcher is set up async and does not always catch the change, keep changing the file
+      // biome-ignore lint/suspicious/noConfusingVoidType: Needed on setTimeout
       let ok: boolean | void = false;
       while (!ok) {
         updated += '\n';

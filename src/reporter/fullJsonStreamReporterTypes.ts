@@ -38,7 +38,8 @@ export interface IFailEvent extends IPassEvent {
   actual?: string;
 }
 
-export interface IEndEvent {}
+// biome-ignore lint/complexity/noBannedTypes: No special data
+export type IEndEvent = {}
 
 export interface ISuiteStartEvent {
   path: string[];

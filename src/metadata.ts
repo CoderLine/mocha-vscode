@@ -7,9 +7,9 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
-export const enum ItemType {
+export enum ItemType {
   Directory,
   File,
   Suite,

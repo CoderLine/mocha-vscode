@@ -51,9 +51,8 @@ export class OutputQueue {
           this.queue.shift();
           return this.runQueue();
         });
-      } else {
-        this.queue.shift();
       }
+        this.queue.shift();
     }
   }
 }
