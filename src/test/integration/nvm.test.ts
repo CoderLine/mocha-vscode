@@ -55,7 +55,7 @@ describe('nvm', () => {
       os.platform() === 'linux' && ((await isNvmInstalled()) || process.env.GITHUB_ACTIONS);
     console.log(`Expecting node ${expectedVersion}, ran in ${actualVersion}`);
     if (shouldRun) {
-      expect(process.version).to.match(new RegExp(`${expectedVersion}.*`));
+      expect(actualVersion).to.match(new RegExp(`${expectedVersion}.*`));
     }
   });
 });
