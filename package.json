@@ -151,7 +151,7 @@
     "@biomejs/biome": "^1.9.4",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@types/chai": "^4.3.20",
-    "@types/estree": "^1.0.6",
+    "@types/estree": "^1.0.7",
     "@types/extract-zip": "^2.0.1",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
