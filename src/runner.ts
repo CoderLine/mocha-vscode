@@ -41,9 +41,35 @@ export class TestRunner {
     private readonly smStore: SourceMapStore,
     private readonly launchConfig: ConfigValue<Record<string, any>>,
     private readonly env: ConfigValue<Record<string, string>>,
-  ) {}
+  ) { }
 
   private currentRunningTest?: vscode.TestItem;
+
+  private static filterArgsForCopy(args: string[]): string[] {
+    const forCopy: string[] = [];
+
+    // powershell prefix 
+    if (process.platform === 'win32') {
+      forCopy.push('&');
+    }
+
+    let i = 0;
+    while (i < args.length) {
+
+      if (args[i] === '--reporter') {
+        i++; // --reporter
+        i++; // value
+      } else {
+        const sanitized = args[i].includes(' ') || args[i].includes('\\')
+          ? JSON.stringify(args[i])
+          : args[i]
+        forCopy.push(sanitized);
+        i++;
+      }
+    }
+
+    return forCopy;
+  }
 
   public makeHandler(
     ctrl: vscode.TestController,
@@ -113,8 +139,7 @@ export class TestRunner {
               const { path } = parsed[1];
               if (path.length > 0) {
                 enqueueLine(
-                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
-                    path[path.length - 1]
+                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
                   }`,
                 );
               }
@@ -125,8 +150,7 @@ export class TestRunner {
               const { file, path, duration } = parsed[1];
               const test = compiledFileTests.lookup(file, path);
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${
-                  path[path.length - 1]
+                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
                 }`,
                 test,
               );
@@ -143,8 +167,7 @@ export class TestRunner {
               const tcase = compiledFileTests.lookup(file, path);
 
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${
-                  styles.red.close
+                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${styles.red.close
                 }`,
                 tcase,
               );
@@ -214,10 +237,17 @@ export class TestRunner {
       };
 
       run.appendOutput(
-        `${styles.inverse.open} > ${styles.inverse.close} ${(
+        `${styles.inverse.open} VSCode Command (for troubleshooting)> ${styles.inverse.close} ${(
           await config.getMochaSpawnArgs(spawnOpts.args)
-        ).join(' ')}}\r\n`,
+        ).join(' ')}\r\n`,
       );
+
+      run.appendOutput(
+        `${styles.inverse.open} Terminal Command (for copying)> ${styles.inverse.close} ${TestRunner.filterArgsForCopy(
+          await config.getMochaSpawnArgs(spawnOpts.args)
+        ).join(' ')}\r\n`,
+      );
+
 
       try {
         const start = performance.now();
@@ -548,8 +578,12 @@ class CompiledFileTests {
 
     // on windows paths are case insensitive and we sometimes get inconsistent
     // casings (e.g. C:\ vs c:\) - happens especially on debugging
+    // we still need to keep the main parts of the paths consistent
+    // (e.g. jest snapshot uses the file name for writing new files -> can lead to cross platform problems)
     if (process.platform === 'win32') {
-      return file.toLowerCase();
+      if (file.charAt(1) === ':') {
+        return file.substring(0, 1).toLowerCase() + file.substring(1);
+      }
     }
 
     return file;
