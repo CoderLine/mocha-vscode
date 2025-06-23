@@ -177,7 +177,7 @@
     "enhanced-resolve": "^5.18.1",
     "error-stack-parser": "^2.1.4",
     "extract-zip": "^2.0.1",
-    "glob": "^11.0.2",
+    "glob": "^11.0.3",
     "minimatch": "^10.0.1",
     "mocha": "^11.5.0",
     "sinon": "^20.0.0",
