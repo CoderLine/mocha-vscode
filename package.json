@@ -186,7 +186,7 @@
     "supports-color": "^10.0.0",
     "tar": "^7.4.3",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.34.1",
     "which": "^5.0.0"
