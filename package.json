@@ -153,7 +153,7 @@
     "@types/chai": "^4.3.20",
     "@types/estree": "^1.0.8",
     "@types/extract-zip": "^2.0.1",
-    "@types/glob": "^8.1.0",
+    "@types/glob": "^9.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/picomatch": "^4.0.0",
