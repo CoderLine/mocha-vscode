@@ -174,7 +174,7 @@
     "chai": "^4.5.0",
     "cross-env": "^10.0.0",
     "data-uri-to-buffer": "^6.0.2",
-    "enhanced-resolve": "^5.18.2",
+    "enhanced-resolve": "^5.18.3",
     "error-stack-parser": "^2.1.4",
     "extract-zip": "^2.0.1",
     "glob": "^11.0.3",
