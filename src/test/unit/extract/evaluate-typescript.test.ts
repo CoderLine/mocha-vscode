@@ -230,4 +230,36 @@ describe('evaluate typescript', () => {
       },
     ]);
   });
+
+    it('extracts basic suite import string', async () => {
+    const src = await extractWithEvaluation(
+      "import a from './test';", //
+      "const _ = String(a)",
+      "suite('hello', () => {",
+      "  it('works', () => { a() });",
+      '})',
+    );
+    expect(src).to.deep.equal([
+      {
+        name: 'hello',
+        kind: NodeKind.Suite,
+        startLine: 2,
+        startColumn: 0,
+        endColumn: 1,
+        endLine: 4,
+        children: [
+          {
+            name: 'works',
+            kind: NodeKind.Test,
+            startLine: 3,
+            startColumn: 2,
+            endColumn: Number.MAX_SAFE_INTEGER,
+            endLine: 3,
+            children: [],
+          },
+        ],
+      },
+    ]);
+  });
+
 });

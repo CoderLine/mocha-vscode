@@ -63,6 +63,22 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     function placeholder(): unknown {
       return new Proxy(placeholder, {
         get: (obj, target) => {
+
+          // ES2026 symbols
+          // see https://github.com/CoderLine/mocha-vscode/discussions/378
+          if ('toPrimitive' in Symbol && target === Symbol.toPrimitive) {
+            return () => {
+              return '[object Proxy]'
+            };
+          }
+
+          if ('toStringTag' in Symbol && target === Symbol.toStringTag) {
+            return () => {
+              return '[object Proxy]'
+            };
+          }
+
+          // standard nested proxy accessors
           try {
             const desc = Object.getOwnPropertyDescriptor(obj, target);
             if (desc && !desc.writable && !desc.configurable) {
