@@ -3,7 +3,7 @@
   "displayName": "Mocha for VS Code",
   "description": "Run and debug Mocha tests right within VS Code.",
   "publisher": "coderline",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.83.0"
