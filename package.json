@@ -148,7 +148,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.2.4",
     "@jridgewell/trace-mapping": "^0.3.30",
     "@types/chai": "^4.3.20",
     "@types/estree": "^1.0.8",
