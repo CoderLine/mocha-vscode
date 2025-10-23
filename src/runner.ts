@@ -306,8 +306,8 @@ export class TestRunner {
           name: `Mocha Test (${config.uri.fsPath})`,
           program: spawnArgs[1],
           args: [...spawnArgs.slice(2), ...(launchConfig.args || [])],
+          cwd: path.dirname(config.uri.fsPath),
           env: { ...launchConfig.env, ...this.env.value },
-
           __extensionSessionKey: sessionKey,
         }),
       ).catch(reject);
