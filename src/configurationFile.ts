@@ -101,17 +101,14 @@ export class ConfigurationFile implements vscode.Disposable {
       try {
         const packageJson = JSON.parse(await fs.promises.readFile(this.uri.fsPath, 'utf-8'));
         if ('mocha' in packageJson && typeof packageJson.mocha !== 'undefined') {
-          this.logChannel.trace('Found mocha section in package.config, skipping activation');
+          this.logChannel.trace('Found mocha section in package.config, activating');
           this.activateEmitter.fire();
           this._activateFired = true;
           return true;
         }
-          this.logChannel.trace('No mocha section in package.config, skipping activation');
+        this.logChannel.trace('No mocha section in package.config, skipping activation');
       } catch (e) {
-        this.logChannel.warn(
-          'Error while reading mocha options from package.config, skipping activation',
-          e,
-        );
+        this.logChannel.warn('Error while reading mocha options from package.config, skipping activation', e);
       }
     } else {
       // for normal mocharc files directly activate

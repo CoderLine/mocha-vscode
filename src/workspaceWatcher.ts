@@ -14,6 +14,7 @@ import { Controller } from './controller';
 import { DisposableStore } from './disposable';
 import type { TestRunner } from './runner';
 import type { SourceMapStore } from './source-map-store';
+import type { ExtensionSettings } from './settings';
 
 export class WorkspaceFolderWatcher {
   private readonly disposables = new DisposableStore();
@@ -27,6 +28,7 @@ export class WorkspaceFolderWatcher {
     private folder: vscode.WorkspaceFolder,
     private runner: TestRunner,
     private smStore: SourceMapStore,
+    private settings: ExtensionSettings
   ) {}
 
   async init() {
@@ -79,6 +81,7 @@ export class WorkspaceFolderWatcher {
       this.smStore,
       file,
       this.runner,
+      this.settings
     );
     this.controllers.set(file.toString(), controller);
     this.disposables.add(controller);

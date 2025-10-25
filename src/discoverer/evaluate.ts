@@ -17,11 +17,11 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as vm from 'node:vm';
 import type * as vscode from 'vscode';
-import type { ConfigValue } from '../configValue';
 import { isEsm, isTypeScript } from '../constants';
 import type { TsConfigStore } from '../tsconfig-store';
 import { acornOptions } from './syntax';
-import { type IExtensionSettings, type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
+import { type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
+import type { ExtensionSettings } from '../settings';
 
 /**
  * Note: the goal is not to sandbox test code (workspace trust is required
@@ -52,7 +52,7 @@ const replacedGlobals = new Set([
 export class EvaluationTestDiscoverer implements ITestDiscoverer {
   constructor(
     protected logChannel: vscode.LogOutputChannel | undefined,
-    protected settings: ConfigValue<IExtensionSettings>,
+    protected settings: ExtensionSettings,
     protected tsconfigStore: TsConfigStore,
   ) { }
 
@@ -207,7 +207,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     const suiteFunction = makeTesterFunction(NodeKind.Suite, sourceMap);
     const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
 
-    const symbols = this.settings;
+    const symbols = this.settings.extractSettings;
     const contextObj = new Proxy(
       {
         __dirname: path.dirname(filePath),
@@ -257,7 +257,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
 
   protected evaluate(contextObj: vm.Context, filePath: string, code: string) {
     vm.runInNewContext(code, contextObj, {
-      timeout: this.settings.value.extractTimeout,
+      timeout: this.settings.extractSettings.value.extractTimeout,
       filename: filePath,
     });
   }

@@ -19,14 +19,6 @@ export interface IParsedNode {
   error?: string;
 }
 
-export interface IExtensionSettings {
-  suite: readonly string[];
-  test: readonly string[];
-  hooks: readonly string[];
-  extractWith: 'syntax' | 'evaluation-cjs' | 'evaluation-cjs-full';
-  extractTimeout: number;
-}
-
 export enum NodeKind {
   Suite,
   Test,

@@ -9,13 +9,13 @@
 
 import { expect } from 'chai';
 import * as vscode from 'vscode';
-import { defaultTestSymbols } from '../../constants';
 import { captureTestRun, expectTestTree, getController } from '../util';
+import { defaultTestSymbols } from '../../settings';
 
 describe('typescript-full', () => {
   async function getFullController() {
     const c = await getController(false);
-    c.settings.setValue({
+    c.settings.extractSettings.setValue({
       ...defaultTestSymbols,
       extractWith: 'evaluation-cjs-full',
     });
@@ -25,7 +25,7 @@ describe('typescript-full', () => {
 
   it('discovers tests', async () => {
     const c = await getFullController();
-    c.settings.setValue({
+    c.settings.extractSettings.setValue({
       ...defaultTestSymbols,
       extractWith: 'evaluation-cjs-full',
     });

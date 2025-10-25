@@ -14,7 +14,6 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import split2 from 'split2';
 import * as vscode from 'vscode';
-import type { ConfigValue } from './configValue';
 import type { ConfigurationFile } from './configurationFile';
 import { DisposableStore } from './disposable';
 import { TestProcessExitedError } from './errors';
@@ -22,6 +21,7 @@ import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
 import { MochaEvent, type MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
 import type { SourceMapStore } from './source-map-store';
+import type { ExtensionSettings } from './settings';
 
 interface ISpawnOptions {
   config: ConfigurationFile;
@@ -30,39 +30,33 @@ interface ISpawnOptions {
   token: vscode.CancellationToken;
 }
 
-export type RunHandler = (
-  request: vscode.TestRunRequest,
-  token: vscode.CancellationToken,
-) => Promise<void>;
+export type RunHandler = (request: vscode.TestRunRequest, token: vscode.CancellationToken) => Promise<void>;
 
 export class TestRunner {
   constructor(
     private readonly logChannel: vscode.LogOutputChannel,
     private readonly smStore: SourceMapStore,
-    private readonly launchConfig: ConfigValue<Record<string, any>>,
-    private readonly env: ConfigValue<Record<string, string>>,
-  ) { }
+    private readonly settings: ExtensionSettings
+  ) {}
 
   private currentRunningTest?: vscode.TestItem;
 
   private static filterArgsForCopy(args: string[]): string[] {
     const forCopy: string[] = [];
 
-    // powershell prefix 
+    // powershell prefix
     if (process.platform === 'win32') {
       forCopy.push('&');
     }
 
     let i = 0;
     while (i < args.length) {
-
       if (args[i] === '--reporter') {
         i++; // --reporter
         i++; // value
       } else {
-        const sanitized = args[i].includes(' ') || args[i].includes('\\')
-          ? JSON.stringify(args[i])
-          : args[i]
+        const sanitized =
+          args[i].includes(' ') || args[i].includes('\\') || args[i].includes('*') ? JSON.stringify(args[i]) : args[i];
         forCopy.push(sanitized);
         i++;
       }
@@ -74,22 +68,16 @@ export class TestRunner {
   public makeHandler(
     ctrl: vscode.TestController,
     config: ConfigurationFile,
-    debug: boolean,
+    debug: boolean
   ): RunHandler {
     const workingDir = path.dirname(config.uri.fsPath);
 
-    return async (request) => {
+    return async request => {
       const runStart = performance.now();
       this.logChannel.debug('Creating new test run ', request);
 
       const run = ctrl.createTestRun(request);
-      const { args, compiledFileTests, leafTests } = await this.prepareArguments(
-        ctrl,
-        [],
-        request,
-        run,
-        config,
-      );
+      const { args, compiledFileTests, leafTests } = await this.prepareArguments(ctrl, [], request, run, config);
       if (run.token.isCancellationRequested) {
         return;
       }
@@ -110,10 +98,12 @@ export class TestRunner {
         spawnCts.cancel();
       });
 
+      const spawnArgs = await config.getMochaSpawnArgs(args);
+
       const spawnOpts: ISpawnOptions = {
-        args,
+        args: spawnArgs,
         config,
-        onLine: (line) => {
+        onLine: line => {
           let parsed: MochaEventTuple;
           try {
             parsed = JSON.parse(line);
@@ -139,8 +129,7 @@ export class TestRunner {
               const { path } = parsed[1];
               if (path.length > 0) {
                 enqueueLine(
-                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
-                  }`,
+                  `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]}`
                 );
               }
               break;
@@ -150,9 +139,8 @@ export class TestRunner {
               const { file, path, duration } = parsed[1];
               const test = compiledFileTests.lookup(file, path);
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]
-                }`,
-                test,
+                `${'  '.repeat(path.length - 1)}${styles.green.open} ✓ ${styles.green.close}${path[path.length - 1]}`,
+                test
               );
               if (test) {
                 this.currentRunningTest = undefined;
@@ -167,21 +155,14 @@ export class TestRunner {
               const tcase = compiledFileTests.lookup(file, path);
 
               enqueueLine(
-                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${styles.red.close
-                }`,
-                tcase,
+                `${'  '.repeat(path.length - 1)}${styles.red.open} x ${path.join(' ')}${styles.red.close}`,
+                tcase
               );
               const rawErr = stack || err;
 
-              const locationsReplaced = replaceAllLocations(
-                this.smStore,
-                forceCRLF(rawErr),
-                workingDir,
-              );
+              const locationsReplaced = replaceAllLocations(this.smStore, forceCRLF(rawErr), workingDir);
               if (rawErr) {
-                outputQueue.enqueue(async () =>
-                  run.appendOutput(await locationsReplaced, undefined, tcase),
-                );
+                outputQueue.enqueue(async () => run.appendOutput(await locationsReplaced, undefined, tcase));
               }
 
               if (!tcase) {
@@ -194,10 +175,7 @@ export class TestRunner {
                 tcase.range &&
                 new vscode.Location(
                   tcase.uri!,
-                  new vscode.Range(
-                    tcase.range.start,
-                    new vscode.Position(tcase.range.start.line, 100),
-                  ),
+                  new vscode.Range(tcase.range.start, new vscode.Position(tcase.range.start.line, 100))
                 );
 
               const locationProm = tryDeriveStackLocation(this.smStore, rawErr, tcase, workingDir);
@@ -211,9 +189,7 @@ export class TestRunner {
                   message.expectedOutput = outputToString(expected);
                 } else {
                   message = new vscode.TestMessage(
-                    stack
-                      ? await sourcemapStack(this.smStore, stack, workingDir)
-                      : await locationsReplaced,
+                    stack ? await sourcemapStack(this.smStore, stack, workingDir) : await locationsReplaced
                   );
                 }
 
@@ -228,26 +204,23 @@ export class TestRunner {
               break;
             default:
               // just normal output
-              outputQueue.enqueue(() =>
-                run.appendOutput(`${line}\r\n`, undefined, this.currentRunningTest),
-              );
+              outputQueue.enqueue(() => run.appendOutput(`${line}\r\n`, undefined, this.currentRunningTest));
           }
         },
-        token: spawnCts.token,
+        token: spawnCts.token
       };
 
       run.appendOutput(
-        `${styles.inverse.open} VSCode Command (for troubleshooting)> ${styles.inverse.close} ${(
-          await config.getMochaSpawnArgs(spawnOpts.args)
-        ).join(' ')}\r\n`,
+        `${styles.inverse.open} VSCode Command (for troubleshooting)> ${styles.inverse.close} ${(spawnOpts.args).join(
+          ' '
+        )}\r\n`
       );
 
       run.appendOutput(
         `${styles.inverse.open} Terminal Command (for copying)> ${styles.inverse.close} ${TestRunner.filterArgsForCopy(
-          await config.getMochaSpawnArgs(spawnOpts.args)
-        ).join(' ')}\r\n`,
+          spawnOpts.args
+        ).join(' ')}\r\n`
       );
-
 
       try {
         const start = performance.now();
@@ -288,15 +261,14 @@ export class TestRunner {
   private async runDebug({ args, config, onLine, token }: ISpawnOptions) {
     const ds = new DisposableStore();
 
-    const spawnArgs = await config.getMochaSpawnArgs(args);
-    this.logChannel.info('Start test debugging with args', spawnArgs);
+    this.logChannel.info('Start test debugging with args', args);
 
     return new Promise<void>((resolve, reject) => {
       const sessionKey = randomUUID();
       const includedSessions = new Set<vscode.DebugSession | undefined>();
-      const launchConfig = this.launchConfig.value || {};
+      const launchConfig = this.settings.debugOptions.value || {};
 
-      this.logChannel.info('Start test execution with env', this.env.value);
+      this.logChannel.info('Start test execution with env', this.settings.env.value);
 
       Promise.resolve(
         vscode.debug.startDebugging(config.wf, {
@@ -304,12 +276,12 @@ export class TestRunner {
           type: 'node',
           request: 'launch',
           name: `Mocha Test (${config.uri.fsPath})`,
-          program: spawnArgs[1],
-          args: [...spawnArgs.slice(2), ...(launchConfig.args || [])],
+          program: args[1],
+          args: [...args.slice(2), ...(launchConfig.args || [])],
           cwd: path.dirname(config.uri.fsPath),
-          env: { ...launchConfig.env, ...this.env.value },
-          __extensionSessionKey: sessionKey,
-        }),
+          env: { ...launchConfig.env, ...this.settings.env.value },
+          __extensionSessionKey: sessionKey
+        })
       ).catch(reject);
 
       ds.add(
@@ -321,17 +293,17 @@ export class TestRunner {
           }
 
           resolve();
-        }),
+        })
       );
 
       let didFindFirst = false;
       ds.add(
-        vscode.debug.onDidTerminateDebugSession((session) => {
+        vscode.debug.onDidTerminateDebugSession(session => {
           includedSessions.delete(session);
           if (didFindFirst && includedSessions.size === 0) {
             resolve();
           }
-        }),
+        })
       );
 
       let output = '';
@@ -350,12 +322,7 @@ export class TestRunner {
 
             return {
               onDidSendMessage({ type, event, body }) {
-                if (
-                  type === 'event' &&
-                  event === 'output' &&
-                  body.output &&
-                  body.category !== 'telemetry'
-                ) {
+                if (type === 'event' && event === 'output' && body.output && body.category !== 'telemetry') {
                   output += body.output;
                 }
 
@@ -365,10 +332,10 @@ export class TestRunner {
                   output = output.substring(newLine + 1);
                   newLine = output.indexOf('\n');
                 }
-              },
+              }
             };
-          },
-        }),
+          }
+        })
       );
     }).finally(() => {
       ds.dispose();
@@ -376,15 +343,14 @@ export class TestRunner {
   }
 
   private async runWithoutDebug({ args, config, onLine, token }: ISpawnOptions) {
-    const spawnArgs = await config.getMochaSpawnArgs(args);
-    this.logChannel.info('Start test execution with args', spawnArgs);
+    this.logChannel.info('Start test execution with args', args);
 
-    this.logChannel.info('Start test execution with env', this.env.value);
+    this.logChannel.info('Start test execution with env', this.settings.env.value);
 
     const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
-      const p = spawn(spawnArgs[0], spawnArgs.slice(1), {
+      const p = spawn(args[0], args.slice(1), {
         cwd: path.dirname(config.uri.fsPath),
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...this.env.value },
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...this.settings.env.value }
       });
       p.on('spawn', () => resolve(p));
       p.on('error', reject);
@@ -401,7 +367,7 @@ export class TestRunner {
     cli.stdout.pipe(split2()).on('data', onLine);
     return new Promise<void>((resolve, reject) => {
       cli.on('error', reject);
-      cli.on('close', (code) => {
+      cli.on('close', code => {
         this.logChannel.trace('Test Process closed');
         if (code === 0) {
           resolve();
@@ -422,11 +388,11 @@ export class TestRunner {
     baseArgs: ReadonlyArray<string>,
     request: vscode.TestRunRequest,
     run: vscode.TestRun,
-    config: ConfigurationFile,
+    config: ConfigurationFile
   ) {
     const reporterSrc = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporter.js');
 
-    // need to copy the reporter to the node_moduules dir, otherwise mocha cannot be resolved
+    // need to copy the reporter to the node_modules dir, otherwise mocha cannot be resolved
     const reporterDest = await this.copyReporter(reporterSrc, config);
 
     // unbundled compilation
@@ -463,7 +429,7 @@ export class TestRunner {
         grepRe.push(escapeRe(getFullName(test)) + (data.type === ItemType.Test ? '$' : ' '));
       }
 
-      forEachLeaf(test, (t) => {
+      forEachLeaf(test, t => {
         leafTests.add(t);
         run.enqueued(t);
       });
@@ -509,10 +475,7 @@ export class TestRunner {
 }
 
 class CompiledFileTests {
-  public readonly value = new Map<
-    /* compiled file path */ string,
-    /* source file test items */ Set<vscode.TestItem>
-  >();
+  public readonly value = new Map</* compiled file path */ string, /* source file test items */ Set<vscode.TestItem>>();
 
   /**
    * Gets a test by its path of test titles. Ideally it reads the hinted
@@ -526,12 +489,12 @@ class CompiledFileTests {
       const items = this.value.get(file);
       return items && this.getPathInTestItems(items, path);
     }
-      for (const items of this.value.values()) {
-        const found = this.getPathInTestItems(items, path);
-        if (found) {
-          return found;
-        }
+    for (const items of this.value.values()) {
+      const found = this.getPathInTestItems(items, path);
+      if (found) {
+        return found;
       }
+    }
   }
 
   /**
@@ -624,7 +587,7 @@ async function sourcemapStack(store: SourceMapStore, str: string, workingDir: st
   locationRe.lastIndex = 0;
 
   const replacements = await Promise.all(
-    [...str.matchAll(locationRe)].map(async (match) => {
+    [...str.matchAll(locationRe)].map(async match => {
       const location = await deriveSourceLocation(store, match, workingDir);
       if (!location) {
         return;
@@ -632,10 +595,10 @@ async function sourcemapStack(store: SourceMapStore, str: string, workingDir: st
       return {
         from: match[0],
         to: location?.uri.with({
-          fragment: `L${location.range.start.line + 1}:${location.range.start.character + 1}`,
-        }),
+          fragment: `L${location.range.start.line + 1}:${location.range.start.character + 1}`
+        })
       };
-    }),
+    })
   );
 
   for (const replacement of replacements) {
@@ -664,11 +627,9 @@ async function replaceAllLocations(store: SourceMapStore, str: string, workingDi
     }
 
     output.push(
-      locationPromise.then((location) =>
-        location
-          ? `${location.uri}:${location.range.start.line}:${location.range.start.character + 1}`
-          : match[0],
-      ),
+      locationPromise.then(location =>
+        location ? `${location.uri}:${location.range.start.line}:${location.range.start.character + 1}` : match[0]
+      )
     );
 
     lastIndex = endIndex;
@@ -692,11 +653,11 @@ async function tryDeriveStackLocation(
   store: SourceMapStore,
   stack: string,
   tcase: vscode.TestItem,
-  workingDir: string,
+  workingDir: string
 ) {
   locationRe.lastIndex = 0;
 
-  return new Promise<vscode.Location | undefined>((resolve) => {
+  return new Promise<vscode.Location | undefined>(resolve => {
     const matches = [...stack.matchAll(locationRe)];
     let todo = matches.length;
     if (todo === 0) {
@@ -707,7 +668,7 @@ async function tryDeriveStackLocation(
     for (const [i, match] of matches.entries()) {
       deriveSourceLocation(store, match, workingDir)
         .catch(() => undefined)
-        .then((location) => {
+        .then(location => {
           if (location) {
             let score = 0;
             if (tcase.uri && tcase.uri.toString() === location.uri.toString()) {
@@ -729,11 +690,7 @@ async function tryDeriveStackLocation(
   });
 }
 
-async function deriveSourceLocation(
-  store: SourceMapStore,
-  parts: RegExpMatchArray,
-  workingDir: string,
-) {
+async function deriveSourceLocation(store: SourceMapStore, parts: RegExpMatchArray, workingDir: string) {
   const [, fileUriStr, line, col] = parts;
   const fileUri = fileUriStr.startsWith('file:')
     ? vscode.Uri.parse(fileUriStr)
@@ -761,7 +718,7 @@ const outputToString = (output: unknown) =>
 
 const tryMakeMarkdown = (message: string) => {
   const lines = message.split('\n');
-  const start = lines.findIndex((l) => l.includes('+ actual'));
+  const start = lines.findIndex(l => l.includes('+ actual'));
   if (start === -1) {
     return message;
   }

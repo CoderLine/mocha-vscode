@@ -9,13 +9,14 @@
 
 import * as timers from 'node:timers/promises';
 import * as vscode from 'vscode';
-import { ConfigValue } from './configValue';
 import { ConsoleOuputChannel } from './consoleLogChannel';
 import { getControllersForTestCommand, recreateControllersForTestCommand } from './constants';
 import { initESBuild } from './esbuild';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
 import { WorkspaceFolderWatcher } from './workspaceWatcher';
+import { ExtensionSettings } from './settings';
+import { DisposableStore } from './disposable';
 
 enum FolderSyncState {
   Idle,
@@ -23,12 +24,17 @@ enum FolderSyncState {
   ReSyncNeeded,
 }
 
+let disposables = new DisposableStore();
+
 export function activate(context: vscode.ExtensionContext) {
+  disposables = new DisposableStore();
+
   let logChannel = vscode.window.createOutputChannel('Mocha Test Runner', { log: true });
 
   if (process.env.MOCHA_VSCODE_TEST) {
     logChannel = new ConsoleOuputChannel(logChannel);
   }
+  disposables.add(logChannel);
 
   const packageJson = context.extension.packageJSON;
   const extensionInfo = context.extension.packageJSON['mocha-vscode'];
@@ -37,12 +43,13 @@ export function activate(context: vscode.ExtensionContext) {
     extensionInfo,
   );
 
+  const settings = disposables.add(new ExtensionSettings());
+
   const smStore = new SourceMapStore();
   const runner = new TestRunner(
     logChannel,
     smStore,
-    new ConfigValue('debugOptions', {}),
-    new ConfigValue('env', {}),
+    settings
   );
 
   const watchers: Map<string /* workspace folder */, WorkspaceFolderWatcher> = new Map<
@@ -77,7 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (!watchers.has(key)) {
           logChannel.debug('New workspace folder', folder);
-          const newController = new WorkspaceFolderWatcher(logChannel, folder, runner, smStore);
+          const newController = new WorkspaceFolderWatcher(logChannel, folder, runner, smStore, settings);
           await newController.init();
           watchers.set(key, newController);
         } else {
@@ -150,4 +157,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() { }
+export function deactivate() { 
+  disposables.dispose();
+}
