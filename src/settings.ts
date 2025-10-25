@@ -27,12 +27,15 @@ export const defaultTestSymbols: IExtensionSettings = {
   extractTimeout: 10_000
 };
 
+export type TestRuntimeMode = 'auto' | 'node' | 'nvm';
+
 export class ExtensionSettings implements Disposable {
   private readonly disposables = new DisposableStore();
 
   public readonly extractSettings = this.disposables.add(new ConfigValue('extractSettings', defaultTestSymbols));
   public readonly debugOptions = this.disposables.add(new ConfigValue<Record<string, any>>('debugOptions', {}));
   public readonly env = this.disposables.add(new ConfigValue<Record<string, string>>('env', {}));
+  public readonly runtime = this.disposables.add(new ConfigValue<TestRuntimeMode>('runtime', 'auto'));
 
   public dispose() {
     this.disposables.dispose();

@@ -13,9 +13,9 @@ import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
 import type { Node } from 'estree';
 import { isTypeScript } from '../constants';
+import type { ExtensionSettings } from '../settings';
 import type { TsConfigStore } from '../tsconfig-store';
 import { type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
-import type { ExtensionSettings } from '../settings';
 
 enum C {
   MemberExpression = 'MemberExpression',

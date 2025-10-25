@@ -7,11 +7,10 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import styles from 'ansi-styles';
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
+import styles from 'ansi-styles';
 import split2 from 'split2';
 import * as vscode from 'vscode';
 import type { ConfigurationFile } from './configurationFile';
@@ -20,8 +19,9 @@ import { TestProcessExitedError } from './errors';
 import { ItemType, testMetadata } from './metadata';
 import { OutputQueue } from './outputQueue';
 import { MochaEvent, type MochaEventTuple } from './reporter/fullJsonStreamReporterTypes';
-import type { SourceMapStore } from './source-map-store';
+import type { ITestRuntime } from './runtime/types';
 import type { ExtensionSettings } from './settings';
+import type { SourceMapStore } from './source-map-store';
 
 interface ISpawnOptions {
   config: ConfigurationFile;
@@ -65,7 +65,12 @@ export class TestRunner {
     return forCopy;
   }
 
-  public makeHandler(ctrl: vscode.TestController, config: ConfigurationFile, debug: boolean): RunHandler {
+  public makeHandler(
+    ctrl: vscode.TestController,
+    config: ConfigurationFile,
+    runtime: ITestRuntime,
+    debug: boolean
+  ): RunHandler {
     const workingDir = path.dirname(config.uri.fsPath);
 
     return async request => {
@@ -93,8 +98,7 @@ export class TestRunner {
       run.token.onCancellationRequested(() => {
         spawnCts.cancel();
       });
-
-      const spawnArgs = await config.getMochaSpawnArgs(args);
+      const spawnArgs = await runtime.getMochaSpawnArgs(args);
 
       const spawnOpts: ISpawnOptions = {
         args: spawnArgs,
@@ -207,14 +211,14 @@ export class TestRunner {
       };
 
       run.appendOutput(
-        `${styles.inverse.open} VSCode Command (for troubleshooting)> ${styles.inverse.close} ${(spawnOpts.args).join(
+        `${styles.inverse.open} VSCode Command (for troubleshooting)> ${styles.inverse.close} ${(spawnArgs).join(
           ' '
         )}\r\n`
       );
 
       run.appendOutput(
         `${styles.inverse.open} Terminal Command (for copying)> ${styles.inverse.close} ${TestRunner.filterArgsForCopy(
-          spawnOpts.args
+          spawnArgs
         ).join(' ')}\r\n`
       );
 
@@ -346,7 +350,7 @@ export class TestRunner {
     const cli = await new Promise<ChildProcessWithoutNullStreams>((resolve, reject) => {
       const p = spawn(args[0], args.slice(1), {
         cwd: path.dirname(config.uri.fsPath),
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...this.settings.env.value }
+        env: { ...process.env, ...this.settings.env.value }
       });
       p.on('spawn', () => resolve(p));
       p.on('error', reject);
@@ -388,19 +392,7 @@ export class TestRunner {
   ) {
     const reporterSrc = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporter.js');
 
-    // need to copy the reporter to the node_modules dir, otherwise mocha cannot be resolved
-    const reporterDest = await this.copyReporter(reporterSrc, config);
-
-    // unbundled compilation
-    const reporterTypesSrc = path.resolve(__dirname, 'reporter', 'fullJsonStreamReporterTypes.js');
-    try {
-      await fs.access(reporterSrc);
-      await this.copyReporter(reporterTypesSrc, config);
-    } catch {
-      // ignore
-    }
-
-    const args = [...baseArgs, '--reporter', reporterDest];
+    const args = [...baseArgs, '--reporter', reporterSrc];
     const exclude = new Set(request.exclude);
     const leafTests = new Set<vscode.TestItem>();
     const include = request.include?.slice() ?? [...ctrl.items].map(([, item]) => item);
@@ -456,17 +448,6 @@ export class TestRunner {
     }
 
     return { args, compiledFileTests, leafTests };
-  }
-
-  async copyReporter(reporterSrc: string, config: ConfigurationFile) {
-    const nodeModules = await config.getMochaNodeModulesPath();
-    const reporterPath = path.join(nodeModules, '.mocha-vscode');
-    await fs.mkdir(reporterPath, { recursive: true });
-
-    const destPath = path.join(reporterPath, path.basename(reporterSrc));
-    await fs.copyFile(reporterSrc, destPath);
-
-    return destPath;
   }
 }
 

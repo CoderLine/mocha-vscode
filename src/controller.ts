@@ -13,14 +13,16 @@ import * as vscode from 'vscode';
 import { ConfigurationFile, type ConfigurationList } from './configurationFile';
 import { showConfigErrorCommand } from './constants';
 import { SettingsBasedFallbackTestDiscoverer } from './discoverer/settings';
-import { type IParsedNode, NodeKind } from './discoverer/types';
+import { type IParsedNode, type ITestDiscoverer, NodeKind } from './discoverer/types';
 import { DisposableStore, MutableDisposable } from './disposable';
 import { last } from './iterable';
-import { type ICreateOpts, ItemType, getContainingItemsForFile, testMetadata } from './metadata';
+import { getContainingItemsForFile, type ICreateOpts, ItemType, testMetadata } from './metadata';
 import type { TestRunner } from './runner';
+import { SettingsBasedTestRuntime } from './runtime/settings';
+import type { ITestRuntime } from './runtime/types';
+import type { ExtensionSettings } from './settings';
 import type { ISourceMapMaintainer, SourceMapStore } from './source-map-store';
 import { TsConfigStore } from './tsconfig-store';
-import type { ExtensionSettings } from './settings';
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('ext-test-duplicates');
 
@@ -77,7 +79,8 @@ export class Controller {
    */
   private currentConfig?: ConfigurationList;
 
-  private discoverer?: SettingsBasedFallbackTestDiscoverer;
+  public readonly runtime: ITestRuntime;
+  private discoverer?: ITestDiscoverer;
 
   private readonly watcher = this.disposables.add(new MutableDisposable());
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
@@ -124,7 +127,8 @@ export class Controller {
     public readonly settings: ExtensionSettings
   ) {
     logChannel.info('New Test Controller for workspace folder and config', wf.uri.fsPath, configFileUri.fsPath);
-    this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf));
+    this.runtime = this.disposables.add(new SettingsBasedTestRuntime(logChannel, configFileUri, settings));
+    this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf, this.runtime));
 
     this.disposables.add(
       this.configFile.onActivate(() => {
@@ -417,8 +421,8 @@ export class Controller {
       return;
     }
 
-    const run = this.runner.makeHandler(this.ctrl, this.configFile, false);
-    const debug = this.runner.makeHandler(this.ctrl, this.configFile, true);
+    const run = this.runner.makeHandler(this.ctrl, this.configFile, this.runtime, false);
+    const debug = this.runner.makeHandler(this.ctrl, this.configFile, this.runtime, true);
     const profiles = [
       this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Run, run, true),
       this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true)
