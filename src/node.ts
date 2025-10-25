@@ -44,7 +44,7 @@ export async function isNvmInstalled() {
   try {
     await fs.promises.access(path.join(nvmDir, '.nvm', '.git'));
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

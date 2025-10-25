@@ -21,7 +21,7 @@ export interface IParsedNode {
 
 export enum NodeKind {
   Suite,
-  Test,
+  Test
 }
 
 export interface ITestDiscoverer {

@@ -1,60 +1,67 @@
 {
-    "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-    "files": {
-        "include": ["src/**"],
-        "ignore": ["out", "test-workspaces", "node_modules", "test-results", ".vscode-test", "tmp", "typings"]
-    },
-    "formatter": {
-        "enabled": true,
-        "formatWithErrors": true,
-        "ignore": [],
-        "attributePosition": "auto",
-        "indentStyle": "space",
-        "indentWidth": 2,
-        "lineWidth": 120,
-        "lineEnding": "lf"
-    },
-    "linter": {
-        "enabled": true,
-        "rules": {
-            "style": {
-                "noNonNullAssertion": "off", // we use these assertions
-                "noParameterAssign": "off", // useful for default values
-                "useBlockStatements": {
-                    "level": "error",
-                    "fix": "safe"
-                },
-                "useEnumInitializers": "off"
-            },
-            "suspicious": {
-                "noExplicitAny": "off" // used in areas where we work with dynamic JSON data
-            },
-            "correctness": {
-                "noUnusedImports": {
-                    "level": "error",
-                    "fix": "safe"
-                },
-                "noSwitchDeclarations": "off"
-            }
-        }
-    },
-    "organizeImports": {
-        "enabled": true
-    },
-    "javascript": {
-        "formatter": {
-            "arrowParentheses": "asNeeded",
-            "bracketSameLine": true,
-            "bracketSpacing": true,
-            "quoteProperties": "asNeeded",
-            "semicolons": "always",
-            "trailingCommas": "none",
-            "quoteStyle": "single"
-        }
-    },
-    "json": {
-        "formatter": {
-            "trailingCommas": "none"
-        }
+  "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
+  "files": {
+    "includes": [
+      "src/**",
+      "!out",
+      "!test-workspaces",
+      "!node_modules",
+      "!test-results",
+      "!.vscode-test",
+      "!tmp",
+      "!typings",
+      "!src/typings"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": true,
+    "attributePosition": "auto",
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120,
+    "lineEnding": "lf"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "style": {
+        "noNonNullAssertion": "off", // we use these assertions
+        "noParameterAssign": "off", // useful for default values
+        "useBlockStatements": {
+          "level": "error",
+          "fix": "safe",
+          "options": {}
+        },
+        "useEnumInitializers": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off" // used in areas where we work with dynamic JSON data
+      },
+      "correctness": {
+        "noUnusedImports": {
+          "level": "error",
+          "fix": "safe",
+          "options": {}
+        },
+        "noSwitchDeclarations": "off"
+      }
     }
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "asNeeded",
+      "bracketSameLine": true,
+      "bracketSpacing": true,
+      "quoteProperties": "asNeeded",
+      "semicolons": "always",
+      "trailingCommas": "none",
+      "quoteStyle": "single"
+    }
+  },
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  }
 }

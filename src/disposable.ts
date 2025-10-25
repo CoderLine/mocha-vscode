@@ -23,7 +23,7 @@ export class DisposableStore {
 
   public remove(disposable: vscode.Disposable) {
     if (this.disposables) {
-      this.disposables = this.disposables.filter((d) => d !== disposable);
+      this.disposables = this.disposables.filter(d => d !== disposable);
     }
   }
 

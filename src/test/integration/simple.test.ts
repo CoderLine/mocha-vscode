@@ -18,7 +18,7 @@ import {
   getController,
   integrationTestPrepare,
   onceChanged,
-  onceScanComplete,
+  onceScanComplete
 } from '../util';
 
 describe('simple', () => {
@@ -35,10 +35,10 @@ describe('simple', () => {
         'skip.test.js',
         [
           ['skip-suite-1', [['addition'], ['subtraction']]],
-          ['skip-suite-2', [['addition'], ['subtraction']]],
-        ],
+          ['skip-suite-2', [['addition'], ['subtraction']]]
+        ]
       ],
-      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]]
     ]);
   });
 
@@ -56,10 +56,10 @@ describe('simple', () => {
         'skip.test.js',
         [
           ['skip-suite-1', [['addition'], ['subtraction']]],
-          ['skip-suite-2', [['addition'], ['subtraction']]],
-        ],
+          ['skip-suite-2', [['addition'], ['subtraction']]]
+        ]
       ],
-      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]]
     ]);
   });
 
@@ -77,10 +77,10 @@ describe('simple', () => {
         'skip.test.js',
         [
           ['skip-suite-1', [['addition'], ['subtraction']]],
-          ['skip-suite-2', [['addition'], ['subtraction']]],
-        ],
+          ['skip-suite-2', [['addition'], ['subtraction']]]
+        ]
       ],
-      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]]
     ]);
   });
 
@@ -94,7 +94,7 @@ describe('simple', () => {
         test("subtraction", () => {
           strictEqual(1 - 2, -1);
         });
-      `,
+      `
     );
     await onChange;
 
@@ -106,11 +106,11 @@ describe('simple', () => {
         'skip.test.js',
         [
           ['skip-suite-1', [['addition'], ['subtraction']]],
-          ['skip-suite-2', [['addition'], ['subtraction']]],
-        ],
+          ['skip-suite-2', [['addition'], ['subtraction']]]
+        ]
       ],
 
-      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]]
     ]);
   });
 
@@ -124,8 +124,8 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
@@ -138,11 +138,7 @@ describe('simple', () => {
       'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/addition': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/subtraction': ['enqueued', 'started', 'passed'],
-      'stacktrace.test.js/stacktrace/should parse error location correctly': [
-        'enqueued',
-        'started',
-        'failed',
-      ],
+      'stacktrace.test.js/stacktrace/should parse error location correctly': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -153,12 +149,12 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('folder')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'folder/nested.test.js/is nested': ['enqueued', 'started', 'passed'],
+      'folder/nested.test.js/is nested': ['enqueued', 'started', 'passed']
     });
   });
 
@@ -169,14 +165,14 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.js')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
-      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -187,14 +183,14 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.js')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Debug)
+      )
     );
 
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
-      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -205,12 +201,12 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.js')!.children.get('math')!.children.get('addition')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
+      'hello.test.js/math/addition': ['enqueued', 'started', 'passed']
     });
   });
 
@@ -221,15 +217,15 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.js')!.children.get('math')!.children.get('failing')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed']
     });
 
-    const failed = run.states.find((s) => s.state === 'failed')!;
+    const failed = run.states.find(s => s.state === 'failed')!;
 
     expect(failed.message).to.not.be.undefined;
     expect(failed.message?.location).to.not.be.undefined;
@@ -246,8 +242,8 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         undefined,
         [c.ctrl!.items.get('hello.test.js')!, c.ctrl!.items.get('folder')!],
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
@@ -256,11 +252,7 @@ describe('simple', () => {
       'skip.test.js/skip-suite-1/subtraction': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/addition': ['enqueued', 'skipped'],
       'skip.test.js/skip-suite-2/subtraction': ['enqueued', 'started', 'passed'],
-      'stacktrace.test.js/stacktrace/should parse error location correctly': [
-        'enqueued',
-        'started',
-        'failed',
-      ],
+      'stacktrace.test.js/stacktrace/should parse error location correctly': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -274,7 +266,7 @@ describe('simple', () => {
 
     // the vscode file watcher is set up async and does not always catch the change, keep changing the file
     // biome-ignore lint/suspicious/noConfusingVoidType: needed for setTimeout
-        let ok: boolean | void = false;
+    let ok: boolean | void = false;
     while (!ok) {
       updated += '\n//';
       await fs.writeFile(configPath, updated);
@@ -288,10 +280,10 @@ describe('simple', () => {
         'skip.test.js',
         [
           ['skip-suite-1', [['addition'], ['subtraction']]],
-          ['skip-suite-2', [['addition'], ['subtraction']]],
-        ],
+          ['skip-suite-2', [['addition'], ['subtraction']]]
+        ]
       ],
-      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]],
+      ['stacktrace.test.js', [['stacktrace', [['should parse error location correctly']]]]]
     ]);
   });
 
@@ -306,19 +298,15 @@ describe('simple', () => {
       new vscode.TestRunRequest(
         [item],
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'stacktrace.test.js/stacktrace/should parse error location correctly': [
-        'enqueued',
-        'started',
-        'failed',
-      ],
+      'stacktrace.test.js/stacktrace/should parse error location correctly': ['enqueued', 'started', 'failed']
     });
 
-    const failed = run.states.find((s) => s.state === 'failed');
+    const failed = run.states.find(s => s.state === 'failed');
     expect(failed!.message!.location!.range.start.line).to.equal(3);
     expect(failed!.message!.location!.range.start.character).to.equal(10);
     expect(failed!.message!.location!.range.end.line).to.equal(3);

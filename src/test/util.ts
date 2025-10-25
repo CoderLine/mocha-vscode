@@ -53,9 +53,7 @@ export function integrationTestPrepare(name: string) {
 
   const workspaceFolder = path.resolve(__dirname, '..', '..', 'test-workspaces', name);
   if (!fs.existsSync(workspaceFolder)) {
-    assert.fail(
-      `Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`,
-    );
+    assert.fail(`Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`);
   }
 
   beforeEach(async () => {
@@ -73,7 +71,7 @@ export function integrationTestPrepare(name: string) {
 async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
   // vscode behaves badly when we delete the workspace folder; delete contents instead.
   const files = await fs.promises.readdir(workspaceFolder);
-  await Promise.all(files.map((f) => rmrf(path.join(workspaceFolder, f))));
+  await Promise.all(files.map(f => rmrf(path.join(workspaceFolder, f))));
 
   await fs.promises.cp(workspaceBackup, workspaceFolder, { recursive: true });
   await rmrf(workspaceBackup);
@@ -104,15 +102,13 @@ export async function getController(scan = true) {
   throw new Error('no controllers registered');
 }
 export async function tryGetController(scan = true) {
-  const controllers = await vscode.commands.executeCommand<Controller[]>(
-    getControllersForTestCommand,
-  );
+  const controllers = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
   if (!controllers || !controllers.length) {
     return undefined;
   }
 
-  let controller: Controller | undefined = undefined;
+  let controller: Controller | undefined;
 
   for (const c of controllers) {
     if (await c.tryActivate()) {
@@ -122,7 +118,7 @@ export async function tryGetController(scan = true) {
           controller = c;
           break;
         }
-          await setTimeout(1000);
+        await setTimeout(1000);
       }
 
       if (controller) {
@@ -151,7 +147,7 @@ export function extractParsedNodes(vsItems: vscode.TestItemCollection): IParsedN
       startColumn: vsItem[1].range?.start.character ?? -1,
       endLine: vsItem[1].range?.end.line ?? -1,
       endColumn: vsItem[1].range?.end.character ?? -1,
-      children: [],
+      children: []
     };
 
     items.push(item);
@@ -255,7 +251,7 @@ export class FakeTestRun implements vscode.TestRun {
     const last: typeof this.states = [];
     for (let i = this.states.length - 1; i >= 0; i--) {
       const state = this.states[i];
-      if (!last.some((l) => l.test === state.test)) {
+      if (!last.some(l => l.test === state.test)) {
         last.unshift(state);
       }
     }
@@ -295,27 +291,20 @@ export class FakeTestRun implements vscode.TestRun {
     this.states.push({
       test,
       state: 'failed',
-      message: Array.isArray(message) ? message[0] : message,
+      message: Array.isArray(message) ? message[0] : message
     });
   }
-  errored(
-    test: vscode.TestItem,
-    message: vscode.TestMessage | readonly vscode.TestMessage[],
-  ): void {
+  errored(test: vscode.TestItem, message: vscode.TestMessage | readonly vscode.TestMessage[]): void {
     this.states.push({
       test,
       state: 'errored',
-      message: Array.isArray(message) ? message[0] : message,
+      message: Array.isArray(message) ? message[0] : message
     });
   }
   passed(test: vscode.TestItem): void {
     this.states.push({ test, state: 'passed' });
   }
-  appendOutput(
-    output: string,
-    location?: vscode.Location | undefined,
-    test?: vscode.TestItem | undefined,
-  ): void {
+  appendOutput(output: string, location?: vscode.Location | undefined, test?: vscode.TestItem | undefined): void {
     // console.log(output); // debug
     this.output.push({ output, location, test });
   }

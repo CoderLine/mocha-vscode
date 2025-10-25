@@ -13,7 +13,7 @@ export enum MochaEvent {
   Pass = 'pass',
   Fail = 'fail',
   End = 'end',
-  SuiteStart = 'suiteStart',
+  SuiteStart = 'suiteStart'
 }
 
 export interface IStartEvent {
@@ -39,7 +39,7 @@ export interface IFailEvent extends IPassEvent {
 }
 
 // biome-ignore lint/complexity/noBannedTypes: No special data
-export type IEndEvent = {}
+export type IEndEvent = {};
 
 export interface ISuiteStartEvent {
   path: string[];

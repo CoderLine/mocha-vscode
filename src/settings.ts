@@ -12,71 +12,71 @@ import { DisposableStore } from './disposable';
 import * as vscode from 'vscode';
 
 export interface IExtensionSettings {
-    suite: readonly string[];
-    test: readonly string[];
-    hooks: readonly string[];
-    extractWith: 'syntax' | 'evaluation-cjs' | 'evaluation-cjs-full';
-    extractTimeout: number;
+  suite: readonly string[];
+  test: readonly string[];
+  hooks: readonly string[];
+  extractWith: 'syntax' | 'evaluation-cjs' | 'evaluation-cjs-full';
+  extractTimeout: number;
 }
 
 export const defaultTestSymbols: IExtensionSettings = {
-    suite: ['describe', 'suite'],
-    test: ['it', 'test'],
-    hooks: ['before', 'after', 'beforeEach', 'afterEach'],
-    extractWith: 'evaluation-cjs',
-    extractTimeout: 10_000
+  suite: ['describe', 'suite'],
+  test: ['it', 'test'],
+  hooks: ['before', 'after', 'beforeEach', 'afterEach'],
+  extractWith: 'evaluation-cjs',
+  extractTimeout: 10_000
 };
 
 export class ExtensionSettings implements Disposable {
-    private readonly disposables = new DisposableStore();
+  private readonly disposables = new DisposableStore();
 
-    public readonly extractSettings = this.disposables.add(new ConfigValue('extractSettings', defaultTestSymbols));
-    public readonly debugOptions = this.disposables.add(new ConfigValue<Record<string, any>>('debugOptions', {}));
-    public readonly env = this.disposables.add(new ConfigValue<Record<string, string>>('env', {}));
+  public readonly extractSettings = this.disposables.add(new ConfigValue('extractSettings', defaultTestSymbols));
+  public readonly debugOptions = this.disposables.add(new ConfigValue<Record<string, any>>('debugOptions', {}));
+  public readonly env = this.disposables.add(new ConfigValue<Record<string, string>>('env', {}));
 
-    public dispose() {
-        this.disposables.dispose();
-    }
+  public dispose() {
+    this.disposables.dispose();
+  }
 }
 
 const sectionName = 'mocha-vscode';
 
 class ConfigValue<T> {
-    private readonly changeEmitter = new vscode.EventEmitter<T>();
-    private readonly changeListener: vscode.Disposable;
-    private _value!: T;
+  private readonly changeEmitter = new vscode.EventEmitter<T>();
+  private readonly changeListener: vscode.Disposable;
+  private _value!: T;
 
-    public readonly onDidChange = this.changeEmitter.event;
+  public readonly onDidChange = this.changeEmitter.event;
 
-    public get value() {
-        return this._value;
-    }
+  public get value() {
+    return this._value;
+  }
 
-    public get key() {
-        return `${sectionName}.${this.sectionKey}`;
-    }
+  public get key() {
+    return `${sectionName}.${this.sectionKey}`;
+  }
 
-    constructor(
-        private readonly sectionKey: string,
-        defaultValue: T,
-        scope?: vscode.ConfigurationScope
-    ) {
-        this.changeListener = vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration(this.key)) {
-                this.setValue(vscode.workspace.getConfiguration(sectionName, scope).get(sectionKey) ?? defaultValue);
-            }
-        });
-
+  constructor(
+    private readonly sectionKey: string,
+    defaultValue: T,
+    scope?: vscode.ConfigurationScope
+  ) {
+    this.changeListener = vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration(this.key)) {
         this.setValue(vscode.workspace.getConfiguration(sectionName, scope).get(sectionKey) ?? defaultValue);
-    }
+      }
+    });
 
-    public dispose() {
-        this.changeListener.dispose();
-        this.changeEmitter.dispose();
-    }
+    this.setValue(vscode.workspace.getConfiguration(sectionName, scope).get(sectionKey) ?? defaultValue);
+  }
 
-    public setValue(value: T) {
-        this._value = value;
-        this.changeEmitter.fire(this._value);
-    }
+  public dispose() {
+    this.changeListener.dispose();
+    this.changeEmitter.dispose();
+  }
+
+  public setValue(value: T) {
+    this._value = value;
+    this.changeEmitter.fire(this._value);
+  }
 }

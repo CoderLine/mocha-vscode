@@ -28,12 +28,12 @@ describe('typescript-esm', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'test/hello.spec.ts/import-meta/dirname': ['enqueued', 'started', 'passed'],
+      'test/hello.spec.ts/import-meta/dirname': ['enqueued', 'started', 'passed']
     });
   });
 
@@ -47,12 +47,12 @@ describe('typescript-esm', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Debug)
+      )
     );
 
     run.expectStates({
-      'test/hello.spec.ts/import-meta/dirname': ['enqueued', 'started', 'passed'],
+      'test/hello.spec.ts/import-meta/dirname': ['enqueued', 'started', 'passed']
     });
   });
 });

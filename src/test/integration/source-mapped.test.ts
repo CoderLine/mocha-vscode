@@ -47,7 +47,7 @@ describe('source mapped', () => {
                 startColumn: 2,
                 endColumn: 3,
                 endLine: 5,
-                children: [],
+                children: []
               },
               {
                 name: 'subtraction',
@@ -56,12 +56,12 @@ describe('source mapped', () => {
                 startColumn: 2,
                 endColumn: 3,
                 endLine: 9,
-                children: [],
-              },
-            ],
-          },
-        ],
-      },
+                children: []
+              }
+            ]
+          }
+        ]
+      }
     ]);
 
     expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['subtraction']]]]]]);
@@ -77,13 +77,13 @@ describe('source mapped', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
-      'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed']
     });
   });
 
@@ -97,13 +97,13 @@ describe('source mapped', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Debug)
+      )
     );
 
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
-      'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed']
     });
   });
 });

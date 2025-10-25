@@ -65,11 +65,7 @@ export class TestRunner {
     return forCopy;
   }
 
-  public makeHandler(
-    ctrl: vscode.TestController,
-    config: ConfigurationFile,
-    debug: boolean
-  ): RunHandler {
+  public makeHandler(ctrl: vscode.TestController, config: ConfigurationFile, debug: boolean): RunHandler {
     const workingDir = path.dirname(config.uri.fsPath);
 
     return async request => {
@@ -400,7 +396,7 @@ export class TestRunner {
     try {
       await fs.access(reporterSrc);
       await this.copyReporter(reporterTypesSrc, config);
-    } catch (e) {
+    } catch {
       // ignore
     }
 

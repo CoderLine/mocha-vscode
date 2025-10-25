@@ -13,10 +13,7 @@ import { DisposableStore } from './disposable';
 
 export class TsConfigStore implements vscode.Disposable {
   private readonly ds = new DisposableStore();
-  private _watcherCache: Map<
-    string,
-    { watcher: vscode.FileSystemWatcher; config: TsConfigResult }
-  > = new Map();
+  private _watcherCache: Map<string, { watcher: vscode.FileSystemWatcher; config: TsConfigResult }> = new Map();
 
   public getTsconfig(searchPath: string) {
     // use from cache if possible
@@ -31,12 +28,12 @@ export class TsConfigStore implements vscode.Disposable {
       // if found start watching it
       config = {
         watcher: this.ds.add(vscode.workspace.createFileSystemWatcher(tsconfig.path)),
-        config: tsconfig,
+        config: tsconfig
       };
       this.ds.add(
         config.watcher.onDidChange(() => {
           config!.config.config = parseTsconfig(tsconfig.path);
-        }),
+        })
       );
 
       this._watcherCache.set(searchPath, config);

@@ -141,14 +141,14 @@
     "watch": "npm run clean && tsc --watch",
     "test": "tsc && vscode-test",
     "test:vsix": "tsc && cross-env TEST_MODE=vsix vscode-test",
-    "prettier": "prettier --write src",
     "lint": "biome lint",
     "lint:ci": "biome lint --reporter=github",
     "fix": "biome lint --write",
+    "format": "biome format --write",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.3.0",
     "@jridgewell/trace-mapping": "^0.3.30",
     "@types/chai": "^4.3.20",
     "@types/estree": "^1.0.8",

@@ -16,9 +16,7 @@ describe('typescript', () => {
   it('discovers tests', async () => {
     const c = await getController();
 
-    expectTestTree(c, [
-      ['hello.test.ts', [['math', [['addition'], ['failing'], ['subtraction']]]]],
-    ]);
+    expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['failing'], ['subtraction']]]]]]);
   });
 
   it('runs tests', async () => {
@@ -31,14 +29,14 @@ describe('typescript', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
-      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -52,14 +50,14 @@ describe('typescript', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Debug)
+      )
     );
 
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
-      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -70,15 +68,15 @@ describe('typescript', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.ts')!.children.get('math')!.children.get('failing')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.ts/math/failing': ['enqueued', 'started', 'failed']
     });
 
-    const failed = run.states.find((s) => s.state === 'failed')!;
+    const failed = run.states.find(s => s.state === 'failed')!;
 
     expect(failed.message).to.not.be.undefined;
     expect(failed.message?.location).to.not.be.undefined;

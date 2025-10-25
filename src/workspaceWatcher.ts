@@ -18,10 +18,7 @@ import type { ExtensionSettings } from './settings';
 
 export class WorkspaceFolderWatcher {
   private readonly disposables = new DisposableStore();
-  public readonly controllers: Map<string /*config file */, Controller> = new Map<
-    string,
-    Controller
-  >();
+  public readonly controllers: Map<string /*config file */, Controller> = new Map<string, Controller>();
 
   constructor(
     private logChannel: vscode.LogOutputChannel,
@@ -33,12 +30,10 @@ export class WorkspaceFolderWatcher {
 
   async init() {
     // we need to watch for *every* change due to https://github.com/microsoft/vscode/issues/60813
-    const watcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(this.folder, '**/*'),
-    );
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(this.folder, '**/*'));
     this.disposables.add(watcher);
 
-    watcher.onDidCreate((uri) => {
+    watcher.onDidCreate(uri => {
       for (const pattern of configFilePatterns) {
         if (minimatch(uri.fsPath.replace(/\\/g, '/'), pattern)) {
           this.addConfigFile(uri);
@@ -46,7 +41,7 @@ export class WorkspaceFolderWatcher {
         }
       }
     });
-    watcher.onDidDelete((uri) => {
+    watcher.onDidDelete(uri => {
       this.removeConfigFile(uri);
     });
 
@@ -54,7 +49,7 @@ export class WorkspaceFolderWatcher {
     for (const configFilePattern of configFilePatterns) {
       const files = await vscode.workspace.findFiles(
         new vscode.RelativePattern(this.folder, configFilePattern),
-        '**/node_modules/**',
+        '**/node_modules/**'
       );
 
       for (const file of files) {
@@ -75,14 +70,7 @@ export class WorkspaceFolderWatcher {
 
   addConfigFile(file: vscode.Uri) {
     this.logChannel.debug(`Added new controller via config file ${file}`);
-    const controller = new Controller(
-      this.logChannel,
-      this.folder,
-      this.smStore,
-      file,
-      this.runner,
-      this.settings
-    );
+    const controller = new Controller(this.logChannel, this.folder, this.smStore, file, this.runner, this.settings);
     this.controllers.set(file.toString(), controller);
     this.disposables.add(controller);
   }

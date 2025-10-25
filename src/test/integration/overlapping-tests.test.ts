@@ -20,23 +20,23 @@ describe('overlapping tests', () => {
         'folder',
         [
           ['suite01-duplicate.test.js', [['suite01', [['test01']]]]],
-          ['suite03.test.js', [['suite03', [['test01']]]]],
-        ],
+          ['suite03.test.js', [['suite03', [['test01']]]]]
+        ]
       ],
       [
         'suite01.test.js',
         [
           ['suite01', [['test01'], ['test02']]],
-          ['suite01.1', [['suite01.1']]],
-        ],
+          ['suite01.1', [['suite01.1']]]
+        ]
       ],
       [
         'suite02.test.js',
         [
           ['suite02', [['test01'], ['test02']]],
-          ['suite02.1', [['test01'], ['test02']]],
-        ],
-      ],
+          ['suite02.1', [['test01'], ['test02']]]
+        ]
+      ]
     ]);
   });
 
@@ -50,8 +50,8 @@ describe('overlapping tests', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
@@ -63,7 +63,7 @@ describe('overlapping tests', () => {
       'suite02.test.js/suite02.1/test01': ['enqueued', 'started', 'passed'],
       'suite02.test.js/suite02.1/test02': ['enqueued', 'started', 'passed'],
       'folder/suite03.test.js/suite03/test01': ['enqueued', 'started', 'passed'],
-      'folder/suite01-duplicate.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
+      'folder/suite01-duplicate.test.js/suite01/test01': ['enqueued', 'started', 'passed']
     });
   });
 
@@ -72,16 +72,16 @@ describe('overlapping tests', () => {
       'runs only test of specific file',
       ['suite01.test.js/suite01/test01'],
       {
-        'suite01.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
-      },
+        'suite01.test.js/suite01/test01': ['enqueued', 'started', 'passed']
+      }
     ],
     [
       'runs only suite of specific file',
       ['suite01.test.js/suite01'],
       {
         'suite01.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
-        'suite01.test.js/suite01/test02': ['enqueued', 'started', 'passed'],
-      },
+        'suite01.test.js/suite01/test02': ['enqueued', 'started', 'passed']
+      }
     ],
     [
       'runs all suites in specific file',
@@ -89,8 +89,8 @@ describe('overlapping tests', () => {
       {
         'suite01.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
         'suite01.test.js/suite01/test02': ['enqueued', 'started', 'passed'],
-        'suite01.test.js/suite01.1/suite01.1': ['enqueued', 'started', 'passed'],
-      },
+        'suite01.test.js/suite01.1/suite01.1': ['enqueued', 'started', 'passed']
+      }
     ],
     [
       'runs multiple files',
@@ -102,30 +102,26 @@ describe('overlapping tests', () => {
         'suite02.test.js/suite02/test01': ['enqueued', 'started', 'passed'],
         'suite02.test.js/suite02/test02': ['enqueued', 'started', 'passed'],
         'suite02.test.js/suite02.1/test01': ['enqueued', 'started', 'passed'],
-        'suite02.test.js/suite02.1/test02': ['enqueued', 'started', 'passed'],
-      },
+        'suite02.test.js/suite02.1/test02': ['enqueued', 'started', 'passed']
+      }
     ],
     [
       'runs mixed nodes',
-      [
-        'suite01.test.js/suite01',
-        'suite02.test.js/suite02/test01',
-        'suite02.test.js/suite02.1/test02',
-      ],
+      ['suite01.test.js/suite01', 'suite02.test.js/suite02/test01', 'suite02.test.js/suite02.1/test02'],
       {
         'suite01.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
         'suite01.test.js/suite01/test02': ['enqueued', 'started', 'passed'],
         'suite02.test.js/suite02/test01': ['enqueued', 'started', 'passed'],
-        'suite02.test.js/suite02.1/test02': ['enqueued', 'started', 'passed'],
-      },
+        'suite02.test.js/suite02.1/test02': ['enqueued', 'started', 'passed']
+      }
     ],
     [
       'runs all in folder',
       ['folder'],
       {
         'folder/suite03.test.js/suite03/test01': ['enqueued', 'started', 'passed'],
-        'folder/suite01-duplicate.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
-      },
+        'folder/suite01-duplicate.test.js/suite01/test01': ['enqueued', 'started', 'passed']
+      }
     ],
     [
       'cannot differenciate overlapping suites',
@@ -136,9 +132,9 @@ describe('overlapping tests', () => {
         'folder/suite01-duplicate.test.js/suite01/test01': ['enqueued', 'started', 'passed'],
 
         // this test we cannot avoid to be executed due to name overlap, it's not really queued but still running
-        'suite01.test.js/suite01/test01': ['started', 'passed'],
-      },
-    ],
+        'suite01.test.js/suite01/test01': ['started', 'passed']
+      }
+    ]
   ];
 
   for (const [name, include, expected] of testCases) {
@@ -147,15 +143,15 @@ describe('overlapping tests', () => {
       const profiles = c.profiles;
       expect(profiles).to.have.lengthOf(2);
 
-      const testItems = include.map((i) => findTestItem(c.ctrl!.items, i)!);
+      const testItems = include.map(i => findTestItem(c.ctrl!.items, i)!);
 
       const run = await captureTestRun(
         c,
         new vscode.TestRunRequest(
           testItems,
           undefined,
-          profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-        ),
+          profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+        )
       );
 
       run.expectStates(expected);

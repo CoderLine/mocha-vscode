@@ -61,7 +61,7 @@ export class ConfigurationFile implements vscode.Disposable {
   constructor(
     private readonly logChannel: vscode.LogOutputChannel,
     public readonly uri: vscode.Uri,
-    public readonly wf: vscode.WorkspaceFolder,
+    public readonly wf: vscode.WorkspaceFolder
   ) {
     const watcher = this.ds.add(vscode.workspace.createFileSystemWatcher(uri.fsPath));
     let changeDebounce: NodeJS.Timeout | undefined;
@@ -76,14 +76,14 @@ export class ConfigurationFile implements vscode.Disposable {
           this.didChangeEmitter.fire();
           this.tryActivate();
         }, 300);
-      }),
+      })
     );
 
     this.ds.add(
       watcher.onDidDelete(() => {
         this.readPromise = undefined;
         this.didDeleteEmitter.fire();
-      }),
+      })
     );
   }
 
@@ -162,7 +162,7 @@ export class ConfigurationFile implements vscode.Disposable {
       this.logChannel.debug('Creating new resolver for resolving Mocha');
       this._resolver ??= resolveModule.ResolverFactory.createResolver({
         fileSystem: new resolveModule.CachedInputFileSystem(fs, 4000),
-        conditionNames: ['node', 'require', 'module'],
+        conditionNames: ['node', 'require', 'module']
       });
     }
     return this._resolver;
@@ -232,7 +232,7 @@ export class ConfigurationFile implements vscode.Disposable {
         await fs.promises.access(binPath);
         return binPath;
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -254,9 +254,9 @@ export class ConfigurationFile implements vscode.Disposable {
           reject(
             new HumanError(
               `Could not find mocha in working directory '${path.dirname(
-                this.uri.fsPath,
-              )}', please install mocha to run tests.`,
-            ),
+                this.uri.fsPath
+              )}', please install mocha to run tests.`
+            )
           );
         } else {
           this.logChannel.debug(`'${request}' resolved to '${res}'`);
@@ -267,12 +267,8 @@ export class ConfigurationFile implements vscode.Disposable {
   }
 
   private async _read() {
-    this._optionsModule ??= require(
-      await this._resolveLocalMochaPath('/lib/cli/options'),
-    ) as OptionsModule;
-    this._configModule ??= require(
-      await this._resolveLocalMochaPath('/lib/cli/config'),
-    ) as ConfigModule;
+    this._optionsModule ??= require(await this._resolveLocalMochaPath('/lib/cli/options')) as OptionsModule;
+    this._configModule ??= require(await this._resolveLocalMochaPath('/lib/cli/config')) as ConfigModule;
     let config: IResolvedConfiguration;
 
     // need to change to the working dir for loading the config,
@@ -289,7 +285,7 @@ export class ConfigurationFile implements vscode.Disposable {
       try {
         const resolved = require.resolve(configFile);
         delete require.cache[resolved];
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -328,14 +324,14 @@ export class ConfigurationList {
     private readonly logChannel: vscode.LogOutputChannel,
     public readonly uri: vscode.Uri,
     public readonly value: IResolvedConfiguration,
-    wf: vscode.WorkspaceFolder,
+    wf: vscode.WorkspaceFolder
   ) {
     let positional = value._;
     if (!positional) {
       positional = ['./test/*.{js,cjs,mjs}'];
     }
 
-    this.patterns = positional.map((f) => {
+    this.patterns = positional.map(f => {
       if (path.isAbsolute(f)) {
         return { glob: false, value: path.normalize(f) };
       }
@@ -343,15 +339,13 @@ export class ConfigurationList {
       return {
         glob: true,
         value: toForwardSlashes(path.join(cfgDir, f)),
-        workspaceFolderRelativeGlob: toForwardSlashes(
-          path.join(path.relative(wf.uri.fsPath, cfgDir), f),
-        ),
+        workspaceFolderRelativeGlob: toForwardSlashes(path.join(path.relative(wf.uri.fsPath, cfgDir), f))
       };
     });
 
     if (value.ignore) {
       this.patterns.push(
-        ...value.ignore.map((f) => {
+        ...value.ignore.map(f => {
           if (path.isAbsolute(f)) {
             return { glob: false as const, value: `!${path.normalize(f)}` };
           }
@@ -359,11 +353,9 @@ export class ConfigurationList {
           return {
             glob: true as const,
             value: `!${toForwardSlashes(path.join(cfgDir, f))}`,
-            workspaceFolderRelativeGlob: toForwardSlashes(
-              path.join(path.relative(wf.uri.fsPath, cfgDir), f),
-            ),
+            workspaceFolderRelativeGlob: toForwardSlashes(path.join(path.relative(wf.uri.fsPath, cfgDir), f))
           };
-        }),
+        })
       );
     }
 

@@ -26,29 +26,22 @@ export interface IMappingAccessor {
 export const identityMapping = (file: vscode.Uri): IMappingAccessor => ({
   originalPositionFor(line, col) {
     return new vscode.Location(file, new vscode.Position(line, col));
-  },
+  }
 });
 
 const smMappingAccessor = (file: vscode.Uri, sm: TraceMap): IMappingAccessor => ({
   // @jridgewell/trace-mapping: Lines start at line 1, columns at column 0.
   originalPositionFor(line, column) {
-    const {
-      source,
-      line: smLine,
-      column: smCol,
-    } = originalPositionFor(sm, { line: line + 1, column: column });
+    const { source, line: smLine, column: smCol } = originalPositionFor(sm, { line: line + 1, column: column });
     if (!source) {
       return new vscode.Location(file, new vscode.Position(line, column));
     }
 
     return new vscode.Location(vscode.Uri.parse(source), new vscode.Position(smLine - 1, smCol));
-  },
+  }
 });
 
-export const parseSourceMap = (
-  path: vscode.Uri,
-  contents: string,
-): IMappingAccessor | Promise<IMappingAccessor> => {
+export const parseSourceMap = (path: vscode.Uri, contents: string): IMappingAccessor | Promise<IMappingAccessor> => {
   const start = contents.lastIndexOf(smUrlComment);
   if (start === -1) {
     return identityMapping(path);
@@ -74,7 +67,7 @@ export const parseSourceMapURL = (path: vscode.Uri, sourceMapUrl: string) => {
   try {
     return fs
       .readFile(sourceMapPath, 'utf8')
-      .then((c) => smMappingAccessor(path, new TraceMap(c, pathAsStr)))
+      .then(c => smMappingAccessor(path, new TraceMap(c, pathAsStr)))
       .catch(() => identityMapping(path));
   } catch {
     return identityMapping(path);

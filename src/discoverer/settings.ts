@@ -23,7 +23,7 @@ export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
   constructor(
     private logChannel: vscode.LogOutputChannel,
     private settings: ExtensionSettings,
-    tsconfigStore: TsConfigStore,
+    tsconfigStore: TsConfigStore
   ) {
     this._syntax = new SyntaxTestDiscoverer(settings, tsconfigStore);
     this._evaluation = new EvaluationTestDiscoverer(logChannel, settings, tsconfigStore);
@@ -53,7 +53,7 @@ export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
       if (discoverer !== this._syntax) {
         this.logChannel.error(
           `Error discovering tests with ${this.settings.extractSettings.value.extractWith}, will fallback to syntax`,
-          e,
+          e
         );
         return this._syntax.discover(filePath, code);
       }

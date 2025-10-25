@@ -27,12 +27,12 @@ describe('tsnode-checkjs', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'test/hello.spec.ts/math/addition': ['enqueued', 'started', 'passed'],
+      'test/hello.spec.ts/math/addition': ['enqueued', 'started', 'passed']
     });
   });
 });

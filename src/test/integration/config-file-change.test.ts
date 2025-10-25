@@ -12,13 +12,7 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import type { Controller } from '../../controller';
-import {
-  expectTestTree,
-  getController,
-  integrationTestPrepare,
-  onceDisposed,
-  tryGetController,
-} from '../util';
+import { expectTestTree, getController, integrationTestPrepare, onceDisposed, tryGetController } from '../util';
 
 describe('config-file-change', () => {
   const workspaceFolder = integrationTestPrepare('config-file-change');
@@ -30,24 +24,18 @@ describe('config-file-change', () => {
     await c.scanFiles();
     expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
-      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]]
     ]);
 
     // rename mocha file
-    await fs.rename(
-      path.join(workspaceFolder, '.mocharc.js'),
-      path.join(workspaceFolder, '.__mocharc.js'),
-    );
+    await fs.rename(path.join(workspaceFolder, '.mocharc.js'), path.join(workspaceFolder, '.__mocharc.js'));
     await onceDisposed(c);
 
     // controller should be gone
     expect(await tryGetController(false)).to.be.undefined;
 
     // rename back
-    await fs.rename(
-      path.join(workspaceFolder, '.__mocharc.js'),
-      path.join(workspaceFolder, '.mocharc.js'),
-    );
+    await fs.rename(path.join(workspaceFolder, '.__mocharc.js'), path.join(workspaceFolder, '.mocharc.js'));
 
     // wait for controller
     for (let retry = 0; retry < 5; retry++) {
@@ -64,7 +52,7 @@ describe('config-file-change', () => {
     await c!.scanFiles();
     expectTestTree(c!, [
       ['folder', [['nested.test.js', [['is nested']]]]],
-      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]]
     ]);
   });
 
@@ -75,7 +63,7 @@ describe('config-file-change', () => {
     await c.scanFiles();
     expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
-      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['subtraction']]]]]
     ]);
 
     // delete mocha file

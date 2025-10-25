@@ -21,24 +21,21 @@ describe('with-hooks', () => {
         [
           ['with beforeAll hook', [['addition'], ['failing'], ['subtraction']]],
           ['with beforeEach hook', [['addition'], ['failing'], ['subtraction']]],
-          [
-            'with broken after hook (suite must be failed)',
-            [['addition'], ['failing'], ['subtraction']],
-          ],
+          ['with broken after hook (suite must be failed)', [['addition'], ['failing'], ['subtraction']]],
           [
             'with broken afterEach hook (suite must be failed)',
-            [['addition (success)'], ['failing (skipped)'], ['subtraction (skipped)']],
+            [['addition (success)'], ['failing (skipped)'], ['subtraction (skipped)']]
           ],
           [
             'with broken before hook (suite must be failed)',
-            [['addition (skipped)'], ['failing (skipped)'], ['subtraction (skipped)']],
+            [['addition (skipped)'], ['failing (skipped)'], ['subtraction (skipped)']]
           ],
           [
             'with broken beforeEach hook (suite must be failed)',
-            [['addition (skipped)'], ['failing (skipped)'], ['subtraction (skipped)']],
-          ],
-        ],
-      ],
+            [['addition (skipped)'], ['failing (skipped)'], ['subtraction (skipped)']]
+          ]
+        ]
+      ]
     ]);
   });
 
@@ -52,8 +49,8 @@ describe('with-hooks', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
@@ -63,63 +60,30 @@ describe('with-hooks', () => {
       'hello.test.js/with beforeEach hook/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/with beforeEach hook/subtraction': ['enqueued', 'started', 'passed'],
       'hello.test.js/with beforeEach hook/failing': ['enqueued', 'started', 'failed'],
-      'hello.test.js/with broken before hook (suite must be failed)/addition (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
-      'hello.test.js/with broken before hook (suite must be failed)/subtraction (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
-      'hello.test.js/with broken before hook (suite must be failed)/failing (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
+      'hello.test.js/with broken before hook (suite must be failed)/addition (skipped)': ['enqueued', 'skipped'],
+      'hello.test.js/with broken before hook (suite must be failed)/subtraction (skipped)': ['enqueued', 'skipped'],
+      'hello.test.js/with broken before hook (suite must be failed)/failing (skipped)': ['enqueued', 'skipped'],
       'hello.test.js/with broken beforeEach hook (suite must be failed)/addition (skipped)': [
         'enqueued',
         'started',
-        'skipped',
+        'skipped'
       ],
-      'hello.test.js/with broken beforeEach hook (suite must be failed)/subtraction (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
-      'hello.test.js/with broken beforeEach hook (suite must be failed)/failing (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
-      'hello.test.js/with broken after hook (suite must be failed)/addition': [
-        'enqueued',
-        'started',
-        'passed',
-      ],
-      'hello.test.js/with broken after hook (suite must be failed)/subtraction': [
-        'enqueued',
-        'started',
-        'passed',
-      ],
-      'hello.test.js/with broken after hook (suite must be failed)/failing': [
-        'enqueued',
-        'started',
-        'failed',
-      ],
+      'hello.test.js/with broken beforeEach hook (suite must be failed)/subtraction (skipped)': ['enqueued', 'skipped'],
+      'hello.test.js/with broken beforeEach hook (suite must be failed)/failing (skipped)': ['enqueued', 'skipped'],
+      'hello.test.js/with broken after hook (suite must be failed)/addition': ['enqueued', 'started', 'passed'],
+      'hello.test.js/with broken after hook (suite must be failed)/subtraction': ['enqueued', 'started', 'passed'],
+      'hello.test.js/with broken after hook (suite must be failed)/failing': ['enqueued', 'started', 'failed'],
       'hello.test.js/with broken afterEach hook (suite must be failed)/addition (success)': [
         'enqueued',
         'started',
-        'passed',
+        'passed'
       ],
-      'hello.test.js/with broken afterEach hook (suite must be failed)/subtraction (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
-      'hello.test.js/with broken afterEach hook (suite must be failed)/failing (skipped)': [
-        'enqueued',
-        'skipped',
-      ],
+      'hello.test.js/with broken afterEach hook (suite must be failed)/subtraction (skipped)': ['enqueued', 'skipped'],
+      'hello.test.js/with broken afterEach hook (suite must be failed)/failing (skipped)': ['enqueued', 'skipped'],
       'hello.test.js/with broken before hook (suite must be failed)': ['failed'],
       'hello.test.js/with broken beforeEach hook (suite must be failed)': ['failed'],
       'hello.test.js/with broken after hook (suite must be failed)': ['failed'],
-      'hello.test.js/with broken afterEach hook (suite must be failed)': ['failed'],
+      'hello.test.js/with broken afterEach hook (suite must be failed)': ['failed']
     });
   });
 });

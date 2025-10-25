@@ -17,7 +17,7 @@ describe('typescript-full', () => {
     const c = await getController(false);
     c.settings.extractSettings.setValue({
       ...defaultTestSymbols,
-      extractWith: 'evaluation-cjs-full',
+      extractWith: 'evaluation-cjs-full'
     });
     await c.scanFiles();
     return c;
@@ -27,12 +27,10 @@ describe('typescript-full', () => {
     const c = await getFullController();
     c.settings.extractSettings.setValue({
       ...defaultTestSymbols,
-      extractWith: 'evaluation-cjs-full',
+      extractWith: 'evaluation-cjs-full'
     });
 
-    expectTestTree(c, [
-      ['hello.test.ts', [['math', [['addition'], ['dynamic1'], ['dynamic2'], ['subtraction']]]]],
-    ]);
+    expectTestTree(c, [['hello.test.ts', [['math', [['addition'], ['dynamic1'], ['dynamic2'], ['subtraction']]]]]]);
   });
 
   it('runs tests', async () => {
@@ -45,15 +43,15 @@ describe('typescript-full', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/dynamic1': ['enqueued', 'started', 'passed'],
-      'hello.test.ts/math/dynamic2': ['enqueued', 'started', 'passed'],
+      'hello.test.ts/math/dynamic2': ['enqueued', 'started', 'passed']
     });
   });
 
@@ -67,15 +65,15 @@ describe('typescript-full', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Debug)
+      )
     );
 
     run.expectStates({
       'hello.test.ts/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/subtraction': ['enqueued', 'started', 'passed'],
       'hello.test.ts/math/dynamic1': ['enqueued', 'started', 'passed'],
-      'hello.test.ts/math/dynamic2': ['enqueued', 'started', 'passed'],
+      'hello.test.ts/math/dynamic2': ['enqueued', 'started', 'passed']
     });
   });
 });
