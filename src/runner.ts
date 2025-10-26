@@ -276,8 +276,8 @@ export class TestRunner {
           type: 'node',
           request: 'launch',
           name: `Mocha Test (${config.uri.fsPath})`,
-          program: args[1],
-          args: [...args.slice(2), ...(launchConfig.args || [])],
+          runtimeExecutable: args[0],
+          runtimeArgs: [...args.slice(1), ...(launchConfig.args || [])],
           cwd: path.dirname(config.uri.fsPath),
           env: { ...launchConfig.env, ...this.settings.env.value },
           __extensionSessionKey: sessionKey
