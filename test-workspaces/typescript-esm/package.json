@@ -1,4 +1,7 @@
 {
   "name": "typescript-esm",
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "mocha": "^11.7.4"
+  }
 }

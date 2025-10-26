@@ -108,7 +108,14 @@
           },
           "mocha-vscode.runtime": {
             "type": "string",
-            "enum": ["auto", "node", "nvm", "node-yarn", "nvm-yarn", "custom"],
+            "enum": [
+              "auto",
+              "node",
+              "nvm",
+              "node-yarn",
+              "nvm-yarn",
+              "custom"
+            ],
             "default": "auto",
             "markdownDescription": "The runtime to use for test discovery and execution.",
             "markdownEnumDescriptions": [
@@ -161,8 +168,8 @@
     "compile:test": "tsc && tsx scripts/tsnocheck.mts",
     "watch:esbuild": "npm run clean && node .esbuild.js --watch",
     "watch": "npm run clean && tsc --watch",
-    "test": "vscode-test",
-    "test:vsix": "cross-env TEST_MODE=vsix vscode-test",
+    "test": "tsx scripts/prepareTestWorkspaces.mts && vscode-test",
+    "test:vsix": "tsx scripts/prepareTestWorkspaces.mts && cross-env TEST_MODE=vsix vscode-test",
     "lint": "biome lint",
     "lint:ci": "biome lint --reporter=github",
     "fix": "biome lint --write",
