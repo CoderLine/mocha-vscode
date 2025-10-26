@@ -7,13 +7,14 @@
  */
 
 import fs from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, platform } from 'node:os';
 import path from 'node:path';
 import type { Disposable, LogOutputChannel, Uri } from 'vscode';
 import { DisposableStore } from '../disposable';
-import type { ExtensionSettings } from '../settings';
+import type { ExtensionSettings, TestRuntimeMode } from '../settings';
 import type { IResolvedConfiguration, ITestRuntime } from './types';
 import { NodeLikeTestRuntime } from './nodelike';
+import which from 'which';
 
 export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
   private readonly disposables = new DisposableStore();
@@ -39,18 +40,102 @@ export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
   }
 
   async detect() {
-    const pathToNvmRc = await this.resolveNvmRc();
-    if (pathToNvmRc) {
-      this.logChannel.trace('Detected NVM, using NVM as mechansim to execute commands.');
-      this._runtime = new NodeLikeTestRuntime(this.logChannel, this.configFileUri, this.settings, [
-        'nvm',
-        'run',
-        '--silent'
-      ]);
-      return;
+    const runtime = await this.detectRuntime();
+
+    let nodeLaunchArgs: string[];
+    switch (runtime) {
+      case 'node':
+        nodeLaunchArgs = ['node'];
+        break;
+      case 'nvm':
+        // https://github.com/nvm-sh/nvm?tab=readme-ov-file#usage
+        nodeLaunchArgs = ['nvm', 'run', '--silent'];
+        break;
+      case 'node-yarn':
+        // https://yarnpkg.com/cli/node
+        nodeLaunchArgs = ['yarn', 'node'];
+
+        // yarn is a batch (CMD) file which cannot directly be launched
+        // as executable via spawn() and quoting is a nightmare
+        // so instead we spawn node with the yarn entry point
+        if (platform() === 'win32') {
+          const pathToYarn = await which('yarn', { nothrow: true });
+          if (pathToYarn) {
+            const pathToYarnEntry = path.resolve(path.dirname(pathToYarn), 'node_modules/corepack/dist/yarn.js');
+            nodeLaunchArgs = [
+              // equal to "yarn node"
+              'node', pathToYarnEntry, 'node'
+            ];
+          }
+        }
+
+        break;
+      case 'nvm-yarn':
+        nodeLaunchArgs = [
+          // 1. nvm exec to start yarn
+          'nvm',
+          'exec',
+          '--silent',
+          // 2. yarn node to start a nested node with the yarn hook registered
+          'yarn',
+          'node'
+        ];
+        break;
     }
 
-    this._runtime = new NodeLikeTestRuntime(this.logChannel, this.configFileUri, this.settings, ['node']);
+    this._runtime = new NodeLikeTestRuntime(this.logChannel, this.configFileUri, this.settings, nodeLaunchArgs);
+  }
+
+  private async detectRuntime(): Promise<Exclude<TestRuntimeMode, 'auto'>> {
+    const runtime = this.settings.runtime.value;
+    if (runtime !== 'auto') {
+      return runtime;
+    }
+
+    const pathToNvmRc = await this.resolveNvmRc();
+    const useYarn = await this.shouldUseYarn();
+
+    if (pathToNvmRc) {
+      return useYarn ? 'nvm-yarn' : 'nvm';
+    }
+    return useYarn ? 'node-yarn' : 'node';
+  }
+
+  private async shouldUseYarn(): Promise<boolean> {
+    // 1. check if package.json declares yarn
+    const packageJson = await this.resolveFile('package.json');
+    if (packageJson) {
+      try {
+        const contents = JSON.parse(await fs.promises.readFile(packageJson, 'utf-8'));
+        if (contents?.packageManager?.startsWith('yarn')) {
+          return true;
+        }
+      } catch {
+        // ignore
+      }
+
+      // 2. check for "yarn.lock" beside package.json
+      if (
+        await fs.promises
+          .access(path.join(path.dirname(packageJson), 'yarn.lock'))
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        return true;
+      }
+    }
+
+    // 3. check for "yarn.lock" beside config
+    if (
+      await fs.promises
+        .access(path.join(path.dirname(this.configFileUri.fsPath), 'yarn.lock'))
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   private async isNvmInstalled() {
@@ -69,23 +154,27 @@ export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
     // the .nvmrc file can be placed in any location up the directory tree, so we do the same
     // starting from the mocha config file
     // https://github.com/nvm-sh/nvm/blob/06413631029de32cd9af15b6b7f6ed77743cbd79/nvm.sh#L475-L491
-    try {
-      if (!(await this.isNvmInstalled())) {
-        return undefined;
-      }
+    if (!(await this.isNvmInstalled())) {
+      return undefined;
+    }
 
+    return this.resolveFile('.nvmrc');
+  }
+
+  private async resolveFile(fileName: string): Promise<string | undefined> {
+    try {
       let dir: string | undefined = path.dirname(this.configFileUri.fsPath);
 
       while (dir) {
-        const nvmrc = path.join(dir, '.nvmrc');
+        const filePath = path.join(dir, fileName);
         if (
           await fs.promises
-            .access(nvmrc)
+            .access(filePath)
             .then(() => true)
             .catch(() => false)
         ) {
-          this.logChannel.debug(`Found .nvmrc at ${nvmrc}`);
-          return nvmrc;
+          this.logChannel.debug(`Found ${fileName} at ${filePath}`);
+          return filePath;
         }
 
         const parent = path.dirname(dir);
@@ -97,7 +186,6 @@ export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
     } catch (e) {
       this.logChannel.error(e as Error, 'Error while searching for nvmrc');
     }
-
     return undefined;
   }
 

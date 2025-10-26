@@ -27,7 +27,7 @@ export const defaultTestSymbols: IExtensionSettings = {
   extractTimeout: 10_000
 };
 
-export type TestRuntimeMode = 'auto' | 'node' | 'nvm';
+export type TestRuntimeMode = 'auto' | 'node' | 'nvm' | 'node-yarn' | 'nvm-yarn';
 
 export class ExtensionSettings implements Disposable {
   private readonly disposables = new DisposableStore();
