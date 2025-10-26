@@ -40,6 +40,10 @@ jobs:
       - name: Install dependencies
         run: |
           corepack enable
+          corepack prepare yarn@latest --activate
+          node --version
+          npm --version
+          yarn --version
           npm install
 
       - name: Build and Package

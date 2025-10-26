@@ -56,12 +56,18 @@ jobs:
           npm uninstall -g yarn pnpm
           npm install -g npm@latest
           npm install -g corepack@latest
+      - name: Uninstall old yarn (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          rm -rf "$HOME/.yarn"
 
       - name: Install dependencies
         run: |
           corepack enable
+          corepack prepare yarn@latest --activate
           node --version
           npm --version
+          yarn --version
           npm install
 
       - name: Compile
