@@ -26,10 +26,14 @@ jobs:
 
       - name: Update NPM (Linux)
         if: runner.os == 'Linux'
-        run: sudo npm install -g npm@latest
+        run: |
+          sudo npm install -g npm@latest
+          sudo npm install -g corepack@latest
       - name: Update NPM (Win/MacOS)
         if: runner.os != 'Linux'
-        run: npm install -g npm@latest
+        run: |
+          npm install -g npm@latest
+          npm install -g corepack@latest
 
       - name: Install dependencies
         run: npm install
