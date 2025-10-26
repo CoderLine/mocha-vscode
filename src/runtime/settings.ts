@@ -141,7 +141,7 @@ export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
     return false;
   }
 
-  private async isNvmInstalled() {
+  public static async isNvmInstalled() {
     // https://github.com/nvm-sh/nvm/blob/179d45050be0a71fd57591b0ed8aedf9b177ba10/install.sh#L27
     const nvmDir = process.env.NVM_DIR || homedir();
     // https://github.com/nvm-sh/nvm/blob/179d45050be0a71fd57591b0ed8aedf9b177ba10/install.sh#L143
@@ -157,7 +157,7 @@ export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
     // the .nvmrc file can be placed in any location up the directory tree, so we do the same
     // starting from the mocha config file
     // https://github.com/nvm-sh/nvm/blob/06413631029de32cd9af15b6b7f6ed77743cbd79/nvm.sh#L475-L491
-    if (!(await this.isNvmInstalled())) {
+    if (!(await SettingsBasedTestRuntime.isNvmInstalled())) {
       return undefined;
     }
 

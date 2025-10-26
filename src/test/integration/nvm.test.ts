@@ -12,8 +12,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as vscode from 'vscode';
-import { isNvmInstalled } from '../../node';
 import { captureTestRun, expectTestTree, getController, integrationTestPrepare } from '../util';
+import { SettingsBasedTestRuntime } from '../../runtime/settings';
 
 describe('nvm', () => {
   const workingDir = integrationTestPrepare('nvm');
@@ -51,7 +51,8 @@ describe('nvm', () => {
     // nvm is only available on MacOS and Linux
     // so we skip it on windows.
     // also if NVM on local development we skip this test (for GITHUB_ACTIONS we expect it to be there).
-    const shouldRun = os.platform() === 'linux' && ((await isNvmInstalled()) || process.env.GITHUB_ACTIONS);
+    const shouldRun =
+      os.platform() === 'linux' && ((await SettingsBasedTestRuntime.isNvmInstalled()) || process.env.GITHUB_ACTIONS);
     console.log(`Expecting node ${expectedVersion}, ran in ${actualVersion}`);
     if (shouldRun) {
       expect(actualVersion).to.match(new RegExp(`${expectedVersion}.*`));
