@@ -27,7 +27,7 @@ export const defaultTestSymbols: IExtensionSettings = {
   extractTimeout: 10_000
 };
 
-export type TestRuntimeMode = 'auto' | 'node' | 'nvm' | 'node-yarn' | 'nvm-yarn';
+export type TestRuntimeMode = 'auto' | 'node' | 'nvm' | 'node-yarn' | 'nvm-yarn' | 'custom';
 
 export class ExtensionSettings implements Disposable {
   private readonly disposables = new DisposableStore();
@@ -36,6 +36,7 @@ export class ExtensionSettings implements Disposable {
   public readonly debugOptions = this.disposables.add(new ConfigValue<Record<string, any>>('debugOptions', {}));
   public readonly env = this.disposables.add(new ConfigValue<Record<string, string>>('env', {}));
   public readonly runtime = this.disposables.add(new ConfigValue<TestRuntimeMode>('runtime', 'auto'));
+  public readonly customRuntime = this.disposables.add(new ConfigValue<string[]>('custom-runtime', []));
 
   public dispose() {
     this.disposables.dispose();

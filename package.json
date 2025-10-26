@@ -3,7 +3,7 @@
   "displayName": "Mocha for VS Code",
   "description": "Run and debug Mocha tests right within VS Code.",
   "publisher": "coderline",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.83.0"
@@ -105,6 +105,28 @@
             "type": "object",
             "additionalProperties": true,
             "markdownDescription": "Additional environment variables set when executing tests. This is useful for setting things like `NODE_ENV`."
+          },
+          "mocha-vscode.runtime": {
+            "type": "string",
+            "enum": ["auto", "node", "nvm", "node-yarn", "nvm-yarn", "custom"],
+            "default": "auto",
+            "markdownDescription": "The runtime to use for test discovery and execution.",
+            "markdownEnumDescriptions": [
+              "Automatic Detection",
+              "Use Node.js with `node` commands",
+              "Use Node Version Manager with `nvm` commands",
+              "Use Node.js with `yarn` commands",
+              "Use Node Version Manager with `yarn` commands",
+              "Use a custom command to launch an alternative tool"
+            ]
+          },
+          "mocha-vscode.custom-runtime": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "The command and arguments to launch the runtime. Needs to be compatible with `node` arguments."
           }
         }
       }
@@ -192,9 +214,5 @@
   },
   "dependencies": {
     "esbuild": "^0.25.8"
-  },
-  "mocha-vscode": {
-    "version": "v1.3.0+9091b98",
-    "date": "2025-02-02T12:29:35.896Z"
   }
 }

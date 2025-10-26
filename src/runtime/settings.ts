@@ -10,11 +10,11 @@ import fs from 'node:fs';
 import { homedir, platform } from 'node:os';
 import path from 'node:path';
 import type { Disposable, LogOutputChannel, Uri } from 'vscode';
+import which from 'which';
 import { DisposableStore } from '../disposable';
 import type { ExtensionSettings, TestRuntimeMode } from '../settings';
-import type { IResolvedConfiguration, ITestRuntime } from './types';
 import { NodeLikeTestRuntime } from './nodelike';
-import which from 'which';
+import type { IResolvedConfiguration, ITestRuntime } from './types';
 
 export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
   private readonly disposables = new DisposableStore();
@@ -81,6 +81,9 @@ export class SettingsBasedTestRuntime implements ITestRuntime, Disposable {
           'node'
         ];
         break;
+        case 'custom':
+          nodeLaunchArgs = this.settings.customRuntime.value;
+          break;
     }
 
     this._runtime = new NodeLikeTestRuntime(this.logChannel, this.configFileUri, this.settings, nodeLaunchArgs);
