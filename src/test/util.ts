@@ -69,7 +69,12 @@ export function integrationTestPrepare(name: string) {
 }
 
 async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
-  await fs.promises.cp(workspaceBackup, workspaceFolder, { recursive: true });
+  for(const dirOrFile of await fs.promises.readdir(workspaceBackup, {withFileTypes: true})) {
+    if(dirOrFile.isDirectory() && dirOrFile.name === 'node_modules') {
+      continue;
+    }
+    await fs.promises.cp(path.join(workspaceBackup, dirOrFile.name), path.join(workspaceFolder, dirOrFile.name), { recursive: true });
+  }
   await rmrf(workspaceBackup);
 
   // it seems like all these files changes can require a moment for vscode's file
