@@ -3,6 +3,7 @@
   "files": {
     "includes": [
       "src/**",
+      "scripts/**",
       "!out",
       "!test-workspaces",
       "!node_modules",
