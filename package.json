@@ -220,6 +220,6 @@
     "which": "^5.0.0"
   },
   "dependencies": {
-    "esbuild": "^0.25.8"
+    "esbuild": "^0.25.11"
   }
 }
