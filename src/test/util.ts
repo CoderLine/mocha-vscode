@@ -69,10 +69,6 @@ export function integrationTestPrepare(name: string) {
 }
 
 async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
-  // vscode behaves badly when we delete the workspace folder; delete contents instead.
-  const files = await fs.promises.readdir(workspaceFolder);
-  await Promise.all(files.map(f => rmrf(path.join(workspaceFolder, f))));
-
   await fs.promises.cp(workspaceBackup, workspaceFolder, { recursive: true });
   await rmrf(workspaceBackup);
 
