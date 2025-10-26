@@ -27,6 +27,7 @@ enum FolderSyncState {
 let disposables = new DisposableStore();
 
 export function activate(context: vscode.ExtensionContext) {
+  disposables.dispose();
   disposables = new DisposableStore();
 
   let logChannel = vscode.window.createOutputChannel('Mocha Test Runner', { log: true });
@@ -83,6 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
           const newController = new WorkspaceFolderWatcher(logChannel, folder, runner, smStore, settings);
           await newController.init();
           watchers.set(key, newController);
+          disposables.add(newController);
         } else {
           logChannel.debug('Existing workspace folder', folder);
         }
@@ -96,6 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
       const watcher = watchers.get(remaining)!;
       watcher.dispose();
       watchers.delete(remaining);
+      disposables.remove(watcher);
     }
 
     // cast is needed since TS incorrectly keeps resyncState narrowed to Syncing
@@ -136,6 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
       logChannel.debug('Destroying all watchers and test controllers');
       for (const [, watcher] of watchers) {
         watcher.dispose();
+        disposables.remove(watcher);
       }
       watchers.clear();
       resyncState = FolderSyncState.Idle;

@@ -66,6 +66,7 @@ export class WorkspaceFolderWatcher {
     if (controller) {
       controller.dispose();
       this.controllers.delete(key);
+      this.disposables.remove(controller);
       this.logChannel.debug(`Removed controller via config file ${key}`);
     }
   }

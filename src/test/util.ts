@@ -77,8 +77,8 @@ async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string
   await rmrf(workspaceBackup);
 
   // it seems like all these files changes can require a moment for vscode's file
-  // watcher to update before we can run the next test. 500 seems to do it 🤷‍♂️
-  await setTimeout(500);
+  // watcher to update before we can run the next test. 1000 seems to do it 🤷‍♂️
+  await setTimeout(1000);
 }
 
 async function backupWorkspace(source: string) {
