@@ -69,13 +69,22 @@ export function integrationTestPrepare(name: string) {
 }
 
 async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
+  const restoredFiles = new Set<string>();
+  // restore changed files
   for(const dirOrFile of await fs.promises.readdir(workspaceBackup, {withFileTypes: true})) {
+    restoredFiles.add(dirOrFile.name);
     if(dirOrFile.isDirectory() && dirOrFile.name === 'node_modules') {
       continue;
     }
     await fs.promises.cp(path.join(workspaceBackup, dirOrFile.name), path.join(workspaceFolder, dirOrFile.name), { recursive: true });
   }
-  await rmrf(workspaceBackup);
+
+  // delete new files
+  for(const dirOrFile of await fs.promises.readdir(workspaceFolder, {withFileTypes: true})) {
+    if(!restoredFiles.has(dirOrFile.name)) {
+      await rmrf(path.join(workspaceFolder, dirOrFile.name));
+    }
+  }
 
   // it seems like all these files changes can require a moment for vscode's file
   // watcher to update before we can run the next test. 1000 seems to do it 🤷‍♂️
