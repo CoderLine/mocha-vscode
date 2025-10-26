@@ -15,16 +15,12 @@ import { isEsm, isTypeScript } from '../constants';
 import { EvaluationTestDiscoverer } from './evaluate';
 
 export class FullEvaluationTestDiscoverer extends EvaluationTestDiscoverer {
-
   protected evaluate(contextObj: vm.Context, filePath: string, code: string) {
     contextObj.require = createRequire(filePath);
     return super.evaluate(contextObj, filePath, code);
   }
 
-  override async transpileCode(
-    filePath: string,
-    code: string,
-  ): Promise<[string, TraceMap | undefined]> {
+  override async transpileCode(filePath: string, code: string): Promise<[string, TraceMap | undefined]> {
     let sourceMap: TraceMap | undefined;
     const needsTranspile = isTypeScript(filePath) || isEsm(filePath, code);
 
@@ -35,11 +31,11 @@ export class FullEvaluationTestDiscoverer extends EvaluationTestDiscoverer {
         bundle: true,
         sourcemap: 'external', // need source map for correct test positions
         write: false,
-        outfile: 'tests.js',
+        outfile: 'tests.js'
       });
 
-      const jsFile = result.outputFiles.find((f) => f.path.endsWith('.js'));
-      const mapFile = result.outputFiles.find((f) => f.path.endsWith('.js.map'));
+      const jsFile = result.outputFiles.find(f => f.path.endsWith('.js'));
+      const mapFile = result.outputFiles.find(f => f.path.endsWith('.js.map'));
 
       if (jsFile && mapFile) {
         code = jsFile.text;

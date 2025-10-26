@@ -1,5 +1,8 @@
 {
   "mocha": {
     "spec": "**/*.test.js"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.4"
   }
 }

@@ -13,7 +13,7 @@ export enum ItemType {
   Directory,
   File,
   Suite,
-  Test,
+  Test
 }
 
 export type ItemMetadata =
@@ -31,7 +31,7 @@ export function* getContainingItemsForFile(
   configUri: vscode.Uri,
   ctrl: vscode.TestController,
   uri: vscode.Uri,
-  createOpts?: ICreateOpts,
+  createOpts?: ICreateOpts
 ): IterableIterator<{ children: vscode.TestItemCollection; item?: vscode.TestItem }> {
   const folderPath = configUri.path.split('/').slice(0, -1);
   const filePath = uri.path.split('/');
@@ -49,13 +49,13 @@ export function* getContainingItemsForFile(
       const item = ctrl.createTestItem(
         filePath[i],
         filePath[i],
-        uri.with({ path: filePath.slice(0, i + 1).join('/') }),
+        uri.with({ path: filePath.slice(0, i + 1).join('/') })
       );
       testMetadata.set(
         item,
         i === filePath.length - 1
           ? { type: ItemType.File, compiledIn: createOpts.compiledFile }
-          : { type: ItemType.Directory },
+          : { type: ItemType.Directory }
       );
       children.add(item);
       children = item.children;

@@ -29,6 +29,10 @@ This extension automatically discovers and works with the `.mocharc.js/cjs/yaml/
 
 - `mocha-vscode.env`: Additional environment variables set when executing tests. This is useful for setting things like `NODE_ENV`.
 
+- `mocha-vscode.runtime`: The runtime to use for test discovery and execution.
+
+- `mocha-vscode.custom-runtime`: The command and arguments to launch the runtime. Needs to be compatible with `node` arguments.
+
 ## Features
 
 ### Show, Running and Debugging Tests
@@ -46,6 +50,22 @@ This extension is designed to work with both TypeScript, JavaScript (CJS/ESM) co
 To discover tests this extension dynamically translates your TypeScript or ESM code to CommonJS code (via [ESBuild](https://esbuild.github.io/)) and executes it partially to build up the test list. If this execution fails or you are having code which cannot be translated to CommonJS (e.g. top level awaits) this will result in errors. 
 
 For execution this extension will try to call directly the Mocha executable passing the `.mocharc` and additional arguments to it. 
+
+### Test Runtime 
+
+To discover and execute tests this extension executes inline scripts via a node-compatible runtime. Via these scripts the mocha conffiguration is loaded and test execution is started.
+
+The runtime is auto-detected by default and it will use the respective commands automatically. The runtime can also be manually configured.
+
+Supported runtimes: 
+
+* Node.js using `node` commands.
+* Node Version Manager using `nvm` commands.
+* Node.js using `yarn` commands (to support strategies like [PnP](https://yarnpkg.com/features/pnp))
+* Node Version Manager using `nvm` to launch `yarn` commands 
+
+You can also configure custom commands to be used via the VS Code settings. 
+This allows using alternative runtimes which are not supported out-of-the-box. The binary needs to support the same arguments like node for launching scripts.
 
 ## Troubleshooting
 

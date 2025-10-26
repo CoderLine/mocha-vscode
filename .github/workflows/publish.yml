@@ -24,8 +24,27 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Update NPM (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo npm uninstall -g yarn pnpm
+          sudo npm install -g npm@latest
+          sudo npm install -g corepack@latest
+      - name: Update NPM (Win/MacOS)
+        if: runner.os != 'Linux'
+        run: |
+          npm uninstall -g yarn pnpm
+          npm install -g npm@latest
+          npm install -g corepack@latest
+
       - name: Install dependencies
-        run: npm install
+        run: |
+          corepack enable
+          corepack prepare yarn@latest --activate
+          node --version
+          npm --version
+          yarn --version
+          npm install
 
       - name: Build and Package
         run: npm run package:release

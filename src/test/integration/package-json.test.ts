@@ -11,13 +11,7 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as vscode from 'vscode';
-import {
-  captureTestRun,
-  expectTestTree,
-  getController,
-  integrationTestPrepare,
-  onceScanComplete,
-} from '../util';
+import { captureTestRun, expectTestTree, getController, integrationTestPrepare, onceScanComplete } from '../util';
 
 describe('package-json', () => {
   const workspaceFolder = integrationTestPrepare('package-json');
@@ -27,7 +21,7 @@ describe('package-json', () => {
 
     expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
-      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]]
     ]);
   });
 
@@ -38,14 +32,14 @@ describe('package-json', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.js')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
-      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -56,14 +50,14 @@ describe('package-json', () => {
       new vscode.TestRunRequest(
         [c.ctrl!.items.get('hello.test.js')!],
         undefined,
-        c.profiles.find((p) => p.kind === vscode.TestRunProfileKind.Debug),
-      ),
+        c.profiles.find(p => p.kind === vscode.TestRunProfileKind.Debug)
+      )
     );
 
     run.expectStates({
       'hello.test.js/math/addition': ['enqueued', 'started', 'passed'],
       'hello.test.js/math/subtraction': ['enqueued', 'started', 'passed'],
-      'hello.test.js/math/failing': ['enqueued', 'started', 'failed'],
+      'hello.test.js/math/failing': ['enqueued', 'started', 'failed']
     });
   });
 
@@ -72,7 +66,7 @@ describe('package-json', () => {
 
     expectTestTree(c, [
       ['folder', [['nested.test.js', [['is nested']]]]],
-      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
+      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]]
     ]);
 
     // especially on MacOS we often get a wrong / early file change detected causing a scan
@@ -93,17 +87,13 @@ describe('package-json', () => {
       }
 
       try {
-        expectTestTree(c, [
-          ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
-        ]);
+        expectTestTree(c, [['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]]]);
         return;
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
 
-    expectTestTree(c, [
-      ['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]],
-    ]);
+    expectTestTree(c, [['hello.test.js', [['math', [['addition'], ['failing'], ['subtraction']]]]]]);
   });
 });

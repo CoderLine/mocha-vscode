@@ -7,10 +7,10 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { execSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 console.log('Preparing for extension publish');
 
@@ -37,7 +37,7 @@ if (gitHubContext) {
     isPrerelease = true;
   }
 
-  if (packageJson.version != tag.slice(1).split('-')[0]) {
+  if (packageJson.version !== tag.slice(1).split('-')[0]) {
     console.error(
       `Git Tag '${tag}' does not match version in package.json '${packageJson.version}', please correct it!`,
     );
@@ -45,7 +45,7 @@ if (gitHubContext) {
   }
 } else {
   const prereleaseTag = isPrerelease ? '-preview' : '';
-  semVer = 'v' + packageJson.version + prereleaseTag + build;
+  semVer = `v${packageJson.version}${prereleaseTag}${build}`;
 }
 
 packageJson['mocha-vscode'] = {

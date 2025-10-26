@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as Mocha from 'mocha';
+import type * as Mocha from 'mocha';
 import { inspect } from 'node:util';
 import { MochaEvent, type MochaEventTuple } from './fullJsonStreamReporterTypes';
 
@@ -21,21 +21,18 @@ import { MochaEvent, type MochaEventTuple } from './fullJsonStreamReporterTypes'
 module.exports = class FullJsonStreamReporter {
   constructor(runner: Mocha.Runner) {
     const total = runner.total;
-    runner.once(Mocha.Runner.constants.EVENT_RUN_BEGIN, () =>
-      writeEvent([MochaEvent.Start, { total }]),
-    );
-    runner.once(Mocha.Runner.constants.EVENT_RUN_END, () => writeEvent([MochaEvent.End, {}]));
+    const constants = (runner.constructor as any).constants as Mocha.RunnerConstants;
+    runner.once(constants.EVENT_RUN_BEGIN, () => writeEvent([MochaEvent.Start, { total }]));
+    runner.once(constants.EVENT_RUN_END, () => writeEvent([MochaEvent.End, {}]));
 
-    runner.on(Mocha.Runner.constants.EVENT_SUITE_BEGIN, (suite: Mocha.Suite) =>
-      writeEvent([MochaEvent.SuiteStart, { path: suite.titlePath(), file: suite.file }]),
+    runner.on(constants.EVENT_SUITE_BEGIN, (suite: Mocha.Suite) =>
+      writeEvent([MochaEvent.SuiteStart, { path: suite.titlePath(), file: suite.file }])
     );
-    runner.on(Mocha.Runner.constants.EVENT_TEST_BEGIN, (test: Mocha.Test) =>
-      writeEvent([MochaEvent.TestStart, clean(test)]),
+    runner.on(constants.EVENT_TEST_BEGIN, (test: Mocha.Test) =>
+      writeEvent([MochaEvent.TestStart, clean(test)])
     );
-    runner.on(Mocha.Runner.constants.EVENT_TEST_PASS, (test) =>
-      writeEvent([MochaEvent.Pass, clean(test)]),
-    );
-    runner.on(Mocha.Runner.constants.EVENT_TEST_FAIL, (test, err) => {
+    runner.on(constants.EVENT_TEST_PASS, test => writeEvent([MochaEvent.Pass, clean(test)]));
+    runner.on(constants.EVENT_TEST_FAIL, (test, err) => {
       writeEvent([
         MochaEvent.Fail,
         {
@@ -43,8 +40,8 @@ module.exports = class FullJsonStreamReporter {
           actual: inspect(err.actual, { depth: 30 }),
           expected: inspect(err.expected, { depth: 30 }),
           err: err.message,
-          stack: err.stack || null,
-        },
+          stack: err.stack || null
+        }
       ]);
     });
   }
@@ -65,6 +62,6 @@ const clean = (test: Mocha.Test) => {
         ? ('fast' as const)
         : test.duration > test.slow()
           ? ('slow' as const)
-          : ('medium' as const),
+          : ('medium' as const)
   };
 };

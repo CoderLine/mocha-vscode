@@ -9,41 +9,45 @@
 
 import * as timers from 'node:timers/promises';
 import * as vscode from 'vscode';
-import { ConfigValue } from './configValue';
 import { ConsoleOuputChannel } from './consoleLogChannel';
 import { getControllersForTestCommand, recreateControllersForTestCommand } from './constants';
 import { initESBuild } from './esbuild';
 import { TestRunner } from './runner';
 import { SourceMapStore } from './source-map-store';
 import { WorkspaceFolderWatcher } from './workspaceWatcher';
+import { ExtensionSettings } from './settings';
+import { DisposableStore } from './disposable';
 
 enum FolderSyncState {
   Idle,
   Syncing,
-  ReSyncNeeded,
+  ReSyncNeeded
 }
 
+let disposables = new DisposableStore();
+
 export function activate(context: vscode.ExtensionContext) {
+  disposables.dispose();
+  disposables = new DisposableStore();
+
   let logChannel = vscode.window.createOutputChannel('Mocha Test Runner', { log: true });
 
   if (process.env.MOCHA_VSCODE_TEST) {
     logChannel = new ConsoleOuputChannel(logChannel);
   }
+  disposables.add(logChannel);
 
   const packageJson = context.extension.packageJSON;
   const extensionInfo = context.extension.packageJSON['mocha-vscode'];
   logChannel.info(
     `Mocha Test Runner Started (id: ${context.extension.id}, version ${packageJson.version})`,
-    extensionInfo,
+    extensionInfo
   );
 
+  const settings = disposables.add(new ExtensionSettings());
+
   const smStore = new SourceMapStore();
-  const runner = new TestRunner(
-    logChannel,
-    smStore,
-    new ConfigValue('debugOptions', {}),
-    new ConfigValue('env', {}),
-  );
+  const runner = new TestRunner(logChannel, smStore, settings);
 
   const watchers: Map<string /* workspace folder */, WorkspaceFolderWatcher> = new Map<
     string,
@@ -69,7 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
     const remainingFolders = new Set<string>(watchers.keys());
 
     await Promise.all(
-      folders.map(async (folder) => {
+      folders.map(async folder => {
         const key = folder.uri.toString();
 
         // mark as existing
@@ -77,15 +81,16 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (!watchers.has(key)) {
           logChannel.debug('New workspace folder', folder);
-          const newController = new WorkspaceFolderWatcher(logChannel, folder, runner, smStore);
+          const newController = new WorkspaceFolderWatcher(logChannel, folder, runner, smStore, settings);
           await newController.init();
           watchers.set(key, newController);
+          disposables.add(newController);
         } else {
           logChannel.debug('Existing workspace folder', folder);
         }
 
         return;
-      }),
+      })
     );
 
     for (const remaining of remainingFolders) {
@@ -93,6 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
       const watcher = watchers.get(remaining)!;
       watcher.dispose();
       watchers.delete(remaining);
+      disposables.remove(watcher);
     }
 
     // cast is needed since TS incorrectly keeps resyncState narrowed to Syncing
@@ -110,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
     for (let retries = 0; retries < 10; retries++) {
       await syncWorkspaceFolders();
 
-      if (Array.from(watchers.values()).find((c) => c.controllers.size > 0)) {
+      if (Array.from(watchers.values()).find(c => c.controllers.size > 0)) {
         break;
       }
 
@@ -127,27 +133,30 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeWorkspaceFolders(syncWorkspaceFolders),
     vscode.commands.registerCommand(getControllersForTestCommand, async () => {
       await initialSync;
-      return Array.from(watchers.values()).flatMap((w) => Array.from(w.controllers.values()));
+      return Array.from(watchers.values()).flatMap(w => Array.from(w.controllers.values()));
     }),
     vscode.commands.registerCommand(recreateControllersForTestCommand, async () => {
       logChannel.debug('Destroying all watchers and test controllers');
       for (const [, watcher] of watchers) {
         watcher.dispose();
+        disposables.remove(watcher);
       }
       watchers.clear();
       resyncState = FolderSyncState.Idle;
 
       logChannel.debug('Destroyed controllers, recreating');
       await syncWorkspaceFoldersWithRetry();
-      return Array.from(watchers.values()).flatMap((w) => Array.from(w.controllers.values()));
+      return Array.from(watchers.values()).flatMap(w => Array.from(w.controllers.values()));
     }),
     new vscode.Disposable(() => {
       for (const c of watchers.values()) {
         c.dispose();
       }
     }),
-    logChannel,
+    logChannel
   );
 }
 
-export function deactivate() { }
+export function deactivate() {
+  disposables.dispose();
+}

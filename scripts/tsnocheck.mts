@@ -1,0 +1,14 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const dirname = fileURLToPath(new URL('.', import.meta.url));
+const reporter = path.join(dirname, '../out/reporter');
+const files = (await fs.promises.readdir(reporter)).filter(f => f.endsWith('.js')).map(f => `${reporter}/${f}`);
+for(const f of files) {
+    await fs.promises.writeFile(
+        f,
+        '// @ts-nocheck\n' + 
+        (await fs.promises.readFile(f, 'utf-8'))
+    )
+}

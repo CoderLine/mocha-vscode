@@ -23,14 +23,12 @@ export class OutputQueue {
 
   public enqueue<T>(
     maybePromise: Promise<T> | T | (() => Promise<void> | void),
-    fn?: (value: T) => Promise<void> | void,
+    fn?: (value: T) => Promise<void> | void
   ) {
     if (fn === undefined) {
       this.queue.push(maybePromise as () => Promise<void> | void);
     } else {
-      this.queue.push(() =>
-        maybePromise instanceof Promise ? maybePromise.then(fn) : fn(maybePromise as T),
-      );
+      this.queue.push(() => (maybePromise instanceof Promise ? maybePromise.then(fn) : fn(maybePromise as T)));
     }
 
     if (this.queue.length === 1) {
@@ -52,7 +50,7 @@ export class OutputQueue {
           return this.runQueue();
         });
       }
-        this.queue.shift();
+      this.queue.shift();
     }
   }
 }

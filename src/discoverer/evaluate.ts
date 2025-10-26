@@ -17,11 +17,11 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import * as vm from 'node:vm';
 import type * as vscode from 'vscode';
-import type { ConfigValue } from '../configValue';
 import { isEsm, isTypeScript } from '../constants';
 import type { TsConfigStore } from '../tsconfig-store';
 import { acornOptions } from './syntax';
-import { type IExtensionSettings, type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
+import { type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
+import type { ExtensionSettings } from '../settings';
 
 /**
  * Note: the goal is not to sandbox test code (workspace trust is required
@@ -33,7 +33,7 @@ const replacedGlobals = new Set([
   'require',
   'process',
   // avoid printing to the console from tests:
-  'console',
+  'console'
 ]);
 
 /**
@@ -52,9 +52,9 @@ const replacedGlobals = new Set([
 export class EvaluationTestDiscoverer implements ITestDiscoverer {
   constructor(
     protected logChannel: vscode.LogOutputChannel | undefined,
-    protected settings: ConfigValue<IExtensionSettings>,
-    protected tsconfigStore: TsConfigStore,
-  ) { }
+    protected settings: ExtensionSettings,
+    protected tsconfigStore: TsConfigStore
+  ) {}
 
   async discover(filePath: string, code: string) {
     const stack: IParsedNode[] = [{ children: [] } as Partial<IParsedNode> as IParsedNode];
@@ -63,18 +63,17 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     function placeholder(): unknown {
       return new Proxy(placeholder, {
         get: (obj, target) => {
-
           // ES2026 symbols
           // see https://github.com/CoderLine/mocha-vscode/discussions/378
           if ('toPrimitive' in Symbol && target === Symbol.toPrimitive) {
             return () => {
-              return '[object Proxy]'
+              return '[object Proxy]';
             };
           }
 
           if ('toStringTag' in Symbol && target === Symbol.toStringTag) {
             return () => {
-              return '[object Proxy]'
+              return '[object Proxy]';
             };
           }
 
@@ -85,14 +84,14 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
               return desc.value; // avoid invariant volation https://stackoverflow.com/q/75148897
             }
             return placeholder();
-          } catch (e) {
+          } catch {
             return placeholder();
           }
         },
         set: () => true,
         apply: () => {
           return placeholder();
-        },
+        }
       });
     }
 
@@ -104,15 +103,11 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
           }
           return originalObject[target];
         },
-        set: () => true,
+        set: () => true
       });
     }
 
-    function makeTesterFunction(
-      kind: NodeKind,
-      sourceMap?: TraceMap | undefined,
-      directive?: string,
-    ) {
+    function makeTesterFunction(kind: NodeKind, sourceMap?: TraceMap | undefined, directive?: string) {
       const fn = (name: string, callback: (() => void) | undefined) => {
         if (typeof name !== 'string') {
           return placeholder();
@@ -137,7 +132,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
           try {
             const startMapped = originalPositionFor(sourceMap, {
               line: startLine,
-              column: startColumn - 1,
+              column: startColumn - 1
             });
             if (startMapped.line !== null) {
               startLine = startMapped.line;
@@ -145,7 +140,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
             }
             const endMapped = originalPositionFor(sourceMap, {
               line: endLine,
-              column: endColumn - 1,
+              column: endColumn - 1
             });
             if (endMapped.line !== null) {
               endLine = endMapped.line;
@@ -173,7 +168,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
           startColumn: startColumn - 1,
           endLine: endLine,
           endColumn: endColumn,
-          children: [],
+          children: []
         };
         if (directive) {
           node.directive = directive;
@@ -207,12 +202,12 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
     const suiteFunction = makeTesterFunction(NodeKind.Suite, sourceMap);
     const testFunction = makeTesterFunction(NodeKind.Test, sourceMap);
 
-    const symbols = this.settings;
+    const symbols = this.settings.extractSettings;
     const contextObj = new Proxy(
       {
         __dirname: path.dirname(filePath),
         __filename: path.basename(filePath),
-        __import_meta_url: pathToFileURL(filePath).href,
+        __import_meta_url: pathToFileURL(filePath).href
       } as any,
       {
         get(target, prop) {
@@ -246,8 +241,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
           }
 
           return placeholder();
-        },
-      },
+        }
+      }
     );
 
     await this.evaluate(contextObj, filePath, code);
@@ -257,8 +252,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
 
   protected evaluate(contextObj: vm.Context, filePath: string, code: string) {
     vm.runInNewContext(code, contextObj, {
-      timeout: this.settings.value.extractTimeout,
-      filename: filePath,
+      timeout: this.settings.extractSettings.value.extractTimeout,
+      filename: filePath
     });
   }
 
@@ -279,7 +274,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
       parsed,
       {},
       {
-        ImportDeclaration: (node) => {
+        ImportDeclaration: node => {
           if (typeof node.source.value === 'string') {
             const module = node.source.value;
             let specifiers = modules.get(module);
@@ -324,8 +319,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
           }
         },
         // we don't handle dynamic import expressions here, they are exposed
-        ImportExpression: undefined,
-      },
+        ImportExpression: undefined
+      }
     );
 
     return modules;
@@ -341,8 +336,8 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
         sourcefile: filePath, // for auto-detection of the loader
         loader: 'default', // use the default loader
         define: {
-          'import.meta.url': '__import_meta_url',
-        },
+          'import.meta.url': '__import_meta_url'
+        }
       });
 
       code = result.code;
@@ -368,7 +363,7 @@ export class EvaluationTestDiscoverer implements ITestDiscoverer {
       minify: false,
       keepNames: true, // reduce CPU
       platform: 'node', // we will evaluate here in node
-      tsconfigRaw: tsconfig?.config as TsconfigRaw,
+      tsconfigRaw: tsconfig?.config as TsconfigRaw
     };
   }
 }

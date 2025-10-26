@@ -51,8 +51,8 @@ export class SourceMapStore {
       async refresh(contents) {
         const contentsProm = fs.readFile(uri.fsPath, 'utf8') || Promise.resolve(contents);
         rec.accessor = contentsProm.then(
-          (c) => parseSourceMap(uri, c),
-          () => identityMapping(uri),
+          c => parseSourceMap(uri, c),
+          () => identityMapping(uri)
         );
         return rec.accessor;
       },
@@ -60,7 +60,7 @@ export class SourceMapStore {
         if (--rec.rc === 0) {
           maps.delete(key);
         }
-      },
+      }
     };
   }
 }

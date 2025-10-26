@@ -12,10 +12,10 @@ import type { Options as AcornOptions } from 'acorn';
 import { parse as acornParse } from 'acorn-loose';
 import * as evk from 'eslint-visitor-keys';
 import type { Node } from 'estree';
-import type { ConfigValue } from '../configValue';
 import { isTypeScript } from '../constants';
+import type { ExtensionSettings } from '../settings';
 import type { TsConfigStore } from '../tsconfig-store';
-import { type IExtensionSettings, type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
+import { type IParsedNode, type ITestDiscoverer, NodeKind } from './types';
 
 enum C {
   MemberExpression = 'MemberExpression',
@@ -23,17 +23,17 @@ enum C {
   TemplateLiteral = 'TemplateLiteral',
   Property = 'Property',
   Literal = 'Literal',
-  Identifier = 'Identifier',
+  Identifier = 'Identifier'
 }
 
 export const acornOptions: AcornOptions = {
   ecmaVersion: 'latest',
   locations: true,
-  allowReserved: true,
+  allowReserved: true
 };
 
 const esTreeOptions: TSESTreeOptions = {
-  jsDocParsingMode: 'none',
+  jsDocParsingMode: 'none'
 };
 
 const getStringish = (nameArg: Node | undefined): string | undefined => {
@@ -45,10 +45,7 @@ const getStringish = (nameArg: Node | undefined): string | undefined => {
   }
 };
 
-const traverse = (
-  node: Node,
-  visitor: { enter: (node: Node) => void; leave: (node: Node) => void },
-) => {
+const traverse = (node: Node, visitor: { enter: (node: Node) => void; leave: (node: Node) => void }) => {
   if (!node) {
     return;
   }
@@ -73,9 +70,9 @@ const traverse = (
 
 export class SyntaxTestDiscoverer implements ITestDiscoverer {
   constructor(
-    private settings: ConfigValue<IExtensionSettings>,
-    private tsconfigStore: TsConfigStore,
-  ) { }
+    private settings: ExtensionSettings,
+    private tsconfigStore: TsConfigStore
+  ) {}
 
   async discover(filePath: string, text: string) {
     const settings = this.settings;
@@ -85,17 +82,17 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
     if (isTypeScript(filePath)) {
       ast = esTreeParse(text, {
         project: this.tsconfigStore.getTsconfig(filePath)?.path,
-        ...esTreeOptions,
+        ...esTreeOptions
       }) as Node;
     } else {
       ast = acornParse(text, acornOptions) as Node;
     }
 
     const interestingName = (name: string) => {
-      if (settings.value.suite.includes(name)) {
+      if (settings.extractSettings.value.suite.includes(name)) {
         return NodeKind.Suite;
       }
-      if (settings.value.test.includes(name)) {
+      if (settings.extractSettings.value.test.includes(name)) {
         return NodeKind.Test;
       }
       return undefined;
@@ -139,7 +136,7 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
           startColumn: node.loc!.start.column,
           endLine: node.loc!.end.line - 1,
           endColumn: node.loc!.end.column,
-          name,
+          name
         };
         if (directive) {
           child.directive = directive;
@@ -151,7 +148,7 @@ export class SyntaxTestDiscoverer implements ITestDiscoverer {
         if (stack[stack.length - 1].node === node) {
           stack.pop();
         }
-      },
+      }
     });
 
     return stack[0].r.children;

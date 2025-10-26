@@ -12,8 +12,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as vscode from 'vscode';
-import { isNvmInstalled } from '../../node';
 import { captureTestRun, expectTestTree, getController, integrationTestPrepare } from '../util';
+import { SettingsBasedTestRuntime } from '../../runtime/settings';
 
 describe('nvm', () => {
   const workingDir = integrationTestPrepare('nvm');
@@ -34,25 +34,25 @@ describe('nvm', () => {
       new vscode.TestRunRequest(
         undefined,
         undefined,
-        profiles.find((p) => p.kind === vscode.TestRunProfileKind.Run),
-      ),
+        profiles.find(p => p.kind === vscode.TestRunProfileKind.Run)
+      )
     );
 
     run.expectStates({
-      'nvm.test.js/nvm/ensure-version': ['enqueued', 'started', 'passed'],
+      'nvm.test.js/nvm/ensure-version': ['enqueued', 'started', 'passed']
     });
 
     const expectedVersion = await fs.promises.readFile(path.join(workingDir, '.nvmrc'), 'utf-8');
     const actualVersion = await fs.promises.readFile(
       path.resolve(__dirname, '..', '..', '..', 'tmp', '.nvmrc-actual'),
-      'utf-8',
+      'utf-8'
     );
 
     // nvm is only available on MacOS and Linux
     // so we skip it on windows.
     // also if NVM on local development we skip this test (for GITHUB_ACTIONS we expect it to be there).
     const shouldRun =
-      os.platform() === 'linux' && ((await isNvmInstalled()) || process.env.GITHUB_ACTIONS);
+      os.platform() === 'linux' && ((await SettingsBasedTestRuntime.isNvmInstalled()) || process.env.GITHUB_ACTIONS);
     console.log(`Expecting node ${expectedVersion}, ran in ${actualVersion}`);
     if (shouldRun) {
       expect(actualVersion).to.match(new RegExp(`${expectedVersion}.*`));

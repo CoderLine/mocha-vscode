@@ -21,8 +21,6 @@ describe('typescript top level await', () => {
     expect(e[0][1])
       .to.be.a('string')
       .and.to.include('Transform failed with')
-      .and.to.include(
-        'ERROR: Top-level await is currently not supported with the "cjs" output format',
-      );
+      .and.to.include('ERROR: Top-level await is currently not supported with the "cjs" output format');
   });
 });

@@ -8,12 +8,12 @@
  */
 
 import type * as vscode from 'vscode';
-import type { ConfigValue } from '../configValue';
 import type { TsConfigStore } from '../tsconfig-store';
 import { EvaluationTestDiscoverer } from './evaluate';
 import { FullEvaluationTestDiscoverer } from './evaluate-full';
 import { SyntaxTestDiscoverer } from './syntax';
-import type { IExtensionSettings, IParsedNode, ITestDiscoverer } from './types';
+import type { IParsedNode, ITestDiscoverer } from './types';
+import type { ExtensionSettings } from '../settings';
 
 export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
   private _syntax: SyntaxTestDiscoverer;
@@ -22,8 +22,8 @@ export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
 
   constructor(
     private logChannel: vscode.LogOutputChannel,
-    private settings: ConfigValue<IExtensionSettings>,
-    tsconfigStore: TsConfigStore,
+    private settings: ExtensionSettings,
+    tsconfigStore: TsConfigStore
   ) {
     this._syntax = new SyntaxTestDiscoverer(settings, tsconfigStore);
     this._evaluation = new EvaluationTestDiscoverer(logChannel, settings, tsconfigStore);
@@ -32,7 +32,7 @@ export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
 
   async discover(filePath: string, code: string): Promise<IParsedNode[]> {
     let discoverer: ITestDiscoverer;
-    switch (this.settings.value.extractWith) {
+    switch (this.settings.extractSettings.value.extractWith) {
       case 'syntax':
         discoverer = this._syntax;
         break;
@@ -52,12 +52,12 @@ export class SettingsBasedFallbackTestDiscoverer implements ITestDiscoverer {
     } catch (e) {
       if (discoverer !== this._syntax) {
         this.logChannel.error(
-          `Error discovering tests with ${this.settings.value.extractWith}, will fallback to syntax`,
-          e,
+          `Error discovering tests with ${this.settings.extractSettings.value.extractWith}, will fallback to syntax`,
+          e
         );
         return this._syntax.discover(filePath, code);
       }
-      this.logChannel.error(`Error discovering tests with ${this.settings.value.extractWith}`, e);
+      this.logChannel.error(`Error discovering tests with ${this.settings.extractSettings.value.extractWith}`, e);
       throw e;
     }
   }

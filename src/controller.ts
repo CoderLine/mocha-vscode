@@ -10,15 +10,17 @@
 import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import * as vscode from 'vscode';
-import { ConfigValue } from './configValue';
 import { ConfigurationFile, type ConfigurationList } from './configurationFile';
-import { defaultTestSymbols, showConfigErrorCommand } from './constants';
+import { showConfigErrorCommand } from './constants';
 import { SettingsBasedFallbackTestDiscoverer } from './discoverer/settings';
-import { type IParsedNode, NodeKind } from './discoverer/types';
+import { type IParsedNode, type ITestDiscoverer, NodeKind } from './discoverer/types';
 import { DisposableStore, MutableDisposable } from './disposable';
 import { last } from './iterable';
-import { type ICreateOpts, ItemType, getContainingItemsForFile, testMetadata } from './metadata';
+import { getContainingItemsForFile, type ICreateOpts, ItemType, testMetadata } from './metadata';
 import type { TestRunner } from './runner';
+import { SettingsBasedTestRuntime } from './runtime/settings';
+import type { ITestRuntime } from './runtime/types';
+import type { ExtensionSettings } from './settings';
 import type { ISourceMapMaintainer, SourceMapStore } from './source-map-store';
 import { TsConfigStore } from './tsconfig-store';
 
@@ -46,7 +48,7 @@ class TestNodeCounter {
       counts = new Map([
         ['+', 0],
         ['~', 0],
-        ['-', 0],
+        ['-', 0]
       ]);
       this.counts.set(nodeKind, counts);
     }
@@ -77,11 +79,9 @@ export class Controller {
    */
   private currentConfig?: ConfigurationList;
 
-  private discoverer?: SettingsBasedFallbackTestDiscoverer;
+  public readonly runtime: ITestRuntime;
+  private discoverer?: ITestDiscoverer;
 
-  public readonly settings = this.disposables.add(
-    new ConfigValue('extractSettings', defaultTestSymbols),
-  );
   private readonly watcher = this.disposables.add(new MutableDisposable());
   private readonly didChangeEmitter = new vscode.EventEmitter<void>();
   private readonly scanCompleteEmitter = new vscode.EventEmitter<void>();
@@ -124,21 +124,16 @@ export class Controller {
     private readonly smStore: SourceMapStore,
     configFileUri: vscode.Uri,
     private readonly runner: TestRunner,
+    public readonly settings: ExtensionSettings
   ) {
-    logChannel.info(
-      'New Test Controller for workspace folder and config',
-      wf.uri.fsPath,
-      configFileUri.fsPath,
-    );
-    this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf));
+    logChannel.info('New Test Controller for workspace folder and config', wf.uri.fsPath, configFileUri.fsPath);
+    this.runtime = this.disposables.add(new SettingsBasedTestRuntime(logChannel, configFileUri, settings));
+    this.configFile = this.disposables.add(new ConfigurationFile(logChannel, configFileUri, wf, this.runtime));
 
     this.disposables.add(
       this.configFile.onActivate(() => {
         try {
-          const ctrl = vscode.tests.createTestController(
-            configFileUri.toString(),
-            configFileUri.fsPath,
-          );
+          const ctrl = vscode.tests.createTestController(configFileUri.toString(), configFileUri.fsPath);
           this.ctrl = ctrl;
           this.disposables.add(ctrl);
 
@@ -153,7 +148,6 @@ export class Controller {
             }
           };
           this.disposables.add(this.configFile.onDidChange(() => rescan('mocharc changed')));
-          this.disposables.add(this.settings.onDidChange(() => rescan('settings changed')));
           ctrl.refreshHandler = () => {
             this.configFile.forget();
             rescan('user');
@@ -162,7 +156,7 @@ export class Controller {
         } catch (e) {
           this.logChannel.error(e as Error);
         }
-      }),
+      })
     );
 
     this.configFile.tryActivate();
@@ -188,11 +182,7 @@ export class Controller {
       this.disposables.add(this.tsconfigStore);
     }
 
-    this.discoverer = new SettingsBasedFallbackTestDiscoverer(
-      this.logChannel,
-      this.settings,
-      this.tsconfigStore!,
-    );
+    this.discoverer = new SettingsBasedFallbackTestDiscoverer(this.logChannel, this.settings, this.tsconfigStore!);
   }
 
   public dispose() {
@@ -231,11 +221,7 @@ export class Controller {
     try {
       tree = await this.discoverer!.discover(uri.fsPath, contents);
     } catch (e) {
-      this.logChannel.error(
-        'Error while test extracting ',
-        (e as Error).message,
-        (e as Error).stack,
-      );
+      this.logChannel.error('Error while test extracting ', (e as Error).message, (e as Error).stack);
       this.deleteFileTests(uri.toString());
 
       const errorFile = last(this.getContainingItemsForFile(uri, { compiledFile: uri }))!.item!;
@@ -258,14 +244,14 @@ export class Controller {
       parent: vscode.TestItem,
       node: IParsedNode,
       start: vscode.Location,
-      end: vscode.Location,
+      end: vscode.Location
     ): vscode.TestItem => {
       let item = parent.children.get(node.name);
       if (!item) {
         item = this.ctrl!.createTestItem(node.name, node.name, start.uri);
         counter.add(node.kind);
         testMetadata.set(item, {
-          type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test,
+          type: node.kind === NodeKind.Suite ? ItemType.Suite : ItemType.Test
         });
         parent.children.add(item);
       } else {
@@ -381,14 +367,12 @@ export class Controller {
 
   private async startWatchingWorkspace() {
     // we need to watch for *every* change due to https://github.com/microsoft/vscode/issues/60813
-    const watcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(this.wf, '**/*'),
-    );
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(this.wf, '**/*'));
     this.watcher.value = watcher;
 
-    watcher.onDidCreate((uri) => this._syncFile(uri));
-    watcher.onDidChange((uri) => this._syncFile(uri));
-    watcher.onDidDelete((uri) => {
+    watcher.onDidCreate(uri => this._syncFile(uri));
+    watcher.onDidChange(uri => this._syncFile(uri));
+    watcher.onDidDelete(uri => {
       const prefix = uri.toString();
       for (const key of this.testsInFiles.keys()) {
         if (key === prefix || (key[prefix.length] === '/' && key.startsWith(prefix))) {
@@ -409,8 +393,8 @@ export class Controller {
     this.errorItem = item;
     item.error = new vscode.MarkdownString(
       `[View details](command:${showConfigErrorCommand}?${encodeURIComponent(
-        JSON.stringify([this.configFile.uri.toString()]),
-      )})`,
+        JSON.stringify([this.configFile.uri.toString()])
+      )})`
     );
     item.error.isTrusted = true;
     this.ctrl!.items.add(item);
@@ -437,11 +421,11 @@ export class Controller {
       return;
     }
 
-    const run = this.runner.makeHandler(this.ctrl, this.configFile, false);
-    const debug = this.runner.makeHandler(this.ctrl, this.configFile, true);
+    const run = this.runner.makeHandler(this.ctrl, this.configFile, this.runtime, false);
+    const debug = this.runner.makeHandler(this.ctrl, this.configFile, this.runtime, true);
     const profiles = [
       this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Run, run, true),
-      this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true),
+      this.ctrl.createRunProfile(name, vscode.TestRunProfileKind.Debug, debug, true)
     ];
 
     this.runProfiles.set(name, profiles);
@@ -510,7 +494,7 @@ export class Controller {
     for (const f of rough.files) {
       processFile(vscode.Uri.file(f));
     }
-    const todo = rough.patterns.map(async (pattern) => {
+    const todo = rough.patterns.map(async pattern => {
       const relativePattern = new vscode.RelativePattern(this.wf, pattern);
       for (const file of await vscode.workspace.findFiles(relativePattern)) {
         processFile(file);
@@ -546,18 +530,12 @@ const addDuplicateDiagnostic = (location: vscode.Location, existing: vscode.Test
   const diagnostic = new vscode.Diagnostic(
     location.range,
     'Duplicate tests cannot be run individually and will not be reported correctly by the test framework. Please rename them.',
-    vscode.DiagnosticSeverity.Warning,
+    vscode.DiagnosticSeverity.Warning
   );
 
   diagnostic.relatedInformation = [
-    new vscode.DiagnosticRelatedInformation(
-      new vscode.Location(existing.uri!, existing.range!),
-      'First declared here',
-    ),
+    new vscode.DiagnosticRelatedInformation(new vscode.Location(existing.uri!, existing.range!), 'First declared here')
   ];
 
-  diagnosticCollection.set(
-    location.uri,
-    diagnosticCollection.get(location.uri)?.concat([diagnostic]) || [diagnostic],
-  );
+  diagnosticCollection.set(location.uri, diagnosticCollection.get(location.uri)?.concat([diagnostic]) || [diagnostic]);
 };

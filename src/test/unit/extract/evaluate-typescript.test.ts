@@ -8,28 +8,28 @@
  */
 
 import { expect } from 'chai';
-import { ConfigValue } from '../../../configValue';
-import { defaultTestSymbols } from '../../../constants';
 import { EvaluationTestDiscoverer } from '../../../discoverer/evaluate';
 import { NodeKind } from '../../../discoverer/types';
 import { TsConfigStore } from '../../../tsconfig-store';
 import { source } from '../../util';
+import { ExtensionSettings } from '../../../settings';
 
 describe('evaluate typescript', () => {
   function extractWithEvaluation(...lines: string[]) {
-    const discoverer = new EvaluationTestDiscoverer(
-      undefined,
-      new ConfigValue('', defaultTestSymbols),
-      new TsConfigStore(),
-    );
-    return discoverer.discover('test.ts', source(...lines));
+    const settings = new ExtensionSettings();
+    try {
+      const discoverer = new EvaluationTestDiscoverer(undefined, new ExtensionSettings(), new TsConfigStore());
+      return discoverer.discover('test.ts', source(...lines));
+    } finally {
+      settings.dispose();
+    }
   }
 
   it('extracts basic suite', async () => {
     const src = await extractWithEvaluation(
       "suite('hello', () => {", //
       "  it('works', () => {});",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -47,10 +47,10 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 1,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
@@ -59,7 +59,7 @@ describe('evaluate typescript', () => {
       "import a from './test';", //
       "suite('hello', () => {",
       "  it('works', () => { a() });",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -77,10 +77,10 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 2,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
@@ -95,7 +95,7 @@ describe('evaluate typescript', () => {
       '    return a.toString() as string;',
       '  }',
       "  it('works', () => {});",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -113,10 +113,10 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 8,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
@@ -136,7 +136,7 @@ describe('evaluate typescript', () => {
       '',
       '',
       "  it('works2', () => {});",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -154,7 +154,7 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 1,
-            children: [],
+            children: []
           },
           {
             name: 'works2',
@@ -163,9 +163,9 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 4,
-            children: [],
-          },
-        ],
+            children: []
+          }
+        ]
       },
       {
         name: 'hello2',
@@ -182,7 +182,7 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 10,
-            children: [],
+            children: []
           },
           {
             name: 'works2',
@@ -191,10 +191,10 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 13,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
@@ -206,7 +206,7 @@ describe('evaluate typescript', () => {
       '',
       "suite('hello', () => {", //
       "  it('works');",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -224,20 +224,20 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 5,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
-    it('extracts basic suite import string', async () => {
+  it('extracts basic suite import string', async () => {
     const src = await extractWithEvaluation(
       "import a from './test';", //
-      "const _ = String(a)",
+      'const _ = String(a)',
       "suite('hello', () => {",
       "  it('works', () => { a() });",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -255,11 +255,10 @@ describe('evaluate typescript', () => {
             startColumn: 2,
             endColumn: Number.MAX_SAFE_INTEGER,
             endLine: 3,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
-
 });

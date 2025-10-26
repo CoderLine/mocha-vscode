@@ -8,27 +8,28 @@
  */
 
 import { expect } from 'chai';
-import { ConfigValue } from '../../../configValue';
-import { defaultTestSymbols } from '../../../constants';
 import { SyntaxTestDiscoverer } from '../../../discoverer/syntax';
 import { NodeKind } from '../../../discoverer/types';
 import { TsConfigStore } from '../../../tsconfig-store';
 import { source } from '../../util';
+import { ExtensionSettings } from '../../../settings';
 
 describe('syntax', () => {
   function extractWithAst(...lines: string[]) {
-    const discoverer = new SyntaxTestDiscoverer(
-      new ConfigValue('', defaultTestSymbols),
-      new TsConfigStore(),
-    );
-    return discoverer.discover('test.js', source(...lines));
+    const settings = new ExtensionSettings();
+    try {
+      const discoverer = new SyntaxTestDiscoverer(settings, new TsConfigStore());
+      return discoverer.discover('test.js', source(...lines));
+    } finally {
+      settings.dispose();
+    }
   }
 
   it('extracts basic suite', async () => {
     const src = await extractWithAst(
       "suite('hello', () => {", //
       "  it('works', () => {});",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -46,10 +47,10 @@ describe('syntax', () => {
             startColumn: 2,
             endColumn: 23,
             endLine: 1,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
@@ -58,7 +59,7 @@ describe('syntax', () => {
       "suite('hello', () => {", //
       "  it.only('a', ()=>{});",
       "  it.skip('a', ()=>{});",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -77,7 +78,7 @@ describe('syntax', () => {
             endColumn: 22,
             endLine: 1,
             children: [],
-            directive: 'only',
+            directive: 'only'
           },
           {
             name: 'a',
@@ -87,10 +88,10 @@ describe('syntax', () => {
             endColumn: 22,
             endLine: 2,
             children: [],
-            directive: 'skip',
-          },
-        ],
-      },
+            directive: 'skip'
+          }
+        ]
+      }
     ]);
   });
 
@@ -98,7 +99,7 @@ describe('syntax', () => {
     const src = await extractWithAst(
       "suite('hello', () => {", //
       "  it('works');",
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -116,10 +117,10 @@ describe('syntax', () => {
             startColumn: 2,
             endColumn: 13,
             endLine: 1,
-            children: [],
-          },
-        ],
-      },
+            children: []
+          }
+        ]
+      }
     ]);
   });
 
@@ -133,8 +134,8 @@ describe('syntax', () => {
         startColumn: 0,
         endColumn: 14,
         endLine: 0,
-        children: [],
-      },
+        children: []
+      }
     ]);
   });
 
@@ -144,7 +145,7 @@ describe('syntax', () => {
       "  for (const name of ['foo', 'bar', 'baz']) {",
       '    it(name, () => {});',
       '  }',
-      '})',
+      '})'
     );
     expect(src).to.deep.equal([
       {
@@ -154,8 +155,8 @@ describe('syntax', () => {
         startColumn: 0,
         endColumn: 2,
         endLine: 4,
-        children: [],
-      },
+        children: []
+      }
     ]);
   });
 

@@ -8,18 +8,10 @@
  */
 
 import path from 'node:path';
-import type { IExtensionSettings } from './discoverer/types';
 
 /** Pattern of files the CLI looks for */
 export const configFilePatterns = ['**/.mocharc.{js,cjs,yaml,yml,json,jsonc}', '**/package.json'];
-
-export const defaultTestSymbols: IExtensionSettings = {
-  suite: ['describe', 'suite'],
-  test: ['it', 'test'],
-  hooks: ['before', 'after', 'beforeEach', 'afterEach'],
-  extractWith: 'evaluation-cjs',
-  extractTimeout: 10_000,
-};
+export const ignoreConfigFilePattern = '**/node_modules/**';
 
 export const showConfigErrorCommand = 'mocha-vscode.showConfigError';
 export const getControllersForTestCommand = 'mocha-vscode.getControllersForTest';

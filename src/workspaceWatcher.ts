@@ -9,42 +9,41 @@
 
 import { minimatch } from 'minimatch';
 import * as vscode from 'vscode';
-import { configFilePatterns } from './constants';
+import { configFilePatterns, ignoreConfigFilePattern } from './constants';
 import { Controller } from './controller';
 import { DisposableStore } from './disposable';
 import type { TestRunner } from './runner';
 import type { SourceMapStore } from './source-map-store';
+import type { ExtensionSettings } from './settings';
 
 export class WorkspaceFolderWatcher {
   private readonly disposables = new DisposableStore();
-  public readonly controllers: Map<string /*config file */, Controller> = new Map<
-    string,
-    Controller
-  >();
+  public readonly controllers: Map<string /*config file */, Controller> = new Map<string, Controller>();
 
   constructor(
     private logChannel: vscode.LogOutputChannel,
     private folder: vscode.WorkspaceFolder,
     private runner: TestRunner,
     private smStore: SourceMapStore,
+    private settings: ExtensionSettings
   ) {}
 
   async init() {
     // we need to watch for *every* change due to https://github.com/microsoft/vscode/issues/60813
-    const watcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(this.folder, '**/*'),
-    );
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(this.folder, '**/*'));
     this.disposables.add(watcher);
 
-    watcher.onDidCreate((uri) => {
-      for (const pattern of configFilePatterns) {
-        if (minimatch(uri.fsPath.replace(/\\/g, '/'), pattern)) {
+    watcher.onDidCreate(uri => {
+      const isMatch = configFilePatterns.some(pattern => minimatch(uri.fsPath.replace(/\\/g, '/'), pattern));
+      if(isMatch) {
+        const isIgnore  = minimatch(uri.fsPath.replace(/\\/g, '/'), ignoreConfigFilePattern);
+        if(!isIgnore) {
           this.addConfigFile(uri);
           return;
         }
       }
     });
-    watcher.onDidDelete((uri) => {
+    watcher.onDidDelete(uri => {
       this.removeConfigFile(uri);
     });
 
@@ -52,7 +51,7 @@ export class WorkspaceFolderWatcher {
     for (const configFilePattern of configFilePatterns) {
       const files = await vscode.workspace.findFiles(
         new vscode.RelativePattern(this.folder, configFilePattern),
-        '**/node_modules/**',
+        ignoreConfigFilePattern
       );
 
       for (const file of files) {
@@ -67,19 +66,14 @@ export class WorkspaceFolderWatcher {
     if (controller) {
       controller.dispose();
       this.controllers.delete(key);
+      this.disposables.remove(controller);
       this.logChannel.debug(`Removed controller via config file ${key}`);
     }
   }
 
   addConfigFile(file: vscode.Uri) {
     this.logChannel.debug(`Added new controller via config file ${file}`);
-    const controller = new Controller(
-      this.logChannel,
-      this.folder,
-      this.smStore,
-      file,
-      this.runner,
-    );
+    const controller = new Controller(this.logChannel, this.folder, this.smStore, file, this.runner, this.settings);
     this.controllers.set(file.toString(), controller);
     this.disposables.add(controller);
   }

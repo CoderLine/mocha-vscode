@@ -22,7 +22,7 @@ type PlatformLookup = { [platform: string]: string };
 const knownWindowsPackages: PlatformLookup = {
   'win32 arm64 LE': '@esbuild/win32-arm64',
   'win32 ia32 LE': '@esbuild/win32-ia32',
-  'win32 x64 LE': '@esbuild/win32-x64',
+  'win32 x64 LE': '@esbuild/win32-x64'
 };
 const knownUnixlikePackages: PlatformLookup = {
   'aix ppc64 BE': '@esbuild/aix-ppc64',
@@ -43,11 +43,11 @@ const knownUnixlikePackages: PlatformLookup = {
   'netbsd x64 LE': '@esbuild/netbsd-x64',
   'openbsd arm64 LE': '@esbuild/openbsd-arm64',
   'openbsd x64 LE': '@esbuild/openbsd-x64',
-  'sunos x64 LE': '@esbuild/sunos-x64',
+  'sunos x64 LE': '@esbuild/sunos-x64'
 };
 const knownWebAssemblyFallbackPackages: PlatformLookup = {
   'android arm LE': '@esbuild/android-arm',
-  'android x64 LE': '@esbuild/android-x64',
+  'android x64 LE': '@esbuild/android-x64'
 };
 function getPlatformPackageName() {
   let pkg: string;
@@ -81,10 +81,7 @@ export async function esbuildPackageVersion() {
 
 // ESBuild needs the platform specific binary for execution
 // here we run the init script coming with ESBuild
-export async function initESBuild(
-  context: vscode.ExtensionContext,
-  logChannel: vscode.LogOutputChannel,
-) {
+export async function initESBuild(context: vscode.ExtensionContext, logChannel: vscode.LogOutputChannel) {
   logChannel.debug('Checking ESBuild availability');
 
   const platformPackageName = getPlatformPackageName();
@@ -93,10 +90,7 @@ export async function initESBuild(
     logChannel.debug('Determining ESBuild platform package and version');
 
     const packageJson = JSON.parse(
-      await fs.promises.readFile(
-        path.join(context.extensionPath, 'node_modules', 'esbuild', 'package.json'),
-        'utf-8',
-      ),
+      await fs.promises.readFile(path.join(context.extensionPath, 'node_modules', 'esbuild', 'package.json'), 'utf-8')
     );
 
     let packageVersion = packageJson.optionalDependencies?.[platformPackageName];
@@ -111,29 +105,23 @@ export async function initESBuild(
       context.extensionPath,
       'node_modules',
       ...platformPackageName.split('/'),
-      'package.json',
+      'package.json'
     );
     if (fs.existsSync(platformPackageJsonPath)) {
       try {
-        const platformPackageJson = JSON.parse(
-          await fs.promises.readFile(platformPackageJsonPath, 'utf-8'),
-        );
+        const platformPackageJson = JSON.parse(await fs.promises.readFile(platformPackageJsonPath, 'utf-8'));
         if (platformPackageJson.version === packageVersion) {
           logChannel.debug(
-            `Determining ESBuild platform package ${platformPackageAndVersion} already installed, skipping install`,
+            `Determining ESBuild platform package ${platformPackageAndVersion} already installed, skipping install`
           );
           return;
         }
-      } catch (e) {
+      } catch {
         // ignore and trigger install
       }
     }
   } catch (e) {
-    logChannel.error(
-      'Failed to determine ESBuild platform package',
-      (e as Error).message,
-      (e as Error).stack,
-    );
+    logChannel.error('Failed to determine ESBuild platform package', (e as Error).message, (e as Error).stack);
     return;
   }
 
@@ -149,10 +137,9 @@ export async function initESBuild(
       {
         cwd: temp,
         env: {
-          ...process.env,
-          ELECTRON_RUN_AS_NODE: '1',
+          ...process.env
         },
-        windowsHide: true,
+        windowsHide: true
       },
       (error, stdout, stderr) => {
         if (stdout) {
@@ -167,20 +154,20 @@ export async function initESBuild(
         } else {
           resolve();
         }
-      },
+      }
     );
   });
 
   const tgzPath = (
     await fs.promises.readdir(temp, {
       withFileTypes: true,
-      recursive: false,
+      recursive: false
     })
   )[0];
   logChannel.debug(`Extracting ${tgzPath.name}`);
   await tar.extract({
     file: path.join(temp, tgzPath.name),
-    cwd: temp,
+    cwd: temp
   });
 
   const targetPath = path.join(context.extensionPath, 'node_modules', platformPackageName);

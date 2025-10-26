@@ -53,9 +53,7 @@ export function integrationTestPrepare(name: string) {
 
   const workspaceFolder = path.resolve(__dirname, '..', '..', 'test-workspaces', name);
   if (!fs.existsSync(workspaceFolder)) {
-    assert.fail(
-      `Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`,
-    );
+    assert.fail(`Workspace Folder '${workspaceFolder}' doesn't exist, something is wrong with the test setup`);
   }
 
   beforeEach(async () => {
@@ -71,16 +69,26 @@ export function integrationTestPrepare(name: string) {
 }
 
 async function restoreWorkspace(workspaceFolder: string, workspaceBackup: string) {
-  // vscode behaves badly when we delete the workspace folder; delete contents instead.
-  const files = await fs.promises.readdir(workspaceFolder);
-  await Promise.all(files.map((f) => rmrf(path.join(workspaceFolder, f))));
+  const restoredFiles = new Set<string>();
+  // restore changed files
+  for(const dirOrFile of await fs.promises.readdir(workspaceBackup, {withFileTypes: true})) {
+    restoredFiles.add(dirOrFile.name);
+    if(dirOrFile.isDirectory() && dirOrFile.name === 'node_modules') {
+      continue;
+    }
+    await fs.promises.cp(path.join(workspaceBackup, dirOrFile.name), path.join(workspaceFolder, dirOrFile.name), { recursive: true });
+  }
 
-  await fs.promises.cp(workspaceBackup, workspaceFolder, { recursive: true });
-  await rmrf(workspaceBackup);
+  // delete new files
+  for(const dirOrFile of await fs.promises.readdir(workspaceFolder, {withFileTypes: true})) {
+    if(!restoredFiles.has(dirOrFile.name)) {
+      await rmrf(path.join(workspaceFolder, dirOrFile.name));
+    }
+  }
 
   // it seems like all these files changes can require a moment for vscode's file
-  // watcher to update before we can run the next test. 500 seems to do it 🤷‍♂️
-  await setTimeout(500);
+  // watcher to update before we can run the next test. 1000 seems to do it 🤷‍♂️
+  await setTimeout(1000);
 }
 
 async function backupWorkspace(source: string) {
@@ -92,7 +100,7 @@ async function backupWorkspace(source: string) {
 }
 
 export async function getController(scan = true) {
-  for (let retry = 0; retry < 3; retry++) {
+  for (let retry = 0; retry < 10; retry++) {
     const c = await tryGetController(scan);
     if (c) {
       return c;
@@ -104,25 +112,23 @@ export async function getController(scan = true) {
   throw new Error('no controllers registered');
 }
 export async function tryGetController(scan = true) {
-  const controllers = await vscode.commands.executeCommand<Controller[]>(
-    getControllersForTestCommand,
-  );
+  const controllers = await vscode.commands.executeCommand<Controller[]>(getControllersForTestCommand);
 
   if (!controllers || !controllers.length) {
     return undefined;
   }
 
-  let controller: Controller | undefined = undefined;
+  let controller: Controller | undefined;
 
   for (const c of controllers) {
     if (await c.tryActivate()) {
       // wait for activation to complete, can be delayed through an event loop
-      for (let retry = 0; retry < 3; retry++) {
+      for (let retry = 0; retry < 10; retry++) {
         if (c.ctrl) {
           controller = c;
           break;
         }
-          await setTimeout(1000);
+        await setTimeout(1000);
       }
 
       if (controller) {
@@ -151,7 +157,7 @@ export function extractParsedNodes(vsItems: vscode.TestItemCollection): IParsedN
       startColumn: vsItem[1].range?.start.character ?? -1,
       endLine: vsItem[1].range?.end.line ?? -1,
       endColumn: vsItem[1].range?.end.character ?? -1,
-      children: [],
+      children: []
     };
 
     items.push(item);
@@ -190,7 +196,7 @@ function buildTreeExpectation(entry: TestTreeExpectation, c: vscode.TestItemColl
 
 export function onceChanged(controller: Controller, timeout = 10000) {
   return new Promise<void>((resolve, reject) => {
-    setTimeout(timeout).then(reject);
+    setTimeout(timeout).then(() => reject("Timed out"));
     const l = controller.onDidChange(() => {
       l.dispose();
       resolve();
@@ -255,7 +261,7 @@ export class FakeTestRun implements vscode.TestRun {
     const last: typeof this.states = [];
     for (let i = this.states.length - 1; i >= 0; i--) {
       const state = this.states[i];
-      if (!last.some((l) => l.test === state.test)) {
+      if (!last.some(l => l.test === state.test)) {
         last.unshift(state);
       }
     }
@@ -274,7 +280,7 @@ export class FakeTestRun implements vscode.TestRun {
       actual[key].push(state);
     }
 
-    assert.deepStrictEqual(actual, expected, JSON.stringify(actual));
+    assert.deepStrictEqual(actual, expected, `Test output: ${JSON.stringify(this.output)}\n${JSON.stringify(actual)}`);
   }
 
   //#region fake implementation
@@ -295,27 +301,20 @@ export class FakeTestRun implements vscode.TestRun {
     this.states.push({
       test,
       state: 'failed',
-      message: Array.isArray(message) ? message[0] : message,
+      message: Array.isArray(message) ? message[0] : message
     });
   }
-  errored(
-    test: vscode.TestItem,
-    message: vscode.TestMessage | readonly vscode.TestMessage[],
-  ): void {
+  errored(test: vscode.TestItem, message: vscode.TestMessage | readonly vscode.TestMessage[]): void {
     this.states.push({
       test,
       state: 'errored',
-      message: Array.isArray(message) ? message[0] : message,
+      message: Array.isArray(message) ? message[0] : message
     });
   }
   passed(test: vscode.TestItem): void {
     this.states.push({ test, state: 'passed' });
   }
-  appendOutput(
-    output: string,
-    location?: vscode.Location | undefined,
-    test?: vscode.TestItem | undefined,
-  ): void {
+  appendOutput(output: string, location?: vscode.Location | undefined, test?: vscode.TestItem | undefined): void {
     // console.log(output); // debug
     this.output.push({ output, location, test });
   }
