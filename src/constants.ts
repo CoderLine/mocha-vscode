@@ -11,6 +11,7 @@ import path from 'node:path';
 
 /** Pattern of files the CLI looks for */
 export const configFilePatterns = ['**/.mocharc.{js,cjs,yaml,yml,json,jsonc}', '**/package.json'];
+export const ignoreConfigFilePattern = '**/node_modules/**';
 
 export const showConfigErrorCommand = 'mocha-vscode.showConfigError';
 export const getControllersForTestCommand = 'mocha-vscode.getControllersForTest';
