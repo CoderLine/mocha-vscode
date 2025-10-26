@@ -158,7 +158,7 @@
     "postinstall": "cd src/typings && npx @vscode/dts main",
     "clean": "node -e \"fs.rmSync('out',{force:true,recursive:true})\"",
     "compile": "npm run clean && tsc --noEmit && node .esbuild.js --minify",
-    "compile:test": "tsc",
+    "compile:test": "tsc && tsx scripts/tsnocheck.mts",
     "watch:esbuild": "npm run clean && node .esbuild.js --watch",
     "watch": "npm run clean && tsc --watch",
     "test": "tsc && vscode-test",
