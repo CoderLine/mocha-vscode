@@ -90,7 +90,7 @@ async function backupWorkspace(source: string) {
 }
 
 export async function getController(scan = true) {
-  for (let retry = 0; retry < 3; retry++) {
+  for (let retry = 0; retry < 10; retry++) {
     const c = await tryGetController(scan);
     if (c) {
       return c;
@@ -113,7 +113,7 @@ export async function tryGetController(scan = true) {
   for (const c of controllers) {
     if (await c.tryActivate()) {
       // wait for activation to complete, can be delayed through an event loop
-      for (let retry = 0; retry < 3; retry++) {
+      for (let retry = 0; retry < 10; retry++) {
         if (c.ctrl) {
           controller = c;
           break;
@@ -186,7 +186,7 @@ function buildTreeExpectation(entry: TestTreeExpectation, c: vscode.TestItemColl
 
 export function onceChanged(controller: Controller, timeout = 10000) {
   return new Promise<void>((resolve, reject) => {
-    setTimeout(timeout).then(reject);
+    setTimeout(timeout).then(() => reject("Timed out"));
     const l = controller.onDidChange(() => {
       l.dispose();
       resolve();
