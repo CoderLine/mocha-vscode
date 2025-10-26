@@ -68,7 +68,10 @@ jobs:
       - name: Pack for VSIX Tests
         run: npm run package:test
         env:
-          TEST_TEMP: ${{ runner.temp }}        
+          TEST_TEMP: ${{ runner.temp }}      
+
+      - name: Recompile-tests
+        run: npm run compile:test
 
       - name: Run VSIX Tests (Linux)
         run: xvfb-run -a npm run test:vsix

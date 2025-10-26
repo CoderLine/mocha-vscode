@@ -270,7 +270,7 @@ export class FakeTestRun implements vscode.TestRun {
       actual[key].push(state);
     }
 
-    assert.deepStrictEqual(actual, expected, JSON.stringify(actual));
+    assert.deepStrictEqual(actual, expected, 'Test output: ' + JSON.stringify(this.output) + '\n' + JSON.stringify(actual));
   }
 
   //#region fake implementation

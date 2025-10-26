@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const dirname = fileURLToPath(new URL('.', import.meta.url));
 const reporter = path.join(dirname, '../out/reporter');
-const files = (await fs.promises.readdir(reporter)).map(f => `${reporter}/${f}`);
+const files = (await fs.promises.readdir(reporter)).filter(f => f.endsWith('.js')).map(f => `${reporter}/${f}`);
 for(const f of files) {
     await fs.promises.writeFile(
         f,
