@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-import * as Mocha from 'mocha';
+import type * as Mocha from 'mocha';
 import { inspect } from 'node:util';
 import { MochaEvent, type MochaEventTuple } from './fullJsonStreamReporterTypes';
 
@@ -21,17 +21,18 @@ import { MochaEvent, type MochaEventTuple } from './fullJsonStreamReporterTypes'
 module.exports = class FullJsonStreamReporter {
   constructor(runner: Mocha.Runner) {
     const total = runner.total;
-    runner.once(Mocha.Runner.constants.EVENT_RUN_BEGIN, () => writeEvent([MochaEvent.Start, { total }]));
-    runner.once(Mocha.Runner.constants.EVENT_RUN_END, () => writeEvent([MochaEvent.End, {}]));
+    const constants = (runner.constructor as any).constants as Mocha.RunnerConstants;
+    runner.once(constants.EVENT_RUN_BEGIN, () => writeEvent([MochaEvent.Start, { total }]));
+    runner.once(constants.EVENT_RUN_END, () => writeEvent([MochaEvent.End, {}]));
 
-    runner.on(Mocha.Runner.constants.EVENT_SUITE_BEGIN, (suite: Mocha.Suite) =>
+    runner.on(constants.EVENT_SUITE_BEGIN, (suite: Mocha.Suite) =>
       writeEvent([MochaEvent.SuiteStart, { path: suite.titlePath(), file: suite.file }])
     );
-    runner.on(Mocha.Runner.constants.EVENT_TEST_BEGIN, (test: Mocha.Test) =>
+    runner.on(constants.EVENT_TEST_BEGIN, (test: Mocha.Test) =>
       writeEvent([MochaEvent.TestStart, clean(test)])
     );
-    runner.on(Mocha.Runner.constants.EVENT_TEST_PASS, test => writeEvent([MochaEvent.Pass, clean(test)]));
-    runner.on(Mocha.Runner.constants.EVENT_TEST_FAIL, (test, err) => {
+    runner.on(constants.EVENT_TEST_PASS, test => writeEvent([MochaEvent.Pass, clean(test)]));
+    runner.on(constants.EVENT_TEST_FAIL, (test, err) => {
       writeEvent([
         MochaEvent.Fail,
         {
