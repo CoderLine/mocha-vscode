@@ -59,6 +59,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          corepack enable
           node --version
           npm --version
           npm install

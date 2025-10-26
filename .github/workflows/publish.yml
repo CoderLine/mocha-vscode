@@ -38,7 +38,9 @@ jobs:
           npm install -g corepack@latest
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          corepack enable
+          npm install
 
       - name: Build and Package
         run: npm run package:release
