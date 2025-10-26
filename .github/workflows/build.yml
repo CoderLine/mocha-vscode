@@ -44,6 +44,13 @@ jobs:
           nvm install $(cat test-workspaces/nvm/.nvmrc)
           nvm install lts/*
 
+      - name: Update NPM (Linux)
+        if: runner.os == 'Linux'
+        run: sudo npm install -g npm@latest
+      - name: Update NPM (Win/MacOS)
+        if: runner.os != 'Linux'
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: |
           node --version
