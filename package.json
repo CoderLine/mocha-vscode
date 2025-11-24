@@ -217,7 +217,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3",
-    "which": "^5.0.0"
+    "which": "^6.0.0"
   },
   "dependencies": {
     "esbuild": "^0.27.0"
