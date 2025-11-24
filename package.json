@@ -190,7 +190,7 @@
     "@types/split2": "^4.2.3",
     "@types/which": "^3.0.4",
     "@types/yargs": "^17.0.34",
-    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.46.2",
     "@typescript-eslint/typescript-estree": "^8.46.1",
     "@vscode/dts": "^0.4.1",
