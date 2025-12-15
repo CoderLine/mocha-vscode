@@ -184,7 +184,7 @@
     "@types/extract-zip": "^2.0.1",
     "@types/glob": "^9.0.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "24.x",
+    "@types/node": "25.x",
     "@types/picomatch": "^4.0.2",
     "@types/sinon": "^21.0.0",
     "@types/split2": "^4.2.3",
