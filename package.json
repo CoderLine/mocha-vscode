@@ -191,7 +191,7 @@
     "@types/which": "^3.0.4",
     "@types/yargs": "^17.0.35",
     "@typescript-eslint/eslint-plugin": "^8.50.1",
-    "@typescript-eslint/parser": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.1",
     "@typescript-eslint/typescript-estree": "^8.53.1",
     "@vscode/dts": "^0.4.1",
     "@vscode/test-cli": "^0.0.12",
