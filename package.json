@@ -205,7 +205,7 @@
     "data-uri-to-buffer": "^6.0.2",
     "error-stack-parser": "^2.1.4",
     "extract-zip": "^2.0.1",
-    "glob": "^13.0.1",
+    "glob": "^13.0.3",
     "minimatch": "^10.1.2",
     "mocha": "^11.7.5",
     "sinon": "^21.0.1",
