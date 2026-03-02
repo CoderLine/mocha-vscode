@@ -212,7 +212,7 @@
     "split2": "^4.2.0",
     "stacktrace-parser": "^0.1.11",
     "supports-color": "^10.2.2",
-    "tar": "^7.5.7",
+    "tar": "^7.5.9",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
