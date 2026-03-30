@@ -451,7 +451,7 @@ export class TestRunner {
   }
 }
 
-class CompiledFileTests {
+export class CompiledFileTests {
   public readonly value = new Map</* compiled file path */ string, /* source file test items */ Set<vscode.TestItem>>();
 
   /**
@@ -476,10 +476,13 @@ class CompiledFileTests {
 
   /**
    * Gets a test item by its path of titles in the test file.
+   * Falls back to the deepest matched ancestor when the full path
+   * can't be resolved (e.g. when tests are dynamically generated).
    */
   private getPathInTestItems(items: Set<vscode.TestItem>, path: readonly string[]) {
     for (const item of items) {
       let candidate: vscode.TestItem | undefined = item;
+      let deepestMatch: vscode.TestItem | undefined;
       for (let i = 0; i < path.length && candidate; i++) {
         const pathPart = path[i];
         if (
@@ -490,10 +493,19 @@ class CompiledFileTests {
         ) {
           break;
         }
-        candidate = candidate.children.get(pathPart);
+        const next = candidate.children.get(pathPart);
+        if (next) {
+          deepestMatch = next;
+          candidate = next;
+        } else {
+          candidate = undefined;
+        }
       }
       if (candidate !== undefined) {
         return candidate;
+      }
+      if (deepestMatch !== undefined) {
+        return deepestMatch;
       }
     }
   }
