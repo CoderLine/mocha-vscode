@@ -185,7 +185,7 @@
     "@types/glob": "^9.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "25.x",
-    "@types/picomatch": "^4.0.2",
+    "@types/picomatch": "^4.0.3",
     "@types/sinon": "^21.0.1",
     "@types/split2": "^4.2.3",
     "@types/which": "^3.0.4",
